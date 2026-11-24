@@ -17,6 +17,8 @@ FlagLens is two things that work together:
 
 It is a community project, not an official Flagsmith product.
 
+![FlagLens in VS Code: live state of every flag in every environment, and the hover card for checkout_button_color](docs/screenshots/hover.png)
+
 ```
 ⚑ new_checkout   Development ● on · Staging ● on · Production ○ off   ⚠ drift
 if (flags.isFeatureEnabled('new_checkout')) {
@@ -27,6 +29,14 @@ const limit = flags.getFeatureValue('rate_limit_per_minute');
 if (flags.isFeatureEnabled('new_chekout')) {      ← Flag "new_chekout" doesn't exist in Flagsmith. Did you mean "new_checkout"?
                             ~~~~~~~~~~~              Quick fix: Replace with "new_checkout" · Create flag in Flagsmith…
 ```
+
+## Screenshots
+
+| | |
+|---|---|
+| ![CodeLens above every flag reference](docs/screenshots/codelens.png) **Live state inline**: every environment above every flag, with ⚠ drift, 🗑 stale and archived badges. | ![Environment Matrix](docs/screenshots/matrix.png) **Environment Matrix**: every flag × environment, differences highlighted, copy the diff as Markdown. |
+| ![Typo quick fix](docs/screenshots/typo-quick-fix.png) **Typo detection**: unknown keys are underlined, with *Replace with…* and *Create flag…* quick fixes. | ![Typed confirmation for Production](docs/screenshots/protected-confirm.png) **Protected environments**: changing Production means typing the flag's name. |
+| ![Problems panel with archived and stale flags](docs/screenshots/archived-and-stale.png) **Archived and stale flags** show up as problems, computed locally on open-source Flagsmith. | ![The self-hosted Flagsmith dashboard](docs/screenshots/dashboard-production.png) **Same data as the dashboard**: every value comes from your self-hosted Flagsmith. |
 
 ## Why
 
@@ -320,7 +330,11 @@ Checked against a live 2.295.2 instance (these shaped the design):
 
 ## Demo
 
-▶ **Demo video:** _link added on submission_
+▶ **Demo video (2:29, 1080p60):** [flaglens-demo.mp4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.1.1/flaglens-demo.mp4)
+
+Everything in the video is real: the VS Code footage is the released extension, driven by a script against the
+self-hosted Flagsmith from `make up && make seed`. The video itself is built in code (Playwright-driven capture,
+Manim, Remotion, ElevenLabs audio); see [video/](video/) to rebuild it.
 
 ## Built with AI assistance
 
