@@ -1,0 +1,38 @@
+{
+  "up": [
+    " Network flaglens_default  Created",
+    " Volume \"flaglens_pgdata\"  Created",
+    " Container flaglens-postgres-1  Started",
+    " Container flaglens-migrate-db-1  Started",
+    " Container flaglens-migrate-db-1  Exited",
+    " Container flaglens-flagsmith-1  Started",
+    " Container flaglens-flagsmith-task-processor-1  Started",
+    " Container flaglens-postgres-1  Healthy",
+    " Container flaglens-flagsmith-1  Healthy",
+    " Container flaglens-flagsmith-task-processor-1  Healthy"
+  ],
+  "seed": [
+    "FlagLens dev kit · seeding self-hosted Flagsmith",
+    "▸ Waiting for Flagsmith at http://localhost:8000   ready ✓",
+    "▸ Admin user admin@flaglens.local   created ✓",
+    "▸ Organisation \"FlagLens Demo\"   created ✓",
+    "▸ Project \"Demo Shop\"   created ✓",
+    "▸ Environments   Development ✓  Staging ✓  Production ✓",
+    "▸ Flags",
+    "  new_checkout             Development ●  Staging ●  Production ○",
+    "  banner_text              Development ●  Staging ●  Production ●",
+    "  rate_limit_per_minute    Development ●  Staging ●  Production ●",
+    "  checkout_button_color    Development ●  Staging ●  Production ●",
+    "  dark_mode                Development ●  Staging ●  Production ●",
+    "  maintenance_mode         Development ○  Staging ○  Production ○",
+    "  legacy_search            Development ○  Staging ○  Production ○  (archived)",
+    "▸ Organisation API key   created ✓",
+    "▸ Writing .env files (git-ignored)   ✓"
+  ],
+  "box": [
+    "✔ Self-hosted Flagsmith is seeded and ready.",
+    "Dashboard   http://localhost:8000",
+    "Login       admin@flaglens.local / FlagLens-demo-2026",
+    "Project     Demo Shop · Development, Staging, Production · 7 flags"
+  ]
+}
