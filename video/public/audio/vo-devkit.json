@@ -1,0 +1,151 @@
+{
+ "id": "devkit",
+ "duration": 12.306576,
+ "words": [
+  {
+   "word": "One",
+   "start": 0,
+   "end": 0.255
+  },
+  {
+   "word": "command",
+   "start": 0.29,
+   "end": 0.592
+  },
+  {
+   "word": "starts",
+   "start": 0.65,
+   "end": 0.894
+  },
+  {
+   "word": "the",
+   "start": 0.929,
+   "end": 0.998
+  },
+  {
+   "word": "official",
+   "start": 1.045,
+   "end": 1.393
+  },
+  {
+   "word": "Flagsmith",
+   "start": 1.463,
+   "end": 1.997
+  },
+  {
+   "word": "images",
+   "start": 2.067,
+   "end": 2.403
+  },
+  {
+   "word": "in",
+   "start": 2.473,
+   "end": 2.589
+  },
+  {
+   "word": "Docker.",
+   "start": 2.659,
+   "end": 3.158
+  },
+  {
+   "word": "One",
+   "start": 3.738,
+   "end": 3.959
+  },
+  {
+   "word": "more",
+   "start": 3.994,
+   "end": 4.168
+  },
+  {
+   "word": "seeds",
+   "start": 4.226,
+   "end": 4.551
+  },
+  {
+   "word": "a",
+   "start": 4.609,
+   "end": 4.644
+  },
+  {
+   "word": "demo",
+   "start": 4.702,
+   "end": 4.923
+  },
+  {
+   "word": "project:",
+   "start": 4.981,
+   "end": 5.538
+  },
+  {
+   "word": "three",
+   "start": 5.805,
+   "end": 6.037
+  },
+  {
+   "word": "environments,",
+   "start": 6.072,
+   "end": 6.711
+  },
+  {
+   "word": "seven",
+   "start": 6.827,
+   "end": 7.094
+  },
+  {
+   "word": "flags,",
+   "start": 7.14,
+   "end": 7.57
+  },
+  {
+   "word": "and",
+   "start": 7.697,
+   "end": 7.837
+  },
+  {
+   "word": "an",
+   "start": 7.895,
+   "end": 7.953
+  },
+  {
+   "word": "API",
+   "start": 8.022,
+   "end": 8.464
+  },
+  {
+   "word": "key,",
+   "start": 8.533,
+   "end": 8.858
+  },
+  {
+   "word": "all",
+   "start": 9.056,
+   "end": 9.253
+  },
+  {
+   "word": "through",
+   "start": 9.3,
+   "end": 9.497
+  },
+  {
+   "word": "Flagsmith's",
+   "start": 9.543,
+   "end": 10.124
+  },
+  {
+   "word": "own",
+   "start": 10.194,
+   "end": 10.449
+  },
+  {
+   "word": "REST",
+   "start": 10.612,
+   "end": 10.902
+  },
+  {
+   "word": "API.",
+   "start": 10.983,
+   "end": 12.307
+  }
+ ]
+}

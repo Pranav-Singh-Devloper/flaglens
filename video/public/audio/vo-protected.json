@@ -1,0 +1,91 @@
+{
+ "id": "protected",
+ "duration": 6.315828,
+ "words": [
+  {
+   "word": "Production",
+   "start": 0,
+   "end": 0.464
+  },
+  {
+   "word": "is",
+   "start": 0.511,
+   "end": 0.58
+  },
+  {
+   "word": "protected:",
+   "start": 0.639,
+   "end": 1.242
+  },
+  {
+   "word": "you",
+   "start": 1.44,
+   "end": 1.533
+  },
+  {
+   "word": "type",
+   "start": 1.602,
+   "end": 1.811
+  },
+  {
+   "word": "the",
+   "start": 1.846,
+   "end": 1.916
+  },
+  {
+   "word": "flag's",
+   "start": 1.95,
+   "end": 2.299
+  },
+  {
+   "word": "name",
+   "start": 2.345,
+   "end": 2.554
+  },
+  {
+   "word": "before",
+   "start": 2.589,
+   "end": 2.844
+  },
+  {
+   "word": "anything",
+   "start": 2.902,
+   "end": 3.251
+  },
+  {
+   "word": "changes.",
+   "start": 3.309,
+   "end": 3.924
+  },
+  {
+   "word": "And",
+   "start": 4.238,
+   "end": 4.377
+  },
+  {
+   "word": "every",
+   "start": 4.458,
+   "end": 4.702
+  },
+  {
+   "word": "change",
+   "start": 4.76,
+   "end": 5.097
+  },
+  {
+   "word": "has",
+   "start": 5.132,
+   "end": 5.271
+  },
+  {
+   "word": "an",
+   "start": 5.317,
+   "end": 5.375
+  },
+  {
+   "word": "undo.",
+   "start": 5.468,
+   "end": 6.316
+  }
+ ]
+}

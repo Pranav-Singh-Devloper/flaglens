@@ -1,0 +1,76 @@
+{
+ "id": "title",
+ "duration": 9.055782,
+ "words": [
+  {
+   "word": "Meet",
+   "start": 0,
+   "end": 0.267
+  },
+  {
+   "word": "FlagLens.",
+   "start": 0.325,
+   "end": 1.103
+  },
+  {
+   "word": "Live",
+   "start": 1.683,
+   "end": 1.985
+  },
+  {
+   "word": "Flagsmith",
+   "start": 2.02,
+   "end": 2.589
+  },
+  {
+   "word": "flags,",
+   "start": 2.635,
+   "end": 3.17
+  },
+  {
+   "word": "right",
+   "start": 3.402,
+   "end": 3.622
+  },
+  {
+   "word": "inside",
+   "start": 3.657,
+   "end": 4.029
+  },
+  {
+   "word": "VS",
+   "start": 4.075,
+   "end": 4.354
+  },
+  {
+   "word": "Code.",
+   "start": 4.423,
+   "end": 4.818
+  },
+  {
+   "word": "Built",
+   "start": 5.399,
+   "end": 5.642
+  },
+  {
+   "word": "for",
+   "start": 5.689,
+   "end": 5.805
+  },
+  {
+   "word": "self-hosted,",
+   "start": 5.875,
+   "end": 6.676
+  },
+  {
+   "word": "open-source",
+   "start": 6.838,
+   "end": 7.535
+  },
+  {
+   "word": "Flagsmith.",
+   "start": 7.628,
+   "end": 9.056
+  }
+ ]
+}

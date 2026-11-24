@@ -1,0 +1,186 @@
+{
+ "id": "drift",
+ "duration": 13.792653,
+ "words": [
+  {
+   "word": "Now",
+   "start": 0,
+   "end": 0.163
+  },
+  {
+   "word": "look",
+   "start": 0.221,
+   "end": 0.348
+  },
+  {
+   "word": "at",
+   "start": 0.383,
+   "end": 0.43
+  },
+  {
+   "word": "the",
+   "start": 0.453,
+   "end": 0.522
+  },
+  {
+   "word": "rate",
+   "start": 0.569,
+   "end": 0.743
+  },
+  {
+   "word": "limit.",
+   "start": 0.766,
+   "end": 1.161
+  },
+  {
+   "word": "Staging",
+   "start": 1.939,
+   "end": 2.368
+  },
+  {
+   "word": "says",
+   "start": 2.415,
+   "end": 2.694
+  },
+  {
+   "word": "one",
+   "start": 2.833,
+   "end": 3.065
+  },
+  {
+   "word": "hundred,",
+   "start": 3.1,
+   "end": 3.541
+  },
+  {
+   "word": "production",
+   "start": 3.738,
+   "end": 4.168
+  },
+  {
+   "word": "says",
+   "start": 4.226,
+   "end": 4.47
+  },
+  {
+   "word": "fifty.",
+   "start": 4.632,
+   "end": 5.19
+  },
+  {
+   "word": "That's",
+   "start": 5.457,
+   "end": 5.7
+  },
+  {
+   "word": "the",
+   "start": 5.759,
+   "end": 5.828
+  },
+  {
+   "word": "two",
+   "start": 5.863,
+   "end": 5.991
+  },
+  {
+   "word": "A.M.",
+   "start": 6.06,
+   "end": 6.351
+  },
+  {
+   "word": "bug.",
+   "start": 6.374,
+   "end": 6.757
+  },
+  {
+   "word": "The",
+   "start": 7.129,
+   "end": 7.256
+  },
+  {
+   "word": "environment",
+   "start": 7.314,
+   "end": 7.779
+  },
+  {
+   "word": "matrix",
+   "start": 7.825,
+   "end": 8.139
+  },
+  {
+   "word": "shows",
+   "start": 8.185,
+   "end": 8.394
+  },
+  {
+   "word": "every",
+   "start": 8.487,
+   "end": 8.707
+  },
+  {
+   "word": "difference",
+   "start": 8.742,
+   "end": 9.056
+  },
+  {
+   "word": "at",
+   "start": 9.079,
+   "end": 9.149
+  },
+  {
+   "word": "once,",
+   "start": 9.218,
+   "end": 9.613
+  },
+  {
+   "word": "and",
+   "start": 9.741,
+   "end": 9.88
+  },
+  {
+   "word": "copies",
+   "start": 9.95,
+   "end": 10.275
+  },
+  {
+   "word": "them",
+   "start": 10.31,
+   "end": 10.437
+  },
+  {
+   "word": "as",
+   "start": 10.519,
+   "end": 10.658
+  },
+  {
+   "word": "Markdown,",
+   "start": 10.774,
+   "end": 11.447
+  },
+  {
+   "word": "straight",
+   "start": 11.61,
+   "end": 11.946
+  },
+  {
+   "word": "into",
+   "start": 12.004,
+   "end": 12.19
+  },
+  {
+   "word": "your",
+   "start": 12.271,
+   "end": 12.457
+  },
+  {
+   "word": "pull",
+   "start": 12.527,
+   "end": 12.713
+  },
+  {
+   "word": "request.",
+   "start": 12.771,
+   "end": 13.792
+  }
+ ]
+}

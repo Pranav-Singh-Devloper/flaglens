@@ -1,0 +1,171 @@
+{
+ "id": "hover",
+ "duration": 15.000091,
+ "words": [
+  {
+   "word": "Hover",
+   "start": 0,
+   "end": 0.337
+  },
+  {
+   "word": "for",
+   "start": 0.395,
+   "end": 0.488
+  },
+  {
+   "word": "the",
+   "start": 0.534,
+   "end": 0.604
+  },
+  {
+   "word": "details:",
+   "start": 0.662,
+   "end": 1.382
+  },
+  {
+   "word": "values,",
+   "start": 1.753,
+   "end": 2.473
+  },
+  {
+   "word": "variant",
+   "start": 2.705,
+   "end": 3.123
+  },
+  {
+   "word": "weights,",
+   "start": 3.17,
+   "end": 3.704
+  },
+  {
+   "word": "overrides,",
+   "start": 4.017,
+   "end": 4.888
+  },
+  {
+   "word": "and",
+   "start": 5.05,
+   "end": 5.213
+  },
+  {
+   "word": "when",
+   "start": 5.271,
+   "end": 5.399
+  },
+  {
+   "word": "it",
+   "start": 5.433,
+   "end": 5.492
+  },
+  {
+   "word": "last",
+   "start": 5.55,
+   "end": 5.782
+  },
+  {
+   "word": "changed.",
+   "start": 5.828,
+   "end": 6.385
+  },
+  {
+   "word": "It",
+   "start": 6.966,
+   "end": 7.105
+  },
+  {
+   "word": "uses",
+   "start": 7.163,
+   "end": 7.43
+  },
+  {
+   "word": "the",
+   "start": 7.465,
+   "end": 7.535
+  },
+  {
+   "word": "same",
+   "start": 7.581,
+   "end": 7.802
+  },
+  {
+   "word": "detection",
+   "start": 7.837,
+   "end": 8.278
+  },
+  {
+   "word": "as",
+   "start": 8.348,
+   "end": 8.44
+  },
+  {
+   "word": "Flagsmith's",
+   "start": 8.522,
+   "end": 9.23
+  },
+  {
+   "word": "own",
+   "start": 9.288,
+   "end": 9.474
+  },
+  {
+   "word": "Code",
+   "start": 9.543,
+   "end": 9.787
+  },
+  {
+   "word": "References,",
+   "start": 9.822,
+   "end": 10.553
+  },
+  {
+   "word": "and",
+   "start": 10.751,
+   "end": 10.902
+  },
+  {
+   "word": "reads",
+   "start": 10.983,
+   "end": 11.215
+  },
+  {
+   "word": "the",
+   "start": 11.25,
+   "end": 11.32
+  },
+  {
+   "word": "Flagsmith",
+   "start": 11.366,
+   "end": 11.97
+  },
+  {
+   "word": "CLI's",
+   "start": 12.028,
+   "end": 12.574
+  },
+  {
+   "word": "config",
+   "start": 12.62,
+   "end": 13.131
+  },
+  {
+   "word": "to",
+   "start": 13.293,
+   "end": 13.398
+  },
+  {
+   "word": "pick",
+   "start": 13.468,
+   "end": 13.63
+  },
+  {
+   "word": "the",
+   "start": 13.677,
+   "end": 13.746
+  },
+  {
+   "word": "project.",
+   "start": 13.781,
+   "end": 15
+  }
+ ]
+}

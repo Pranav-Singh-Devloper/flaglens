@@ -1,0 +1,17 @@
+{
+  "voice": { "name": "Liam", "id": "TX3LPaxmHKxFdv7VOQHJ", "model": "eleven_multilingual_v2" },
+  "scenes": [
+    { "id": "cold-open", "text": "Quick question: is this flag on in production? To find out, you leave your editor, open the dashboard, pick the project, pick the environment, search... and then do it all again for staging." },
+    { "id": "title", "text": "Meet FlagLens. Live Flagsmith flags, right inside VS Code. Built for self-hosted, open-source Flagsmith." },
+    { "id": "devkit", "text": "One command starts the official Flagsmith images in Docker. One more seeds a demo project: three environments, seven flags, and an API key, all through Flagsmith's own REST API." },
+    { "id": "connect", "text": "Open the project, and FlagLens finds that key. One click to connect, and every flag in your code lights up with its live state, in every environment." },
+    { "id": "hover", "text": "Hover for the details: values, variant weights, overrides, and when it last changed. It uses the same detection as Flagsmith's own Code References, and reads the Flagsmith CLI's config to pick the project." },
+    { "id": "toggle", "text": "Need to flip one? Click, confirm, done. The shop picks it up on the next request. No redeploy." },
+    { "id": "protected", "text": "Production is protected: you type the flag's name before anything changes. And every change has an undo." },
+    { "id": "drift", "text": "Now look at the rate limit. Staging says one hundred, production says fifty. That's the two A.M. bug. The environment matrix shows every difference at once, and copies them as Markdown, straight into your pull request." },
+    { "id": "typo", "text": "Typos in flag keys fail silently in every SDK. FlagLens catches them, and fixes them in one click. Archived flags still hiding in your code? Flagged too." },
+    { "id": "stale", "text": "Stale flag detection is a paid feature on Flagsmith Cloud. FlagLens works it out locally, so open-source teams get it for free." },
+    { "id": "proof", "text": "Everything goes through the Flagsmith API, so the dashboard always agrees. And eleven end-to-end tests run against real, self-hosted Flagsmith on every push." },
+    { "id": "outro", "text": "FlagLens. Clone it, make up, make seed, and you're live in five minutes." }
+  ]
+}
