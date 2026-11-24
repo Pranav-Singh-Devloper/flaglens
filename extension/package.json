@@ -1,0 +1,386 @@
+{
+  "name": "flaglens",
+  "displayName": "FlagLens for Flagsmith",
+  "description": "A community VS Code extension for self-hosted Flagsmith: live flag states inline, safe toggles, environment drift, typo and stale-flag detection.",
+  "version": "0.1.0",
+  "publisher": "pranav-singh-devloper",
+  "license": "MIT",
+  "author": {
+    "name": "Pranav Singh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Pranav-Singh-Devloper/flaglens"
+  },
+  "homepage": "https://github.com/Pranav-Singh-Devloper/flaglens#readme",
+  "bugs": "https://github.com/Pranav-Singh-Devloper/flaglens/issues",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#1e1b3a",
+    "theme": "dark"
+  },
+  "keywords": [
+    "flagsmith",
+    "feature flags",
+    "feature toggles",
+    "remote config",
+    "self-hosted",
+    "codelens"
+  ],
+  "categories": [
+    "Other",
+    "Linters"
+  ],
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/flagsmith.json",
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In untrusted workspaces FlagLens ignores flagsmith.json and .env files from the workspace."
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "flaglens.connect",
+        "title": "Connect to Flagsmith…",
+        "category": "FlagLens",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "flaglens.signOut",
+        "title": "Sign Out (Forget API Key)",
+        "category": "FlagLens"
+      },
+      {
+        "command": "flaglens.refresh",
+        "title": "Refresh Flags",
+        "category": "FlagLens",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "flaglens.selectEnvironment",
+        "title": "Switch Active Environment…",
+        "category": "FlagLens",
+        "icon": "$(server-environment)"
+      },
+      {
+        "command": "flaglens.selectProject",
+        "title": "Switch Project…",
+        "category": "FlagLens",
+        "icon": "$(project)"
+      },
+      {
+        "command": "flaglens.toggleFlag",
+        "title": "Toggle Flag…",
+        "category": "FlagLens",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "flaglens.setValue",
+        "title": "Set Flag Value…",
+        "category": "FlagLens",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "flaglens.createFlag",
+        "title": "Create Flag in Flagsmith…",
+        "category": "FlagLens",
+        "icon": "$(add)"
+      },
+      {
+        "command": "flaglens.openInDashboard",
+        "title": "Open in Flagsmith Dashboard",
+        "category": "FlagLens",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "flaglens.showHistory",
+        "title": "Show Flag History…",
+        "category": "FlagLens",
+        "icon": "$(history)"
+      },
+      {
+        "command": "flaglens.openMatrix",
+        "title": "Open Environment Matrix",
+        "category": "FlagLens",
+        "icon": "$(table)"
+      },
+      {
+        "command": "flaglens.copyDiffMarkdown",
+        "title": "Copy Environment Diff as Markdown…",
+        "category": "FlagLens",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "flaglens.findUnusedFlags",
+        "title": "Find Unused Flags in Workspace",
+        "category": "FlagLens",
+        "icon": "$(search)"
+      },
+      {
+        "command": "flaglens.showOutput",
+        "title": "Show Log",
+        "category": "FlagLens",
+        "icon": "$(output)"
+      },
+      {
+        "command": "flaglens.flagActions",
+        "title": "Flag Actions…",
+        "category": "FlagLens"
+      },
+      {
+        "command": "flaglens.copyKey",
+        "title": "Copy Flag Key",
+        "category": "FlagLens",
+        "icon": "$(copy)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "flaglens",
+          "title": "FlagLens",
+          "icon": "media/activitybar.svg"
+        }
+      ]
+    },
+    "views": {
+      "flaglens": [
+        {
+          "id": "flaglens.flags",
+          "name": "Flags",
+          "icon": "media/activitybar.svg",
+          "contextualTitle": "FlagLens"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "flaglens.flags",
+        "contents": "Connect to your Flagsmith instance to see your flags.\n[Connect to Flagsmith](command:flaglens.connect)\nNo Flagsmith yet? The FlagLens dev kit starts a self-hosted one with `make up && make seed`. [Learn more](https://github.com/Pranav-Singh-Devloper/flaglens#quick-start)",
+        "when": "!flaglens.connected"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "flaglens.refresh",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "navigation@1"
+        },
+        {
+          "command": "flaglens.openMatrix",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "navigation@2"
+        },
+        {
+          "command": "flaglens.selectEnvironment",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "navigation@3"
+        },
+        {
+          "command": "flaglens.createFlag",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "1_flags@1"
+        },
+        {
+          "command": "flaglens.findUnusedFlags",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "1_flags@2"
+        },
+        {
+          "command": "flaglens.copyDiffMarkdown",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "1_flags@3"
+        },
+        {
+          "command": "flaglens.selectProject",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "2_connection@1"
+        },
+        {
+          "command": "flaglens.connect",
+          "when": "view == flaglens.flags",
+          "group": "2_connection@2"
+        },
+        {
+          "command": "flaglens.showOutput",
+          "when": "view == flaglens.flags",
+          "group": "2_connection@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "flaglens.toggleFlag",
+          "when": "view == flaglens.flags && viewItem =~ /state-writable/",
+          "group": "inline@1"
+        },
+        {
+          "command": "flaglens.openInDashboard",
+          "when": "view == flaglens.flags && viewItem =~ /^(flag|state)/",
+          "group": "inline@2"
+        },
+        {
+          "command": "flaglens.toggleFlag",
+          "when": "view == flaglens.flags && viewItem =~ /state-writable/",
+          "group": "1_edit@1"
+        },
+        {
+          "command": "flaglens.setValue",
+          "when": "view == flaglens.flags && viewItem =~ /state-writable/",
+          "group": "1_edit@2"
+        },
+        {
+          "command": "flaglens.showHistory",
+          "when": "view == flaglens.flags && viewItem =~ /^flag/",
+          "group": "2_info@1"
+        },
+        {
+          "command": "flaglens.copyKey",
+          "when": "view == flaglens.flags && viewItem =~ /^flag/",
+          "group": "2_info@2"
+        },
+        {
+          "command": "flaglens.openInDashboard",
+          "when": "view == flaglens.flags && viewItem =~ /^(flag|state)/",
+          "group": "2_info@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "flaglens.flagActions",
+          "when": "false"
+        },
+        {
+          "command": "flaglens.copyKey",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "FlagLens",
+      "properties": {
+        "flaglens.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "markdownDescription": "Base URL of your Flagsmith API, **without** `/api/v1`. Self-hosted default: `http://localhost:8000`. Flagsmith Cloud: `https://api.flagsmith.com`. If not set, FlagLens uses `apiUrl` from `flagsmith.json`, then `FLAGSMITH_API_URL` from the workspace `.env`."
+        },
+        "flaglens.dashboardUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Base URL of the Flagsmith dashboard for deep links. Empty = same as `#flaglens.apiUrl#` (true for the self-hosted Docker image). Flagsmith Cloud: `https://app.flagsmith.com`."
+        },
+        "flaglens.projectId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Flagsmith project ID. Overrides `project` in `flagsmith.json`."
+        },
+        "flaglens.activeEnvironment": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Environment name or client-side key that FlagLens treats as active (status bar, autocomplete). Falls back to `environment` in `flagsmith.json`, then the first environment."
+        },
+        "flaglens.refreshIntervalSeconds": {
+          "type": "number",
+          "default": 10,
+          "minimum": 3,
+          "markdownDescription": "How often FlagLens polls Flagsmith for changes."
+        },
+        "flaglens.protectedEnvironments": {
+          "type": "string",
+          "default": "prod|live|main",
+          "markdownDescription": "Case-insensitive regular expression. Changes in matching environments require typing the flag name to confirm."
+        },
+        "flaglens.driftEnvironments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "Staging",
+            "Production"
+          ],
+          "markdownDescription": "The two environments compared for the **⚠ drift** badge. If either is missing, drift is computed across all environments."
+        },
+        "flaglens.staleAfterDays": {
+          "type": "number",
+          "default": 30,
+          "minimum": 0,
+          "markdownDescription": "A flag is **stale** when it has had the same state in every environment for this many days. Used only when the project has no `stale_flags_limit_days`; set it in the workspace to override the project value."
+        },
+        "flaglens.permanentTags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "permanent",
+            "kill-switch"
+          ],
+          "markdownDescription": "Flags with any of these tags (or a tag marked *permanent* in Flagsmith) are never reported as stale."
+        },
+        "flaglens.extraPatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "\\bflagsmith\\.(?:getValue|hasFeature)\\(\\s*([\"'])(?<key>[A-Za-z0-9_\\-.:]+)\\1",
+            "(?<=\\buseFlags\\(\\s*\\[[^\\]]*)([\"'])(?<key>[A-Za-z0-9_\\-.:]+)\\1"
+          ],
+          "markdownDescription": "Extra regular expressions that find flag keys, each with a named group `key`. The built-in pattern is identical to Flagsmith's official Code References scanner. The defaults add the Flagsmith JS client's `flagsmith.getValue('key')` and the React SDK's `useFlags(['a', 'b'])`, which the official scanner misses."
+        },
+        "flaglens.codeLens.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show live flag states above lines that reference a flag."
+        },
+        "flaglens.diagnostics.unknownFlagSeverity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "information",
+            "off"
+          ],
+          "default": "warning",
+          "markdownDescription": "Severity for flag keys that don't exist in the Flagsmith project."
+        },
+        "flaglens.diagnostics.staleFlags": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show an information hint on references to stale flags."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs --production",
+    "watch": "node esbuild.mjs --watch",
+    "package": "npm run build && vsce package --no-dependencies --out flaglens.vsix",
+    "test": "vitest run",
+    "lint": "eslint src test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^22.19.0",
+    "@types/vscode": "~1.95.0",
+    "@vscode/vsce": "^4.1.1",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.74.0",
+    "vitest": "^5.1.1"
+  }
+}

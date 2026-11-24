@@ -1,0 +1,28 @@
+{
+  "name": "flaglens-monorepo",
+  "private": true,
+  "description": "FlagLens: a community VS Code extension for self-hosted Flagsmith, plus a one-command dev kit.",
+  "license": "MIT",
+  "workspaces": [
+    "extension",
+    "examples/demo-shop"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "devkit:up": "docker compose -f devkit/compose.yaml up -d --wait",
+    "devkit:seed": "node devkit/seed.mjs",
+    "devkit:down": "docker compose -f devkit/compose.yaml down",
+    "devkit:reset": "docker compose -f devkit/compose.yaml down -v",
+    "devkit:logs": "docker compose -f devkit/compose.yaml logs -f flagsmith",
+    "devkit:mcp": "docker compose -f devkit/compose.yaml --profile mcp up -d --wait",
+    "demo": "node examples/demo-shop/server.mjs",
+    "build": "npm run build -w extension",
+    "package": "npm run package -w extension",
+    "test": "npm test -w extension && node --test 'devkit/*.test.mjs'",
+    "lint": "npm run lint -w extension",
+    "typecheck": "npm run typecheck -w extension",
+    "check": "npm run lint && npm run typecheck && npm test"
+  }
+}

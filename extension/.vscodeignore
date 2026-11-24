@@ -1,0 +1,11 @@
+# Only dist/, media/, package.json, README, CHANGELOG and LICENSE ship in the .vsix.
+src/**
+test/**
+node_modules/**
+**/*.map
+**/*.ts
+tsconfig.json
+esbuild.mjs
+eslint.config.mjs
+vitest.config.*
+*.vsix
