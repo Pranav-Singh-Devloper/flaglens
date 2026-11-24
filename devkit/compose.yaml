@@ -1,0 +1,102 @@
+# FlagLens dev kit: a self-hosted, open-source Flagsmith for local development.
+#
+# Based on the official docker-compose.yml from github.com/Flagsmith/flagsmith (v2.295.2), with:
+#   - images pinned to 2.295.2 so the demo is reproducible (amd64 + arm64)
+#   - a health check on the API so `docker compose up --wait` returns only when Flagsmith is ready
+#   - an optional MCP server (`--profile mcp`)
+#
+# The secrets below are Flagsmith's local defaults. They are fine on your laptop.
+# DO NOT expose this stack to the internet.
+
+name: flaglens
+
+x-flagsmith-env: &flagsmith-env
+  DATABASE_URL: postgresql://postgres:password@postgres:5432/flagsmith
+  USE_POSTGRES_FOR_ANALYTICS: 'true'
+  ENVIRONMENT: production
+  DJANGO_ALLOWED_HOSTS: '*'
+  FLAGSMITH_DOMAIN: localhost:${FLAGSMITH_PORT:-8000}
+  DJANGO_SECRET_KEY: secret
+  WAREHOUSE_CREDENTIALS_SECRET: secret
+  TASK_RUN_METHOD: TASK_PROCESSOR
+  PROMETHEUS_ENABLED: 'true'
+  # Stores SDK events in the Postgres database above so Experimentation (beta) works locally.
+  EXPERIMENTATION_ENABLED: 'true'
+
+x-flagsmith-image: &flagsmith-image flagsmith/flagsmith:2.295.2
+
+volumes:
+  pgdata:
+
+services:
+  postgres:
+    image: postgres:15.5-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: flagsmith
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -d flagsmith -U postgres']
+      interval: 2s
+      timeout: 2s
+      retries: 20
+      start_period: 20s
+
+  migrate-db:
+    image: *flagsmith-image
+    command: [migrate]
+    environment:
+      <<: *flagsmith-env
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  flagsmith:
+    image: *flagsmith-image
+    restart: unless-stopped
+    command: [serve]
+    environment:
+      <<: *flagsmith-env
+    ports:
+      - ${FLAGSMITH_PORT:-8000}:8000
+    healthcheck:
+      # The image ships Python, so we don't depend on curl being installed.
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/readiness/', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+    depends_on:
+      migrate-db:
+        condition: service_completed_successfully
+
+  flagsmith-task-processor:
+    image: *flagsmith-image
+    restart: unless-stopped
+    command: [run-task-processor]
+    environment:
+      <<: *flagsmith-env
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate-db:
+        condition: service_completed_successfully
+
+  # Optional: Flagsmith's MCP server, pointed at this self-hosted instance.
+  #   docker compose -f devkit/compose.yaml --profile mcp up -d   (or: make mcp)
+  mcp:
+    profiles: [mcp]
+    image: flagsmith/flagsmith-mcp:latest
+    restart: unless-stopped
+    environment:
+      FLAGSMITH_API_URL: http://flagsmith:8000
+      MCP_SERVER_URL: http://localhost:8002
+    ports:
+      - 8002:8000
+    depends_on:
+      flagsmith:
+        condition: service_healthy
