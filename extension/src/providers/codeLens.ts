@@ -1,8 +1,8 @@
-// "⚑ new_checkout   Development ● on   Staging ● on   Production ○ off   ⚠ drift" above each line that uses a flag.
+// "⚑ new_checkout   Development ● on · Staging ● on · Production ○ off   ⚠ drift" above each line that uses a flag.
 
 import * as vscode from 'vscode';
 import { suggestKey } from '../core/analysis';
-import { badgesFor, lensSummary, type Ctx } from '../present';
+import { badgesFor, LENS_GAP, lensSummary, type Ctx } from '../present';
 import type { ReferenceIndex } from '../references';
 
 export class FlagCodeLensProvider implements vscode.CodeLensProvider {
@@ -44,11 +44,11 @@ export class FlagCodeLensProvider implements vscode.CodeLensProvider {
       }
       const badges = badgesFor(this.ctx, row)
         .map((b) => `${b.icon} ${b.label}`)
-        .join('  ');
-      const offline = store.status === 'offline' ? '  $(debug-disconnect) offline' : '';
+        .join(LENS_GAP);
+      const offline = store.status === 'offline' ? `${LENS_GAP}$(debug-disconnect) offline` : '';
       lenses.push(
         new vscode.CodeLens(range, {
-          title: `$(flag) ${ref.key}   ${lensSummary(this.ctx, row)}${badges ? `   ${badges}` : ''}${offline}`,
+          title: `$(flag) ${ref.key}${LENS_GAP}${lensSummary(this.ctx, row)}${badges ? `${LENS_GAP}${badges}` : ''}${offline}`,
           tooltip: 'Live state from Flagsmith. Click for actions (toggle, set value, history, dashboard).',
           command: 'flaglens.flagActions',
           arguments: [ref.key],

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- CodeLens sections no longer run together: environments are separated by ` · ` and badges by a wide gap,
+  because CodeLens text collapses repeated spaces.
+
 ## 0.1.0
 
 First release.

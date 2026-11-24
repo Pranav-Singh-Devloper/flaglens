@@ -18,10 +18,10 @@ FlagLens is two things that work together:
 It is a community project, not an official Flagsmith product.
 
 ```
-⚑ new_checkout   Development ● on   Staging ● on   Production ○ off
+⚑ new_checkout   Development ● on · Staging ● on · Production ○ off   ⚠ drift
 if (flags.isFeatureEnabled('new_checkout')) {
 
-⚑ rate_limit_per_minute   Development ● on · 1000   Staging ● on · 100   Production ● on · 50   ⚠ drift
+⚑ rate_limit_per_minute   Development ● on 1000 · Staging ● on 100 · Production ● on 50   ⚠ drift
 const limit = flags.getFeatureValue('rate_limit_per_minute');
 
 if (flags.isFeatureEnabled('new_chekout')) {      ← Flag "new_chekout" doesn't exist in Flagsmith. Did you mean "new_checkout"?
@@ -82,7 +82,7 @@ is healthy.
 
 Then install the extension, in either of two ways:
 
-- **Download** `flaglens-0.1.0.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
+- **Download** `flaglens-0.1.1.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
   then in VS Code: Command Palette → **Extensions: Install from VSIX…** → pick the file.
 - **Or build it**: `make package` (npm: `npm install && npm run package`) creates `extension/flaglens.vsix`. If the
   `code` command is on your PATH, `make install-ext` builds and installs it in one step.
@@ -96,7 +96,7 @@ Finally open the demo workspace: **File → Open Folder… → `flaglens/example
 - `make seed` ends with a box: `✔ Self-hosted Flagsmith is seeded and ready.`
 - VS Code's status bar shows **`⚑ Demo Shop · Development`**.
 - In `server.mjs`, above `isFeatureEnabled('new_checkout')`, you see
-  `⚑ new_checkout   Development ● on   Staging ● on   Production ○ off`, and `rate_limit_per_minute` shows **⚠ drift**.
+  `⚑ new_checkout   Development ● on · Staging ● on · Production ○ off`, and `rate_limit_per_minute` shows **⚠ drift**.
 - `typo.ts` has a yellow squiggle under `new_chekout` (try the quick fix) and a blue hint on `dark_mode` (stale).
 - Click the `new_checkout` CodeLens → **Turn off in Development** → confirm. Within 3 seconds the shop at
   http://localhost:3030 switches back to the classic checkout. Try Production: you'll be asked to type the flag name.

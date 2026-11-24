@@ -16,12 +16,18 @@ export function stateGlyph(s: FsState | undefined): string {
   return s.enabled ? '●' : '○';
 }
 
-/** "● on", "○ off", "● on · 100" */
+/** "● on", "○ off", "● on 100", "● on "Black Friday"" */
 export function stateShort(s: FsState | undefined, maxValue = 24): string {
   if (!s) return '— no state';
   const v = formatValue(s.value, maxValue);
-  return `${stateGlyph(s)} ${s.enabled ? 'on' : 'off'}${v ? ` · ${v}` : ''}`;
+  return `${stateGlyph(s)} ${s.enabled ? 'on' : 'off'}${v ? ` ${v}` : ''}`;
 }
+
+/**
+ * Gap between CodeLens sections. CodeLens text is rendered as HTML, which collapses runs of normal spaces, so we use
+ * an em space (not collapsible) to keep sections visibly apart.
+ */
+export const LENS_GAP = '\u2003';
 
 export function staleThreshold(ctx: Ctx): number {
   const s = ctx.settings();
@@ -73,7 +79,7 @@ export function staleSentence(name: string, stale: StaleResult): string {
 
 /** One-line summary for CodeLens: "Development ● on · Staging ● on · Production ○ off" */
 export function lensSummary(ctx: Ctx, row: FlagRow): string {
-  return ctx.store.environments.map((e) => `${e.name} ${stateShort(row.states.get(e.id), 18)}`).join('   ');
+  return ctx.store.environments.map((e) => `${e.name} ${stateShort(row.states.get(e.id), 18)}`).join(' · ');
 }
 
 export function dashboardUrl(ctx: Ctx, row?: FlagRow, env?: FsEnvironment): string | undefined {
