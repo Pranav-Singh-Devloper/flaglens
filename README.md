@@ -17,7 +17,7 @@ FlagLens is two things that work together:
 
 It is a community project, not an official Flagsmith product.
 
-![FlagLens in VS Code: live state of every flag in every environment, and the hover card for checkout_button_color](docs/screenshots/hover.png)
+![Toggling a flag from VS Code with FlagLens; the demo shop picks it up on its next request](docs/demo.gif)
 
 ```
 ⚑ new_checkout   Development ● on · Staging ● on · Production ○ off   ⚠ drift
@@ -36,6 +36,7 @@ if (flags.isFeatureEnabled('new_chekout')) {      ← Flag "new_chekout" doesn't
 |---|---|
 | ![CodeLens above every flag reference](docs/screenshots/codelens.png) **Live state inline**: every environment above every flag, with ⚠ drift, 🗑 stale and archived badges. | ![Environment Matrix](docs/screenshots/matrix.png) **Environment Matrix**: every flag × environment, differences highlighted, copy the diff as Markdown. |
 | ![Typo quick fix](docs/screenshots/typo-quick-fix.png) **Typo detection**: unknown keys are underlined, with *Replace with…* and *Create flag…* quick fixes. | ![Typed confirmation for Production](docs/screenshots/protected-confirm.png) **Protected environments**: changing Production means typing the flag's name. |
+| ![Hover card](docs/screenshots/hover.png) **Hover card**: every environment's state and value, variant weights, overrides, last change, one-click toggles. | ![The demo shop](docs/screenshots/demo-shop.png) **The demo shop** (`make demo`): banner, checkout and button colour all come from self-hosted Flagsmith. |
 | ![Problems panel with archived and stale flags](docs/screenshots/archived-and-stale.png) **Archived and stale flags** show up as problems, computed locally on open-source Flagsmith. | ![The self-hosted Flagsmith dashboard](docs/screenshots/dashboard-production.png) **Same data as the dashboard**: every value comes from your self-hosted Flagsmith. |
 
 ## Why
