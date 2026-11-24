@@ -100,6 +100,11 @@ function escapeMd(text: string): string {
   return text.replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');
 }
 
+/** Inline code. Backslash escapes show literally inside code spans, so only backticks need handling. */
+function code(text: string): string {
+  return `\`${text.replace(/`/g, "'")}\``;
+}
+
 function valueCell(v: FsState['value']): string {
   if (v === null || v === '') return '';
   const text = typeof v === 'string' ? v : String(v);
@@ -114,7 +119,7 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
   const f = row.feature;
   const key = f.name;
   const kind = f.type === 'MULTIVARIATE' ? 'Multivariate flag' : 'Flag';
-  const tags = f.tags.map((t) => `\`${escapeMd(t.label)}\``).join(' ');
+  const tags = f.tags.map((t) => code(t.label)).join(' ');
   md.appendMarkdown(`**$(flag) ${escapeMd(key)}** · ${kind}${tags ? ` · ${tags}` : ''}  \n`);
   if (f.description) md.appendMarkdown(`${escapeMd(f.description)}\n\n`);
   else md.appendMarkdown('\n');
@@ -139,7 +144,7 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
   if (f.variants.length) {
     const control = row.states.get(active?.id ?? -1)?.value;
     const weights = row.states.get(active?.id ?? -1)?.variantWeights;
-    const parts = f.variants.map((v) => `\`${escapeMd(String(v.key ?? v.value))}\` ${weights?.get(v.id) ?? v.weight}%`);
+    const parts = f.variants.map((v) => `${code(String(v.key ?? v.value))} ${weights?.get(v.id) ?? v.weight}%`);
     md.appendMarkdown(`$(symbol-enum) Variants in ${escapeMd(active?.name ?? '')}: control ${valueCell(control ?? null) || '—'} · ${parts.join(' · ')}  \n`);
   }
   const overrides = [`${f.segmentOverrides} segment override${f.segmentOverrides === 1 ? '' : 's'}`];
@@ -162,8 +167,8 @@ export function unknownFlagMarkdown(ctx: Ctx, key: string, suggestion: string | 
   md.isTrusted = { enabledCommands: HOVER_COMMANDS };
   md.appendMarkdown(`**$(warning) ${escapeMd(key)}** is not a flag in Flagsmith project *${escapeMd(ctx.store.project?.name ?? '')}*.\n\n`);
   md.appendMarkdown('Every Flagsmith SDK silently returns the default for unknown keys, so this code path may never run.\n\n');
-  if (suggestion) md.appendMarkdown(`Did you mean \`${escapeMd(suggestion)}\`? `);
-  md.appendMarkdown(`[$(add) Create \`${escapeMd(key)}\` in Flagsmith…](${commandUri('flaglens.createFlag', key)})`);
+  if (suggestion) md.appendMarkdown(`Did you mean ${code(suggestion)}? `);
+  md.appendMarkdown(`[$(add) Create ${code(key)} in Flagsmith…](${commandUri('flaglens.createFlag', key)})`);
   return md;
 }
 

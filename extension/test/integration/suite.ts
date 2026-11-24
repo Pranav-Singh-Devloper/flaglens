@@ -107,6 +107,9 @@ export async function run(): Promise<void> {
     assert.match(typo!.message, /new_chekout.*Did you mean "new_checkout"/);
     const stale = diags.find((d) => d.code === 'stale-flag');
     assert.ok(stale && /dark_mode has been ON in every environment/.test(stale.message), 'no stale dark_mode diagnostic');
+    const hover = hoverText(await vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', doc.uri, typo!.range.start));
+    assert.match(hover, /Did you mean `new_checkout`\?/);
+    assert.doesNotMatch(hover, /`[^`]*\\_[^`]*`/, 'Markdown escapes must not leak into code spans');
     const actions = await vscode.commands.executeCommand<vscode.CodeAction[]>('vscode.executeCodeActionProvider', doc.uri, typo!.range);
     const titles = actions.map((a) => a.title);
     assert.ok(titles.includes('Replace with "new_checkout"'), titles.join(', '));

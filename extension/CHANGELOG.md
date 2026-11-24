@@ -4,6 +4,7 @@
 
 - CodeLens sections no longer run together: environments are separated by ` · ` and badges by a wide gap,
   because CodeLens text collapses repeated spaces.
+- Hover cards no longer show stray backslashes in flag keys (`new\_checkout`): code spans are not Markdown-escaped.
 
 ## 0.1.0
 
