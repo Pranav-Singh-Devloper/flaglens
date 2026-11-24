@@ -68,20 +68,19 @@ const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&a
 
 async function render(envName, visitorId) {
   const flagsmith = clientFor(envName);
-  // Identity flags so the multivariate checkout_button_color gives each visitor a stable variant.
+  // Identity flags, so each visitor gets a stable variant of checkout_button_color.
   const flags = await flagsmith.getIdentityFlags(visitorId, { plan: 'free' });
 
   if (flags.isFeatureEnabled('maintenance_mode')) {
-    return page(envName, '<section class="maintenance"><h2>🛠 Back soon</h2><p>The shop is in maintenance mode.</p></section>', false);
+    return maintenancePage(envName);
   }
 
-  const banner = flags.isFeatureEnabled('banner_text') ? flags.getFeatureValue('banner_text') : null;
+  const banner = flags.getFeatureValue('banner_text');
   const newCheckout = flags.isFeatureEnabled('new_checkout');
-  const buttonColor = flags.isFeatureEnabled('checkout_button_color') ? flags.getFeatureValue('checkout_button_color') : 'blue';
-  const darkMode = flags.isFeatureEnabled('dark_mode');
+  const buttonColor = flags.getFeatureValue('checkout_button_color') ?? 'blue';
   const rateLimit = flags.getFeatureValue('rate_limit_per_minute');
-  // legacy_search is archived in Flagsmith: FlagLens warns about this line in the editor.
-  const legacySearch = flags.isFeatureEnabled('legacy_search');
+  const darkMode = flags.isFeatureEnabled('dark_mode');
+  const legacySearch = flags.isFeatureEnabled('legacy_search'); // archived in Flagsmith
 
   const body = `
     ${banner ? `<div class="banner">${escapeHtml(banner)}</div>` : ''}
@@ -113,6 +112,10 @@ async function render(envName, visitorId) {
         .join(' · ')}
     </footer>`;
   return page(envName, body, darkMode);
+}
+
+function maintenancePage(envName) {
+  return page(envName, '<section class="maintenance"><h2>🛠 Back soon</h2><p>The shop is in maintenance mode.</p></section>', false);
 }
 
 function cssColor(value) {
