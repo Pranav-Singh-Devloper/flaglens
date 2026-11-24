@@ -1,0 +1,6 @@
+{
+  // The demo flags were all created a few minutes ago, so nothing is 30 days old yet.
+  // 0 makes any flag that is identical in every environment show as stale, so you can see the feature.
+  "flaglens.staleAfterDays": 0,
+  "flaglens.refreshIntervalSeconds": 5
+}
