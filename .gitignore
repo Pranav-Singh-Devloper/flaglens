@@ -1,0 +1,13 @@
+# Secrets written by `make seed`. Never commit these.
+.env
+.env.*
+!.env.example
+
+node_modules/
+dist/
+out/
+coverage/
+*.vsix
+*.log
+.DS_Store
+.vscode-test/
