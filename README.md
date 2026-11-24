@@ -322,6 +322,11 @@ Checked against a live 2.295.2 instance (these shaped the design):
 
 ▶ **Demo video:** _link added on submission_
 
+## Built with AI assistance
+
+AI coding assistants helped write parts of this project. Every line was reviewed, and the author understands and can
+explain all of the code.
+
 ## Team · Licence
 
 Built by [Pranav Singh](https://github.com/Pranav-Singh-Devloper) for Toggle Wars 2026 (WeMakeDevs × Flagsmith),
