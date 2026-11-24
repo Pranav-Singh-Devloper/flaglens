@@ -80,8 +80,7 @@ services:
     command: [run-task-processor]
     environment:
       <<: *flagsmith-env
-    healthcheck:
-      disable: true
+    # Uses the image's built-in health check (`flagsmith healthcheck tcp`), so `up --wait` waits for it too.
     depends_on:
       migrate-db:
         condition: service_completed_successfully
