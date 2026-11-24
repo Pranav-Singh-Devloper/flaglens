@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', '*.mjs'] },
+  { ignores: ['dist/**', 'dist-test/**', 'node_modules/**', '**/*.mjs', 'media/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -12,4 +12,6 @@ export default tseslint.config(
       eqeqeq: ['error', 'smart'],
     },
   },
+  // The integration suite prints its results to the test runner's console.
+  { files: ['test/integration/**'], rules: { 'no-console': 'off' } },
 );

@@ -370,12 +370,14 @@
     "package": "npm run build && vsce package --no-dependencies --out flaglens.vsix",
     "test": "vitest run",
     "lint": "eslint src test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:integration": "node esbuild.mjs && node test/integration/run.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
     "@types/node": "^22.19.0",
     "@types/vscode": "~1.95.0",
+    "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.1.1",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.0",

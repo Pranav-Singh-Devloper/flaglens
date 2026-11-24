@@ -9,3 +9,5 @@ esbuild.mjs
 eslint.config.mjs
 vitest.config.*
 *.vsix
+dist-test/**
+.vscode-test/**
