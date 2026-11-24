@@ -1,0 +1,11 @@
+node_modules/
+out/
+recordings/
+frames/
+media/
+.env
+public/footage/
+public/manim/
+public/audio/credits.log
+dist-test/
+__pycache__/

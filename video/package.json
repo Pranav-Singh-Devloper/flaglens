@@ -1,0 +1,28 @@
+{
+  "name": "flaglens-video",
+  "private": true,
+  "description": "The FlagLens demo video: real VS Code footage, Remotion motion graphics, Manim scenes, ElevenLabs audio.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "audio": "node scripts/audio.mjs",
+    "record": "node scripts/record.mjs && node scripts/record-dashboard.mjs",
+    "manim": "sh scripts/manim.sh",
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts FlagLensDemo out/flaglens-demo-raw.mp4 --codec h264 --crf 16 --pixel-format yuv420p --audio-codec aac --audio-bitrate 320k --concurrency 8 && sh scripts/master.sh out/flaglens-demo-raw.mp4 out/flaglens-demo.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.547",
+    "@remotion/google-fonts": "4.0.547",
+    "@remotion/media-utils": "4.0.547",
+    "@remotion/transitions": "4.0.547",
+    "playwright-core": "^1.65.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "4.0.547"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "typescript": "~6.0.3"
+  }
+}
