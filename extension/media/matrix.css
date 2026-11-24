@@ -1,0 +1,99 @@
+/* Environment Matrix. Uses VS Code theme variables so it fits light, dark and high-contrast themes. */
+:root {
+  --on: var(--vscode-testing-iconPassed, #3fb950);
+  --off: var(--vscode-descriptionForeground);
+  --warn: var(--vscode-problemsWarningIcon-foreground, #d29922);
+  --row-diff: color-mix(in srgb, var(--vscode-problemsWarningIcon-foreground, #d29922) 10%, transparent);
+  --border: var(--vscode-panel-border, rgba(128, 128, 128, 0.35));
+}
+body {
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  padding: 0 20px 20px;
+}
+header {
+  position: sticky;
+  top: 0;
+  background: var(--vscode-editor-background);
+  padding: 14px 0 10px;
+  z-index: 2;
+}
+.title { display: flex; align-items: baseline; gap: 12px; }
+h1 { font-size: 1.4em; font-weight: 600; margin: 0 0 10px; }
+#project { color: var(--vscode-descriptionForeground); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.toolbar label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.spacer { flex: 1; }
+.arrow { color: var(--vscode-descriptionForeground); }
+input[type='search'], select {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--border));
+  padding: 4px 6px;
+  border-radius: 2px;
+}
+input[type='search'] { min-width: 220px; }
+button {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  padding: 5px 12px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+button:hover { background: var(--vscode-button-hoverBackground); }
+button.secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
+.status {
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--warn);
+  background: var(--vscode-inputValidation-warningBackground, transparent);
+}
+table { border-collapse: collapse; width: 100%; margin-top: 6px; }
+th, td { border-bottom: 1px solid var(--border); padding: 7px 10px; text-align: left; vertical-align: middle; }
+th { font-weight: 600; white-space: nowrap; color: var(--vscode-descriptionForeground); }
+th.active { color: var(--vscode-foreground); text-decoration: underline; text-underline-offset: 4px; }
+.shield { color: var(--warn); }
+.ro { font-weight: normal; font-size: 0.9em; }
+td.flag { font-family: var(--vscode-editor-font-family); white-space: nowrap; }
+td.flag a { color: var(--vscode-textLink-foreground); text-decoration: none; margin-right: 8px; }
+td.flag a:hover { text-decoration: underline; }
+tr.differs { background: var(--row-diff); }
+tr.focus td { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+tr.archived { opacity: 0.55; }
+.badge {
+  display: inline-block;
+  font-family: var(--vscode-font-family);
+  font-size: 0.8em;
+  padding: 0 6px;
+  border-radius: 9px;
+  margin-right: 4px;
+  border: 1px solid currentColor;
+}
+.badge.drift { color: var(--warn); }
+.badge.stale { color: var(--vscode-charts-purple, #a371f7); }
+.badge.archived { color: var(--vscode-descriptionForeground); }
+.badge.experiment { color: var(--vscode-charts-blue, #2f81f7); }
+td.cell { white-space: nowrap; }
+.toggle {
+  background: transparent;
+  color: var(--off);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--vscode-font-family);
+}
+td.on .toggle { color: var(--on); border-color: var(--on); }
+.toggle:hover:not(:disabled) { background: var(--vscode-list-hoverBackground); }
+.toggle:disabled { cursor: not-allowed; opacity: 0.7; }
+.value {
+  margin-left: 8px;
+  font-family: var(--vscode-editor-font-family);
+  color: var(--vscode-debugTokenExpression-string, var(--vscode-foreground));
+  cursor: pointer;
+}
+.value:hover { text-decoration: underline dotted; }
+td.none { color: var(--vscode-descriptionForeground); }
+#empty { color: var(--vscode-descriptionForeground); }
+footer { margin-top: 16px; color: var(--vscode-descriptionForeground); font-size: 0.9em; }
