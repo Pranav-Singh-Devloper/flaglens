@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, type-check, unit tests, package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flaglens-vsix
+          path: extension/flaglens.vsix
+
+  e2e:
+    name: End-to-end against self-hosted Flagsmith
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Exactly the README quick start: start self-hosted Flagsmith, seed it twice (proves the seed is idempotent).
+      - run: make up
+      - run: make seed
+      - run: make seed
+      - name: Demo shop serves flags from Flagsmith
+        run: |
+          node examples/demo-shop/server.mjs &
+          for i in $(seq 1 20); do curl -fs http://localhost:3030/ > page.html && break; sleep 1; done
+          grep -q "dev build" page.html
+          grep -q "One-page checkout" page.html
+      - name: Extension tests in a real VS Code
+        run: xvfb-run -a npm run test:integration -w extension
+      - if: failure()
+        run: docker compose -f devkit/compose.yaml logs --tail 200 flagsmith
