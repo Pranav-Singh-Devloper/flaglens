@@ -1,0 +1,333 @@
+#!/usr/bin/env node
+// FlagLens dev-kit seed: turns a fresh self-hosted Flagsmith into a ready-to-demo instance.
+//
+//   node devkit/seed.mjs          (or: make seed / npm run devkit:seed)
+//
+// It is idempotent: it logs in if the admin already exists, reuses the organisation, project, environments
+// and flags it finds, and resets every demo flag to the state declared in devkit/seed-data.json.
+// Only Node >= 18 is needed (global fetch); there are no dependencies.
+//
+// Every call goes through Flagsmith's public REST API, the same API the extension uses.
+
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join, relative } from 'node:path';
+import { parseDotenv, renderDotenv, envVarSuffix, normaliseBaseUrl, waitUntil } from './lib.mjs';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const root = join(here, '..');
+const rootEnvPath = join(root, '.env');
+const demoEnvPath = join(root, 'examples', 'demo-shop', '.env');
+
+// Values already in .env win over defaults, and real environment variables win over both.
+const fileEnv = existsSync(rootEnvPath) ? parseDotenv(readFileSync(rootEnvPath, 'utf8')) : {};
+const setting = (name, fallback) => process.env[name] || fileEnv[name] || fallback;
+
+const API_URL = normaliseBaseUrl(setting('FLAGSMITH_API_URL', 'http://localhost:8000'));
+const ADMIN_EMAIL = setting('ADMIN_EMAIL', 'admin@flaglens.local');
+const ADMIN_PASSWORD = setting('ADMIN_PASSWORD', 'FlagLens-demo-2026');
+const DEMO_PORT = setting('DEMO_PORT', '3030');
+const data = JSON.parse(readFileSync(join(here, 'seed-data.json'), 'utf8'));
+
+const log = (msg) => console.log(`  ${msg}`);
+const step = (msg) => console.log(`\n▸ ${msg}`);
+
+// ---------------------------------------------------------------------------------------------------------------
+// Minimal REST client
+// ---------------------------------------------------------------------------------------------------------------
+
+let authHeader = '';
+
+async function api(method, path, body) {
+  const res = await fetch(`${API_URL}/api/v1${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(authHeader && { Authorization: authHeader }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(15_000),
+  });
+  const text = await res.text();
+  let json;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = text;
+  }
+  if (!res.ok) {
+    const err = new Error(`${method} ${path} → HTTP ${res.status}: ${typeof json === 'string' ? json.slice(0, 200) : JSON.stringify(json)}`);
+    err.status = res.status;
+    err.body = json;
+    throw err;
+  }
+  return json;
+}
+
+/** Fetches every page of a paginated list. Some endpoints (e.g. /projects/) return a plain array instead. */
+async function listAll(path) {
+  let page = await api('GET', path);
+  if (Array.isArray(page)) return page;
+  const items = [...page.results];
+  while (page.next) {
+    const next = new URL(page.next);
+    page = await api('GET', `${next.pathname.replace(/^\/api\/v1/, '')}${next.search}`);
+    items.push(...page.results);
+  }
+  return items;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Steps
+// ---------------------------------------------------------------------------------------------------------------
+
+async function waitForFlagsmith() {
+  step(`Waiting for Flagsmith at ${API_URL}`);
+  let dots = 0;
+  const ok = await waitUntil(
+    async () => (await fetch(`${API_URL}/health/readiness/`, { signal: AbortSignal.timeout(3_000) })).ok,
+    { onWait: () => process.stdout.write(dots++ === 0 ? '  starting (first boot runs migrations, 1–3 min)…' : '.') },
+  );
+  if (dots) process.stdout.write('\n');
+  if (!ok) {
+    throw new Error(`Flagsmith did not become ready at ${API_URL} within 3 minutes. Is it running? Try: make up && make logs`);
+  }
+  log('ready ✓');
+}
+
+async function signUpOrLogIn() {
+  step(`Admin user ${ADMIN_EMAIL}`);
+  try {
+    await api('POST', '/auth/users/', { email: ADMIN_EMAIL, password: ADMIN_PASSWORD, first_name: 'FlagLens', last_name: 'Admin' });
+    log('created ✓');
+  } catch (e) {
+    if (e.status !== 400) throw e; // 400 = user already exists (or the password policy rejected it, which login will reveal)
+    log('already exists, logging in');
+  }
+  try {
+    const { key } = await api('POST', '/auth/login/', { email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
+    authHeader = `Token ${key}`;
+  } catch (e) {
+    throw new Error(
+      `Could not log in as ${ADMIN_EMAIL} (${e.message}).\n` +
+        `  If you changed ADMIN_PASSWORD after the first seed, run "make reset && make up && make seed" to start fresh.`,
+    );
+  }
+}
+
+async function getOrCreateOrganisation() {
+  step(`Organisation "${data.organisation}"`);
+  const orgs = await listAll('/organisations/');
+  let org = orgs.find((o) => o.name === data.organisation);
+  if (!org) {
+    org = await api('POST', '/organisations/', { name: data.organisation });
+    log(`created (id ${org.id}) ✓`);
+  } else log(`found (id ${org.id})`);
+  return org;
+}
+
+async function getOrCreateProject(org) {
+  step(`Project "${data.project}"`);
+  const projects = await listAll(`/projects/?organisation=${org.id}`);
+  let project = projects.find((p) => p.name === data.project && p.organisation === org.id);
+  if (!project) {
+    project = await api('POST', '/projects/', { name: data.project, organisation: org.id });
+    log(`created (id ${project.id}) ✓`);
+  } else log(`found (id ${project.id})`);
+  return project;
+}
+
+async function getOrCreateEnvironments(project) {
+  step('Environments');
+  // Verified on 2.295.2: creating a project through the API does NOT create any environments.
+  const existing = await listAll(`/environments/?project=${project.id}`);
+  const envs = [];
+  for (const name of data.environments) {
+    let env = existing.find((e) => e.name === name);
+    if (!env) {
+      env = await api('POST', '/environments/', { name, project: project.id });
+      log(`${name}: created ✓`);
+    } else log(`${name}: found`);
+    envs.push(env);
+  }
+  return envs;
+}
+
+async function getOrCreateTags(project) {
+  step('Tags');
+  const existing = await listAll(`/projects/${project.id}/tags/`);
+  const ids = new Map();
+  for (const t of data.tags) {
+    let tag = existing.find((x) => x.label === t.label);
+    if (!tag) {
+      tag = await api('POST', `/projects/${project.id}/tags/`, t);
+      log(`${t.label}: created ✓`);
+    } else log(`${t.label}: found`);
+    ids.set(t.label, tag.id);
+  }
+  return ids;
+}
+
+/** Converts a JS value into Flagsmith's typed multivariate-option fields. */
+function typedValue(value) {
+  if (typeof value === 'number') return { type: 'int', integer_value: value };
+  if (typeof value === 'boolean') return { type: 'bool', boolean_value: value };
+  return { type: 'unicode', string_value: String(value) };
+}
+
+async function seedFlags(project, envs, tagIds) {
+  step('Flags');
+  const existing = await listAll(`/projects/${project.id}/features/?page_size=100`);
+  for (const flag of data.flags) {
+    const tags = (flag.tags ?? []).map((label) => tagIds.get(label));
+    let feature = existing.find((f) => f.name === flag.name);
+    if (!feature) {
+      feature = await api('POST', `/projects/${project.id}/features/`, {
+        name: flag.name,
+        type: flag.type ?? 'STANDARD',
+        description: flag.description ?? '',
+        default_enabled: false,
+        initial_value: flag.initial_value ?? null,
+        tags,
+        multivariate_options: (flag.variants ?? []).map((v) => ({
+          ...typedValue(v.value),
+          key: v.key,
+          default_percentage_allocation: v.weight,
+        })),
+      });
+    }
+    // Verified on 2.295.2: variant `key`s sent with the feature are ignored, so set them on each option.
+    // The PATCH must include default_percentage_allocation, otherwise the server answers 500 (KeyError).
+    for (const variant of flag.variants ?? []) {
+      const option = feature.multivariate_options.find((o) => (o.string_value ?? o.integer_value ?? o.boolean_value) === variant.value);
+      if (option && option.key !== variant.key) {
+        await api('PATCH', `/projects/${project.id}/features/${feature.id}/mv-options/${option.id}/`, {
+          feature: feature.id,
+          key: variant.key,
+          default_percentage_allocation: variant.weight,
+        });
+      }
+    }
+    // Keep metadata in sync (also un-archives first so state writes succeed, then archives at the end).
+    await api('PATCH', `/projects/${project.id}/features/${feature.id}/`, {
+      name: flag.name,
+      description: flag.description ?? '',
+      tags,
+      is_archived: false,
+    });
+
+    for (const env of envs) {
+      const wanted = flag.states[env.name];
+      if (!wanted) continue;
+      const states = await listAll(`/environments/${env.api_key}/featurestates/?feature=${feature.id}`);
+      // The environment default is the state with no segment and no identity.
+      const fs = states.find((s) => s.feature_segment === null && s.identity === null);
+      if (!fs) throw new Error(`No environment default feature state for ${flag.name} in ${env.name}`);
+      const patch = { enabled: wanted.enabled };
+      // Verified on 2.295.2: a raw JSON value is accepted and keeps its type (string, int or bool).
+      if ('value' in wanted) patch.feature_state_value = wanted.value;
+      await api('PATCH', `/environments/${env.api_key}/featurestates/${fs.id}/`, patch);
+    }
+
+    if (flag.archived) {
+      await api('PATCH', `/projects/${project.id}/features/${feature.id}/`, { name: flag.name, is_archived: true });
+    }
+
+    const summary = envs.map((e) => `${e.name} ${flag.states[e.name]?.enabled ? '●' : '○'}`).join('  ');
+    log(`${flag.name.padEnd(24)} ${summary}${flag.archived ? '  (archived)' : ''}`);
+  }
+}
+
+async function getOrCreateOrgApiKey(org, project) {
+  step('Organisation API key (for the FlagLens extension)');
+  // Re-use the key in .env if it still works, so re-seeding doesn't pile up keys.
+  const current = fileEnv.FLAGSMITH_API_KEY;
+  if (current) {
+    const res = await fetch(`${API_URL}/api/v1/projects/${project.id}/`, { headers: { Authorization: `Api-Key ${current}` } });
+    if (res.ok) {
+      log('existing key in .env still works, keeping it');
+      return current;
+    }
+  }
+  // Verified on 2.295.2: the full key is returned only in this response.
+  const created = await api('POST', `/organisations/${org.id}/master-api-keys/`, { name: 'flaglens-dev', is_admin: true });
+  log(`created key ${created.prefix}… ✓`);
+  return created.key;
+}
+
+function writeEnvFiles({ apiKey, org, project, envs }) {
+  step('Writing .env files (git-ignored)');
+  const envEntries = envs.map((e) => [`FLAGSMITH_ENV_KEY_${envVarSuffix(e.name)}`, e.api_key]);
+  const header = [
+    'Written by `make seed`. Git-ignored: never commit this file. See .env.example for documentation.',
+    'Re-run `make seed` at any time; the API key is kept if it still works.',
+    '',
+  ];
+  writeFileSync(
+    rootEnvPath,
+    renderDotenv([
+      ...header,
+      ['FLAGSMITH_API_URL', API_URL],
+      ['FLAGSMITH_API_KEY', apiKey],
+      ['FLAGSMITH_ORGANISATION_ID', String(org.id)],
+      ['FLAGSMITH_PROJECT_ID', String(project.id)],
+      ...envEntries,
+      ['ADMIN_EMAIL', ADMIN_EMAIL],
+      ['ADMIN_PASSWORD', ADMIN_PASSWORD],
+      ['DEMO_PORT', DEMO_PORT],
+    ]),
+    { mode: 0o600 },
+  );
+  log(relative(root, rootEnvPath));
+  // The demo workspace gets its own copy so FlagLens finds the key when you open examples/demo-shop on its own.
+  writeFileSync(
+    demoEnvPath,
+    renderDotenv([
+      ...header,
+      ['FLAGSMITH_API_URL', API_URL],
+      ['FLAGSMITH_API_KEY', apiKey],
+      ['FLAGSMITH_PROJECT_ID', String(project.id)],
+      ...envEntries,
+      ['DEMO_PORT', DEMO_PORT],
+    ]),
+    { mode: 0o600 },
+  );
+  log(relative(root, demoEnvPath));
+}
+
+function printSuccess({ project, envs }) {
+  const dev = envs.find((e) => e.name === 'Development') ?? envs[0];
+  const lines = [
+    '✔ Self-hosted Flagsmith is seeded and ready.',
+    '',
+    `Dashboard   ${API_URL}/project/${project.id}/environment/${dev.api_key}/features`,
+    `Login       ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`,
+    `Project     ${data.project} · ${envs.map((e) => e.name).join(', ')} · ${data.flags.length} flags`,
+    '',
+    'Next:',
+    '  1. Install FlagLens (make install-ext, or the .vsix from Releases)',
+    '  2. Open the demo workspace:  code examples/demo-shop',
+    `  3. Run the demo shop:        make demo   → http://localhost:${DEMO_PORT}`,
+  ];
+  const width = Math.max(...lines.map((l) => l.length)) + 2;
+  console.log(`\n┌${'─'.repeat(width)}┐`);
+  for (const l of lines) console.log(`│ ${l.padEnd(width - 1)}│`);
+  console.log(`└${'─'.repeat(width)}┘\n`);
+}
+
+async function main() {
+  console.log('FlagLens dev kit · seeding self-hosted Flagsmith');
+  await waitForFlagsmith();
+  await signUpOrLogIn();
+  const org = await getOrCreateOrganisation();
+  const project = await getOrCreateProject(org);
+  const envs = await getOrCreateEnvironments(project);
+  const tagIds = await getOrCreateTags(project);
+  await seedFlags(project, envs, tagIds);
+  const apiKey = await getOrCreateOrgApiKey(org, project);
+  writeEnvFiles({ apiKey, org, project, envs });
+  printSuccess({ project, envs });
+}
+
+main().catch((e) => {
+  console.error(`\n✖ Seed failed: ${e.message}`);
+  if (e.cause?.code === 'ECONNREFUSED') console.error('  Flagsmith is not reachable. Start it with: make up');
+  process.exit(1);
+});

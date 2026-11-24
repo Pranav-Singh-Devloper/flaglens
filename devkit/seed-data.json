@@ -1,0 +1,87 @@
+{
+  "$comment": "Declarative demo data for `make seed`. Edit freely: re-running the seed restores every flag to the states below.",
+  "organisation": "FlagLens Demo",
+  "project": "Demo Shop",
+  "environments": ["Development", "Staging", "Production"],
+  "tags": [
+    { "label": "kill-switch", "color": "#d9534f", "description": "Emergency off switch. Never stale.", "is_permanent": true },
+    { "label": "checkout", "color": "#3d8bfd", "description": "Checkout squad" }
+  ],
+  "flags": [
+    {
+      "name": "new_checkout",
+      "description": "Rewritten single-page checkout. Rolling out: on in Dev and Staging, off in Production.",
+      "tags": ["checkout"],
+      "states": {
+        "Development": { "enabled": true },
+        "Staging": { "enabled": true },
+        "Production": { "enabled": false }
+      }
+    },
+    {
+      "name": "banner_text",
+      "description": "Text shown in the shop's top banner (remote config).",
+      "initial_value": "Welcome!",
+      "states": {
+        "Development": { "enabled": true, "value": "🚧 dev build" },
+        "Staging": { "enabled": true, "value": "Black Friday: 30% off" },
+        "Production": { "enabled": true, "value": "Black Friday: 30% off" }
+      }
+    },
+    {
+      "name": "rate_limit_per_minute",
+      "description": "Requests per minute per customer. Staging and Production should match.",
+      "initial_value": 100,
+      "states": {
+        "Development": { "enabled": true, "value": 1000 },
+        "Staging": { "enabled": true, "value": 100 },
+        "Production": { "enabled": true, "value": 50 }
+      }
+    },
+    {
+      "name": "checkout_button_color",
+      "description": "Colour experiment for the checkout button. Control is blue.",
+      "type": "MULTIVARIATE",
+      "initial_value": "blue",
+      "tags": ["checkout"],
+      "variants": [
+        { "key": "green", "value": "green", "weight": 50 },
+        { "key": "orange", "value": "orange", "weight": 50 }
+      ],
+      "states": {
+        "Development": { "enabled": true },
+        "Staging": { "enabled": true },
+        "Production": { "enabled": true }
+      }
+    },
+    {
+      "name": "dark_mode",
+      "description": "Dark theme for the shop. Fully rolled out a while ago.",
+      "states": {
+        "Development": { "enabled": true },
+        "Staging": { "enabled": true },
+        "Production": { "enabled": true }
+      }
+    },
+    {
+      "name": "maintenance_mode",
+      "description": "Shows a maintenance page instead of the shop.",
+      "tags": ["kill-switch"],
+      "states": {
+        "Development": { "enabled": false },
+        "Staging": { "enabled": false },
+        "Production": { "enabled": false }
+      }
+    },
+    {
+      "name": "legacy_search",
+      "description": "Old search backend. Replaced; archived.",
+      "archived": true,
+      "states": {
+        "Development": { "enabled": false },
+        "Staging": { "enabled": false },
+        "Production": { "enabled": false }
+      }
+    }
+  ]
+}
