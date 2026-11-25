@@ -88,7 +88,7 @@ export const Window: React.FC<{ rect: Rect; bar?: { kind: 'browser' | 'terminal'
 };
 
 /** Top-left chapter label that slides in when a scene starts. */
-export const Chapter: React.FC<{ n: number; text: string }> = ({ n, text }) => {
+export const Chapter: React.FC<{ n: number | string; text: string }> = ({ n, text }) => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
   const k = spring({ frame: f - 6, fps, config: { damping: 18, stiffness: 140 } });

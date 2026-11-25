@@ -9,7 +9,8 @@ import vo from './data/vo.json';
 import { cameraAt, clipFrames, clicks, events, frameAtVideoTime, mark, shotOnMark, videoTimeAt, type Clip, type Shot } from './footage';
 import { Background, Callout, Chapter, Window } from './components/Chrome';
 import { CameraStage, Footage, ScreenShot } from './components/Footage';
-import { ClickCounter, Outro, Terminal, TitleCard } from './components/Graphics';
+import { ClickCounter, Terminal } from './components/Graphics';
+import { Pillar, PromiseCard, Recap, Still, Stopwatch, TermChip, VersionsCard } from './components/Story';
 import { Ring, StatCard, memeSeconds, type MemeName } from './components/Meme';
 import { C, FPS, SANS, sec } from './theme';
 
@@ -121,21 +122,32 @@ const Stage: React.FC<{ clip: Clip; shots: Shot[]; children?: React.ReactNode }>
 );
 
 // ---------------------------------------------------------------------------------------------------------------
-// 1. Hook: code that has never run. Slow push in, then a zoom punch onto the typo, then a facepalm.
+// The story: a hook, the problem, then three promises (it knows what runs · it proves your rules · it's live), each
+// proved on screen, then the rest in a fast montage and a recap. Each proving scene keeps its promise in the corner.
 // ---------------------------------------------------------------------------------------------------------------
+/** The last occurrence of a word (e.g. "live" in "live inside VS Code ... and it's live"). */
+const lastWord = (id: VoId, w: string) => {
+  const hits = vo[id].words.filter((x) => x.word.toLowerCase().startsWith(w));
+  if (!hits.length) throw new Error(`word "${w}" not in VO ${id}`);
+  return hits[hits.length - 1]!.start;
+};
+/** Scene time at which a clip reaches a video time. */
+const sceneAt = (clip: Clip, t: number) => frameAtVideoTime(clip, t)! / FPS;
+
+// 1. Hook: code that has never run. Slow push in, a zoom punch onto the typo, a facepalm.
 const typoBox = mark('hook', 'typo')!.box!;
-const hookClip: Clip = { take: 'hook', segments: [{ from: 0.3, to: 2.2 }, { from: 2.2, to: 6.35, rate: 0.55 }, { from: 6.35, to: 9.1 }], hold: 1.5 };
-const HOOK_VO = 0.25;
-const hookPunch = HOOK_VO + word('hook', 'why') + 0.45;
+const hookClip: Clip = { take: 'hook', segments: [{ from: 0.3, to: 2.3 }, { from: 2.3, to: 6.4, rate: 0.85 }, { from: 6.4, to: 9.1 }], hold: 1.0 };
+const HOOK_VO = 0.2;
+const hookPunch = HOOK_VO + word('hook', 'why') + 0.35;
 const hookPunchVideoT = videoTimeAt(hookClip, sec(hookPunch));
-const hookMeme = hookPunch + 0.55;
+const hookMeme = hookPunch + 0.45;
 const hook: Scene = {
   id: 'hook',
   seconds: hookMeme + memeSeconds('facepalm') + 0.05,
   vo: [{ id: 'hook', at: HOOK_VO }],
   memes: [{ name: 'facepalm', at: hookMeme, caption: '3 sprints later', volume: 0 }],
   sfx: [
-    { name: 'riser', at: hookPunch - 2.0, volume: 0.3 },
+    { name: 'riser', at: hookPunch - 1.8, volume: 0.3 },
     { name: 'boom', at: hookPunch - 0.05, volume: 0.75 },
     { name: 'scratch', at: hookMeme - 0.05, volume: 0.5 },
   ],
@@ -146,7 +158,7 @@ const hook: Scene = {
         clip={hookClip}
         shots={[
           { at: 0, z: 1.9, x: 760, y: 470, dur: 0.01 },
-          { at: 0.31, z: 2.3, x: 740, y: 462, dur: 6.0 },
+          { at: 0.31, z: 2.3, x: 740, y: 462, dur: 5.5 },
           { at: hookPunchVideoT, z: 3.0, x: typoBox.x + typoBox.width / 2 + 40, y: typoBox.y - 20, dur: 0.18 },
         ]}
       >
@@ -157,11 +169,9 @@ const hook: Scene = {
   ),
 };
 
-// ---------------------------------------------------------------------------------------------------------------
 // 2. The problem: SDKs default silently, and the answer lives five clicks away in a dashboard.
-// ---------------------------------------------------------------------------------------------------------------
-const hookHold: Clip = { take: 'hook', segments: [freeze(9.05, 7.6)] };
-const hunt: Clip = { take: 'hunt', segments: [{ from: 1.8, to: 18.4, rate: 2.25 }] };
+const hookHold: Clip = { take: 'hook', segments: [freeze(9.05, 6)] };
+const hunt: Clip = { take: 'hunt', segments: [{ from: 1.8, to: 18.4, rate: 2.7 }] };
 const huntSec = clipFrames(hunt) / FPS;
 const HuntPart: React.FC = () => {
   const f = useCurrentFrame();
@@ -181,20 +191,13 @@ const HuntPart: React.FC = () => {
     </AbsoluteFill>
   );
 };
-const PROB_VO = 0.15;
-const probHunt = PROB_VO + word('problem', 'because') - 0.25;
-const probMeme = PROB_VO + voDur('problem') + 0.15;
+const PROB_VO = 0.1;
+const probHunt = PROB_VO + word('problem', 'because') - 0.2;
 const problem: Scene = {
   id: 'problem',
-  seconds: probMeme + memeSeconds('intercom') + 0.05,
+  seconds: Math.min(probHunt + huntSec, PROB_VO + voDur('problem') + 0.35),
   vo: [{ id: 'problem', at: PROB_VO }],
-  memes: [{ name: 'intercom', at: probMeme, caption: 'me, looking for one flag', volume: 0.85 }],
-  sfx: [
-    { name: 'alert', at: PROB_VO + word('problem', 'off'), volume: 0.4 },
-    { name: 'whoosh', at: probHunt - 0.15, volume: 0.45 },
-    ...footageSfx(hunt, probHunt),
-    { name: 'scratch', at: probMeme - 0.05, volume: 0.5 },
-  ],
+  sfx: [{ name: 'alert', at: PROB_VO + word('problem', 'off'), volume: 0.4 }, { name: 'whoosh', at: probHunt - 0.15, volume: 0.45 }, ...footageSfx(hunt, probHunt)],
   render: () => (
     <>
       <Part from={0} seconds={probHunt}>
@@ -209,140 +212,65 @@ const problem: Scene = {
   ),
 };
 
-// 3. Title
+// 3. Title and the three promises, each appearing on the word that names it.
+const TITLE_VO = 0.2;
 const title: Scene = {
   id: 'title',
-  seconds: 0.25 + voDur('title') + 0.45,
-  vo: [{ id: 'title', at: 0.25 }],
-  sfx: [{ name: 'impact', at: 0.05, volume: 0.6 }],
-  render: () => <TitleCard liveAt={0.25 + word('title', 'live')} builtAt={0.25 + word('title', 'made')} />,
+  seconds: TITLE_VO + voDur('title') + 0.55,
+  vo: [{ id: 'title', at: TITLE_VO }],
+  sfx: [
+    { name: 'impact', at: 0.05, volume: 0.6 },
+    { name: 'pop', at: TITLE_VO + word('title', 'knows'), volume: 0.5 },
+    { name: 'pop', at: TITLE_VO + word('title', 'proves'), volume: 0.5 },
+    { name: 'pop', at: TITLE_VO + lastWord('title', 'live'), volume: 0.5 },
+  ],
+  render: () => (
+    <PromiseCard
+      subAt={TITLE_VO + word('title', 'self-hosted')}
+      claimsAt={[TITLE_VO + word('title', 'knows') - 0.15, TITLE_VO + word('title', 'proves') - 0.15, TITLE_VO + lastWord('title', 'live') - 0.25]}
+    />
+  ),
 };
 
-// 4. Dev kit
+// 4. Dev kit, then Connect.
+const DEV_VO = 0.2;
+const connectClip: Clip = { take: 'connect', segments: [{ from: 2.4, to: 10.9, rate: 1.3 }], hold: 0.3 };
+const connectAt = DEV_VO + word('devkit', 'click') - 0.6;
 const devkit: Scene = {
   id: 'devkit',
-  seconds: 0.3 + voDur('devkit') + 0.5,
-  vo: [{ id: 'devkit', at: 0.3 }],
-  sfx: [
-    { name: 'typing', at: 0.3, volume: 0.35, len: 0.5 },
-    { name: 'typing', at: 3.4, volume: 0.35, len: 0.5 },
-    { name: 'success', at: 0.3 + word('devkit', 'demo'), volume: 0.45 },
-  ],
+  seconds: Math.max(DEV_VO + voDur('devkit') + 0.3, connectAt + clipFrames(connectClip) / FPS),
+  vo: [{ id: 'devkit', at: DEV_VO }],
+  sfx: [{ name: 'typing', at: 0.3, volume: 0.35, len: 0.5 }, { name: 'success', at: DEV_VO + word('devkit', 'demo'), volume: 0.45 }, ...footageSfx(connectClip, connectAt, { pops: ['toast'], successes: ['lenses'] })],
   render: () => (
     <>
-      <Terminal boxAt={0.3 + word('devkit', 'demo')} />
-      <Chapter n={1} text="One-command self-hosted dev kit" />
+      <Part from={0} seconds={connectAt}>
+        <Terminal boxAt={DEV_VO + word('devkit', 'demo')} />
+      </Part>
+      <Part from={connectAt} seconds={30}>
+        <Background />
+        <ScreenShot
+          clip={connectClip}
+          shots={[
+            { ...shotOnMark('connect', 'toast', { maxZ: 1.3, pad: 1.6 }), at: 0, dur: 0.01 },
+            { at: mark('connect', 'lenses')!.t - 0.7, z: 1.0, x: 960, y: 540, dur: 0.7 },
+            { at: mark('connect', 'lenses')!.t + 0.5, z: 1.32, x: 1010, y: 640, dur: 0.9 },
+            shotOnMark('connect', 'status', { maxZ: 1.9, pad: 3, lead: 0.5 }),
+          ]}
+        />
+      </Part>
+      <Chapter n="▶" text="Set up in two commands" />
     </>
   ),
 };
 
-// 5. Connect
-const connectClip: Clip = { take: 'connect', segments: [{ from: 0, to: 10.7 }], hold: 0.2 };
-const connect: Scene = {
-  id: 'connect',
-  seconds: clipFrames(connectClip) / FPS,
-  vo: [{ id: 'connect', at: 0.6 }],
-  sfx: [...footageSfx(connectClip, 0, { pops: ['toast'], successes: ['lenses'] })],
-  render: () => (
-    <>
-      <Background />
-      <ScreenShot
-        clip={connectClip}
-        shots={[
-          shotOnMark('connect', 'toast', { maxZ: 1.3, pad: 1.6, lead: 0.1, dur: 1.0 }),
-          { at: 3.85, z: 1.0, x: 960, y: 540, dur: 0.9 },
-          { at: 5.3, z: 1.32, x: 1010, y: 640, dur: 1.1 },
-          shotOnMark('connect', 'status', { maxZ: 1.9, pad: 3, lead: 0.5 }),
-        ]}
-      />
-      <Chapter n={2} text="Live state, right in the code" />
-    </>
-  ),
-};
-
-// 6. Toggle (split with the live shop)
-const toggleClip: Clip = { take: 'toggle', segments: [{ from: 1.8, to: 13.4, rate: 1.6 }], hold: 0.6 };
-const toggleShopAt = frameAtVideoTime(toggleClip, mark('toggle', 'shop-updated')!.t)! / FPS;
-const toggle: Scene = {
-  id: 'toggle',
-  seconds: clipFrames(toggleClip) / FPS,
-  vo: [{ id: 'toggle', at: 0.3 }],
-  sfx: [...footageSfx(toggleClip, 0, { pops: ['quickpick'], successes: ['toast'] }), { name: 'pop', at: toggleShopAt, volume: 0.5 }],
-  render: () => (
-    <>
-      <SplitToggle
-        clip={toggleClip}
-        shopUrl="localhost:3030"
-        envLabel="Development"
-        shots={[splitShot('toggle', 'quickpick', { maxZ: 1.5, pad: 1.25 }), splitShot('toggle', 'dialog', { maxZ: 1.6, pad: 1.5 }), splitShot('toggle', 'toast', { maxZ: 1.6, pad: 1.5 })]}
-        callouts={<Callout from={sec(toggleShopAt)} x={1550} y={790} anchor="center" text="No redeploy" tone="on" />}
-      />
-      <Chapter n={3} text="Safe toggles" />
-    </>
-  ),
-};
-
-// 7. Protected environments: "Nope." → Gandalf (footage frozen on the typed confirmation) → the rest.
-const GANDALF = memeSeconds('pass');
-const protFreezeAt = mark('protected', 'typed-confirm')!.t + 0.12;
-const protectedClip: Clip = {
-  take: 'protected',
-  segments: [{ from: 2.0, to: protFreezeAt, rate: 1.6 }, freeze(protFreezeAt, GANDALF + 0.1), { from: protFreezeAt + 0.01, to: 12.2, rate: 1.3 }, { from: 14.2, to: 21.5, rate: 2.0 }],
-  hold: 0.4,
-};
-const protMemeAt = (protFreezeAt - 2.0) / 1.6;
-const protTypedAt = frameAtVideoTime(protectedClip, mark('protected', 'typed-confirm')!.t)! / FPS;
-const protUndoAt = frameAtVideoTime(protectedClip, mark('protected', 'undo-dialog')!.t)! / FPS;
-const protShopAt = frameAtVideoTime(protectedClip, mark('protected', 'shop-updated')!.t)! / FPS;
-const protRevertAt = frameAtVideoTime(protectedClip, mark('protected', 'shop-reverted')!.t)! / FPS;
-const protSplit = word('protected', 'you') - 0.06;
-const protectedScene: Scene = {
-  id: 'protected',
-  seconds: clipFrames(protectedClip) / FPS,
-  vo: [
-    { id: 'protected', at: Math.max(0.3, protMemeAt - protSplit - 0.15), to: protSplit },
-    { id: 'protected', at: protMemeAt + GANDALF + 0.15, from: protSplit },
-  ],
-  memes: [{ name: 'pass', at: protMemeAt, volume: 0.95 }],
-  sfx: [
-    ...footageSfx(protectedClip, 0, { pops: ['dialog', 'undo-dialog'], successes: ['toast', 'undone'] }),
-    { name: 'boom', at: protMemeAt - 0.02, volume: 0.45 },
-    { name: 'pop', at: protShopAt, volume: 0.45 },
-    { name: 'pop', at: protRevertAt, volume: 0.45 },
-  ],
-  render: () => (
-    <>
-      <SplitToggle
-        clip={protectedClip}
-        shopUrl="localhost:3030/?env=Production"
-        envLabel="Production"
-        shots={[
-          splitShot('protected', 'dialog', { maxZ: 1.6, pad: 1.5 }),
-          splitShot('protected', 'typed-confirm', { maxZ: 1.7, pad: 1.2, dy: 40 }),
-          splitShot('protected', 'toast', { maxZ: 1.6, pad: 1.5 }),
-          splitShot('protected', 'undo-dialog', { maxZ: 1.6, pad: 1.5 }),
-          splitShot('protected', 'undone', { maxZ: 1.6, pad: 1.5 }),
-        ]}
-        callouts={
-          <>
-            <Callout from={sec(protTypedAt + GANDALF)} to={sec(protShopAt - 0.6)} x={620} y={830} anchor="center" text="Production is protected: type the flag name" tone="warn" />
-            <Callout from={sec(protUndoAt - 0.2)} x={620} y={830} anchor="center" text="Undo (asks again in Production)" />
-          </>
-        }
-      />
-      <Chapter n={4} text="Protected environments" />
-    </>
-  ),
-};
-
-// 8. Greyed-out code: Development, then Production (where only the certain branches stay grey).
-const greyClip: Clip = { take: 'greyout', segments: [{ from: 0.4, to: 5.0, rate: 0.75 }, { from: 5.0, to: 11.88 }], hold: 1.2 };
-const GREY_VO = 0.2;
+// 5. Promise 1: greyed-out code, Development then Production.
+const greyClip: Clip = { take: 'greyout', segments: [{ from: 0.4, to: 4.6, rate: 1.25 }, { from: 4.6, to: 11.8, rate: 1.1 }], hold: 0.6 };
+const GREY_VO = 0.15;
 const greyout: Scene = {
   id: 'greyout',
-  seconds: Math.max(clipFrames(greyClip) / FPS, GREY_VO + voDur('greyout') + 0.35),
+  seconds: Math.max(clipFrames(greyClip) / FPS, GREY_VO + voDur('greyout') + 0.3),
   vo: [{ id: 'greyout', at: GREY_VO }],
-  sfx: [...footageSfx(greyClip, 0, { pops: ['envpick'] }), { name: 'whoosh', at: frameAtVideoTime(greyClip, mark('greyout', 'prod')!.t)! / FPS - 0.1, volume: 0.35 }],
+  sfx: [...footageSfx(greyClip, 0, { pops: ['envpick'] }), { name: 'whoosh', at: sceneAt(greyClip, mark('greyout', 'prod')!.t) - 0.1, volume: 0.35 }],
   render: () => (
     <>
       <Background />
@@ -350,22 +278,22 @@ const greyout: Scene = {
         clip={greyClip}
         shots={[
           { at: 0, z: 1.12, x: 1000, y: 560, dur: 0.01 },
-          { at: 2.6, z: 1.45, x: 1120, y: 760, dur: 1.6 },
+          { at: 2.2, z: 1.45, x: 1120, y: 760, dur: 1.4 },
           shotOnMark('greyout', 'envpick', { maxZ: 1.7, pad: 1.6, lead: 0.3 }),
-          { at: mark('greyout', 'prod')!.t - 0.2, z: 1.55, x: 1120, y: 800, dur: 0.8 },
+          { at: mark('greyout', 'prod')!.t - 0.2, z: 1.55, x: 1120, y: 800, dur: 0.7 },
         ]}
       />
-      <Callout from={sec(GREY_VO + word('greyout', 'greys'))} to={sec(GREY_VO + word('greyout', 'switch') - 0.2)} x={960} y={120} anchor="center" text="Development: dead branches greyed, with the reason" />
-      <Callout from={sec(GREY_VO + word('greyout', 'only'))} x={960} y={120} anchor="center" text="Production: new_checkout differs per user → not greyed" tone="on" />
-      <Chapter n={5} text="Code that can't run, greyed out" />
+      <Callout from={sec(GREY_VO + word('greyout', 'greyed'))} to={sec(GREY_VO + word('greyout', 'switch') - 0.2)} x={960} y={110} anchor="center" text="Development: dead branches greyed, with the reason" />
+      <Callout from={sec(GREY_VO + word('greyout', 'only'))} x={960} y={110} anchor="center" text="Production: new_checkout differs per user → not greyed" tone="on" />
+      <Pillar n={1} />
     </>
   ),
 };
 
-// 9. Preview as a user, and the server check.
-const previewClip: Clip = { take: 'preview', segments: [{ from: 0.6, to: 15.43 }], hold: 3.6 };
-const PREV_VO = 0.2;
-const prevStatAt = PREV_VO + word('preview', 'and') - 0.1;
+// 6. Promise 1: preview as a user, and the server check.
+const previewClip: Clip = { take: 'preview', segments: [{ from: 0.6, to: 15.3, rate: 1.15 }], hold: 1.6 };
+const PREV_VO = 0.15;
+const prevStatAt = PREV_VO + word('preview', 'flagsmith') - 0.1;
 const preview: Scene = {
   id: 'preview',
   seconds: Math.max(clipFrames(previewClip) / FPS, PREV_VO + voDur('preview') + 0.4),
@@ -379,58 +307,188 @@ const preview: Scene = {
         shots={[
           { at: 0, z: 1.0, x: 960, y: 540, dur: 0.01 },
           shotOnMark('preview', 'personas', { maxZ: 1.9, pad: 1.3, lead: 0.4 }),
-          { at: mark('preview', 'beta')!.t - 0.3, z: 1.4, x: 1000, y: 330, dur: 0.9 },
+          { at: mark('preview', 'beta')!.t - 0.3, z: 1.4, x: 1000, y: 330, dur: 0.8 },
           shotOnMark('preview', 'hover:new_checkout', { maxZ: 1.8, pad: 1.12, lead: 0.2 }),
-          { at: videoTimeAt(previewClip, sec(prevStatAt - 0.3)), z: 1.0, x: 960, y: 540, dur: 0.8 },
+          { at: videoTimeAt(previewClip, sec(prevStatAt - 0.3)), z: 1.0, x: 960, y: 540, dur: 0.7 },
         ]}
       />
       <Part from={prevStatAt} seconds={30}>
-        <StatCard countAt={PREV_VO + word('preview', 'fourteen') - prevStatAt} missesAt={PREV_VO + word('preview', 'zero') - prevStatAt} />
+        <StatCard countAt={PREV_VO + word('preview', 'fifteen') - prevStatAt} missesAt={PREV_VO + word('preview', 'zero') - prevStatAt} />
       </Part>
-      <Chapter n={6} text="Preview as a user" />
+      <Pillar n={1} />
     </>
   ),
 };
 
-// 10. Targeting rule check: the hover, then the report. "They're so different."
-const rulesClip: Clip = { take: 'rules', segments: [{ from: 0.6, to: 6.8 }, { from: 6.8, to: 10.0, rate: 2.4 }, { from: 10.0, to: 14.25 }], hold: 0.4 };
-const RULES_VO = 0.2;
-const rulesMeme = RULES_VO + voDur('rules') + 0.2;
-const rules: Scene = {
-  id: 'rules',
-  seconds: rulesMeme + memeSeconds('different') + 0.25,
-  vo: [{ id: 'rules', at: RULES_VO }],
-  memes: [{ name: 'different', at: rulesMeme, volume: 0.95 }],
-  sfx: [...footageSfx(rulesClip, 0, { pops: ['hover:rate_limit_per_minute', 'report'] }), { name: 'scratch', at: rulesMeme - 0.05, volume: 0.45 }],
+// 7. Promise 2: the rule check finds the shadowed override; fix it from the editor; the finding disappears.
+const fixClip: Clip = {
+  take: 'segfix',
+  segments: [{ from: 0.5, to: 4.9, rate: 0.85 }, { from: 4.9, to: 13.4, rate: 3.0 }, { from: 13.4, to: 16.0, rate: 1.6 }, { from: 16.0, to: 20.8, rate: 1.5 }],
+  hold: 1.6,
+};
+const FIX_VO = 0.15;
+const fixVo2 = FIX_VO + voDur('rules') + 0.15;
+const fixedAt = sceneAt(fixClip, mark('segfix', 'fixed')!.t);
+const fix: Scene = {
+  id: 'fix',
+  seconds: Math.max(clipFrames(fixClip) / FPS, fixVo2 + voDur('segfix') + 0.3),
+  vo: [
+    { id: 'rules', at: FIX_VO },
+    { id: 'segfix', at: fixVo2 },
+  ],
+  sfx: [...footageSfx(fixClip, 0, { pops: ['hover:rate_limit_per_minute', 'list', 'dialog'], successes: ['fixed'] })],
   render: () => (
     <>
       <Background />
       <Stage
-        clip={rulesClip}
+        clip={fixClip}
         shots={[
           { at: 0, z: 1.0, x: 960, y: 540, dur: 0.01 },
-          shotOnMark('rules', 'hover:rate_limit_per_minute', { maxZ: 1.85, pad: 1.08, lead: 0.2 }),
-          { at: 6.7, z: 1.0, x: 960, y: 540, dur: 0.6 },
-          { at: mark('rules', 'report')!.t - 0.1, z: 1.85, x: 1580, y: 760, dur: 0.9 },
+          shotOnMark('segfix', 'hover:rate_limit_per_minute', { maxZ: 1.75, pad: 1.08, lead: 0.2 }),
+          shotOnMark('segfix', 'list', { maxZ: 1.9, pad: 1.3, lead: 0.2 }),
+          shotOnMark('segfix', 'dialog', { maxZ: 1.7, pad: 1.4, lead: 0.2 }),
+          shotOnMark('segfix', 'typed-confirm', { maxZ: 1.8, pad: 1.3, lead: 0.2 }),
+          shotOnMark('segfix', 'fixed', { maxZ: 1.6, pad: 1.6, lead: 0.3 }),
         ]}
       />
-      <Chapter n={7} text="Targeting rule check" />
+      <Callout from={sec(FIX_VO + word('rules', 'this'))} to={sec(fixVo2)} x={960} y={110} anchor="center" text={'"pro_eu" never applies: "pro_plan" catches its users first'} tone="warn" />
+      <Callout from={sec(fixedAt)} x={960} y={110} anchor="center" text="Re-checked: pro_eu applies now. Written to Flagsmith." tone="on" />
+      <Pillar n={2} />
     </>
   ),
 };
 
-// 11. Pairwise test plan: "ninety-six combinations" → maths → [sigh] "Or… seven runs."
+// 8. Promise 3: real time. The Flagsmith dashboard (left) and VS Code (right), with a stopwatch.
+const rtClip: Clip = { take: 'realtime', segments: [{ from: 0.2, to: 9.9 }], hold: 1.4 };
+const RT_VO = 0.15;
+const rtConfirmed = sceneAt(rtClip, mark('realtime', 'confirmed')!.t);
+const rtUpdated = sceneAt(rtClip, mark('realtime', 'vscode-updated')!.t);
+const RealtimeSplit: React.FC = () => {
+  // The dashboard is cropped to its flag list and the confirmation dialog, so both read at video size.
+  const dashCrop = { x: 150, y: 250, w: 810, h: 650 };
+  const dashRect = { x: 40, y: 150, w: 760, h: 46 + Math.round((760 * dashCrop.h) / dashCrop.w) };
+  const vsRect = { x: 830, y: 150, w: 1050, h: 712 };
+  const vsCrop = { x: 520, y: 200, w: 1300, h: 880 };
+  return (
+    <AbsoluteFill>
+      <Background />
+      <Label x={50} y={100} text="Flagsmith dashboard" sub="self-hosted" />
+      <Label x={840} y={100} text="VS Code" sub="FlagLens" />
+      <Window rect={dashRect} bar={{ kind: 'browser', text: 'localhost:8000 · Demo Shop · Development' }}>
+        <Footage clip={rtClip} track="dash" css={{ w: 960, h: 900 }} crop={dashCrop} box={{ w: dashRect.w, h: dashRect.h - 46 }} />
+      </Window>
+      <Window rect={vsRect} lights={false}>
+        <Footage clip={rtClip} track="vscode" css={{ w: 1920, h: 1080 }} crop={vsCrop} box={{ w: vsRect.w, h: vsRect.h }} cursor={false} />
+      </Window>
+    </AbsoluteFill>
+  );
+};
+const realtime: Scene = {
+  id: 'realtime',
+  seconds: Math.max(clipFrames(rtClip) / FPS, RT_VO + voDur('realtime') + 0.3),
+  vo: [{ id: 'realtime', at: RT_VO }],
+  sfx: [...footageSfx(rtClip, 0, { pops: ['modal'] }), { name: 'success', at: rtUpdated, volume: 0.5 }],
+  render: () => (
+    <>
+      <RealtimeSplit />
+      <Stopwatch from={rtConfirmed} to={rtUpdated} seconds={mark('realtime', 'vscode-updated')!.t - mark('realtime', 'confirmed')!.t} x={420} y={830} />
+      <Pillar n={3} />
+    </>
+  ),
+};
+
+// 9. Promise 3: Feature Health. A monitoring alert reaches the code and the confirmation.
+const healthClip: Clip = {
+  take: 'health',
+  segments: [{ from: 0.6, to: 4.4 }, { from: 5.6, to: 9.4, rate: 1.25 }, { from: 10.8, to: 13.9, rate: 2.0 }, { from: 13.9, to: 16.7 }],
+  hold: 0.3,
+};
+const HEALTH_VO = 0.15;
+const healthAlertAt = sceneAt(healthClip, mark('health', 'alert')!.t);
+const healthBadgeAt = sceneAt(healthClip, mark('health', 'badge')!.t);
+const health: Scene = {
+  id: 'health',
+  seconds: Math.max(clipFrames(healthClip) / FPS, HEALTH_VO + voDur('health') + 0.3),
+  vo: [{ id: 'health', at: HEALTH_VO }],
+  sfx: [...footageSfx(healthClip, 0, { alerts: ['badge'], pops: ['dialog'] }), { name: 'typing', at: healthAlertAt, volume: 0.35, len: 0.5 }],
+  render: () => (
+    <>
+      <Background />
+      <Stage
+        clip={healthClip}
+        shots={[
+          { at: 0, z: 1.25, x: 1000, y: 420, dur: 0.01 },
+          { ...shotOnMark('health', 'badge', { maxZ: 1.9, pad: 2.2, lead: 0.1 }) },
+          shotOnMark('health', 'hover:new_checkout', { maxZ: 1.7, pad: 1.1, lead: 0.2 }),
+          shotOnMark('health', 'dialog', { maxZ: 1.8, pad: 1.25, lead: 0.2 }),
+        ]}
+      />
+      <TermChip at={healthAlertAt} until={healthBadgeAt + 0.6} cmd="make alert" note="a monitoring alert, sent to Flagsmith Feature Health" x={960} y={760} />
+      <Pillar n={3} />
+    </>
+  ),
+};
+
+// 10. Safe writes: one click in Development (the shop updates), then Production needs the flag name. Gandalf.
+const SAFE_VO = 0.15;
+const safeSplit = word('safety', 'production') - 0.08;
+const toggleClip: Clip = { take: 'toggle', segments: [{ from: 2.4, to: 11.4, rate: 2.0 }], hold: 0.2 };
+const toggleSec = Math.max(clipFrames(toggleClip) / FPS, SAFE_VO + safeSplit + 0.1);
+const toggleShopAt = sceneAt(toggleClip, mark('toggle', 'shop-updated')!.t);
+const toggle: Scene = {
+  id: 'toggle',
+  seconds: toggleSec,
+  vo: [{ id: 'safety', at: SAFE_VO, to: safeSplit }],
+  sfx: [...footageSfx(toggleClip, 0, { pops: ['quickpick'], successes: ['toast'] }), { name: 'pop', at: toggleShopAt, volume: 0.5 }],
+  render: () => (
+    <>
+      <SplitToggle
+        clip={toggleClip}
+        shopUrl="localhost:3030"
+        envLabel="Development"
+        shots={[splitShot('toggle', 'quickpick', { maxZ: 1.5, pad: 1.25 }), splitShot('toggle', 'dialog', { maxZ: 1.6, pad: 1.5 }), splitShot('toggle', 'toast', { maxZ: 1.6, pad: 1.5 })]}
+        callouts={<Callout from={sec(toggleShopAt)} x={1550} y={790} anchor="center" text="No redeploy" tone="on" />}
+      />
+      <Chapter n="✓" text="Every change is safe" />
+    </>
+  ),
+};
+const GANDALF = memeSeconds('pass');
+const protFreezeAt = mark('protected', 'typed-confirm')!.t + 0.12;
+const protectedClip: Clip = { take: 'protected', segments: [{ from: 2.0, to: protFreezeAt, rate: 2.2 }, freeze(protFreezeAt, GANDALF + 0.1), { from: protFreezeAt + 0.01, to: 12.0, rate: 1.6 }], hold: 0.3 };
+const protMemeAt = (protFreezeAt - 2.0) / 2.2;
+const protSplit2 = word('safety', 'you') - 0.06;
+const protShopAt = sceneAt(protectedClip, mark('protected', 'shop-updated')!.t);
+const protectedScene: Scene = {
+  id: 'protected',
+  seconds: Math.max(clipFrames(protectedClip) / FPS, protMemeAt + GANDALF + 0.15 + voDur('safety') - protSplit2 + 0.3),
+  vo: [
+    { id: 'safety', at: Math.max(0.1, protMemeAt - (protSplit2 - safeSplit) - 0.1), from: safeSplit, to: protSplit2 },
+    { id: 'safety', at: protMemeAt + GANDALF + 0.15, from: protSplit2 },
+  ],
+  memes: [{ name: 'pass', at: protMemeAt, volume: 0.95 }],
+  sfx: [...footageSfx(protectedClip, 0, { pops: ['dialog'], successes: ['toast'] }), { name: 'boom', at: protMemeAt - 0.02, volume: 0.45 }, { name: 'pop', at: protShopAt, volume: 0.45 }],
+  render: () => (
+    <SplitToggle
+      clip={protectedClip}
+      shopUrl="localhost:3030/?env=Production"
+      envLabel="Production"
+      shots={[splitShot('protected', 'dialog', { maxZ: 1.6, pad: 1.5 }), splitShot('protected', 'typed-confirm', { maxZ: 1.7, pad: 1.2, dy: 40 }), splitShot('protected', 'toast', { maxZ: 1.6, pad: 1.5 })]}
+      callouts={<Callout from={sec(protMemeAt + GANDALF)} x={620} y={830} anchor="center" text="Production is protected: type the flag name. Undo included." tone="warn" />}
+    />
+  ),
+};
+
+// 11. Pairwise test plan: "ninety-six combinations" → maths → "or seven runs".
 const MATH = memeSeconds('math');
-const TP_VO = 0.2;
-// Speech-to-text timing: "combinations" ends at 3.94 s, then a sigh until 5.64 s. Split there, so the sigh comes
-// after the meme. (The alignment stretches "combinations." over the sigh, so it can't be used for this.)
-const tpSplit = 3.97;
+const TP_VO = 0.15;
+const tpSplit = word('testplan', 'or') - 0.05;
 const tpMeme = TP_VO + tpSplit + 0.05;
-const tpFreezeAt = tpMeme + 0.3;
-const testplanClip: Clip = { take: 'testplan', segments: [{ from: 0.3, to: tpFreezeAt }, freeze(tpFreezeAt, MATH + 0.1), { from: tpFreezeAt + 0.01, to: 11.25, rate: 0.9 }], hold: 1.6 };
+const tpFreezeAt = Math.min(tpMeme + 0.3, 7.0);
+const testplanClip: Clip = { take: 'testplan', segments: [{ from: 0.3, to: tpFreezeAt, rate: 1.2 }, freeze(tpFreezeAt, MATH + 0.1), { from: tpFreezeAt + 0.01, to: 11.2 }], hold: 0.8 };
 const testplan: Scene = {
   id: 'testplan',
-  seconds: Math.max(clipFrames(testplanClip) / FPS, tpMeme + MATH + 0.1 + voDur('testplan') - tpSplit + 0.4),
+  seconds: Math.max(clipFrames(testplanClip) / FPS, tpMeme + MATH + 0.1 + voDur('testplan') - tpSplit + 0.35),
   vo: [
     { id: 'testplan', at: TP_VO, to: tpSplit },
     { id: 'testplan', at: tpMeme + MATH + 0.1, from: tpSplit },
@@ -446,65 +504,68 @@ const testplan: Scene = {
           { at: 0, z: 1.0, x: 960, y: 540, dur: 0.01 },
           shotOnMark('testplan', 'flags', { maxZ: 1.8, pad: 1.15, lead: 0.3 }),
           shotOnMark('testplan', 'mode', { maxZ: 2.1, pad: 1.25, lead: 0.2 }),
-          { at: mark('testplan', 'plan')!.t - 0.2, z: 1.55, x: 1500, y: 560, dur: 0.9 },
+          { at: mark('testplan', 'plan')!.t - 0.2, z: 1.55, x: 1500, y: 560, dur: 0.8 },
         ]}
       />
-      <Chapter n={8} text="Pairwise test plan" />
+      <Chapter n="∑" text="Smallest test plan" />
     </>
   ),
 };
 
-// 12. Montage: drift, typo fix, stale flags. "All free, on open source." → free real estate.
-const mDrift: Clip = { take: 'drift', segments: [{ from: 20.7, to: 23.2, rate: 1.1 }], hold: 0.6 };
-const mTypo: Clip = { take: 'typo', segments: [{ from: 8.25, to: 11.9, rate: 1.9 }], hold: 0.1 };
+// 12. Montage: one beat per thing, on the word that names it.
+const MONT_VO = 0.1;
+const mAt = (w: string) => MONT_VO + word('montage', w) - 0.1;
+const mDrift: Clip = { take: 'drift', segments: [{ from: 20.7, to: 23.2, rate: 1.4 }], hold: 0.6 };
+const mTypo: Clip = { take: 'typo', segments: [{ from: 8.25, to: 11.9, rate: 2.2 }], hold: 0.1 };
 const mStale: Clip = { take: 'stale', segments: [{ from: 8.6, to: 12.4 }], hold: 1.0 };
-const MONT_VO = 0.15;
-const mTypoAt = MONT_VO + word('montage', 'one-click') - 0.15;
-const mStaleAt = MONT_VO + word('montage', 'stale') - 0.15;
-const montMeme = MONT_VO + voDur('montage') + 0.1;
+const beats = [mAt('code'), mAt('overrides'), mAt('versioned'), mAt('drift'), mAt('typos'), mAt('stale')];
 const montage: Scene = {
   id: 'montage',
-  seconds: montMeme + memeSeconds('realestate') + 0.2,
+  seconds: MONT_VO + voDur('montage') + 0.45,
   vo: [{ id: 'montage', at: MONT_VO }],
-  memes: [{ name: 'realestate', at: montMeme, volume: 0.95 }],
-  sfx: [
-    { name: 'whoosh', at: mTypoAt - 0.1, volume: 0.35 },
-    { name: 'whoosh', at: mStaleAt - 0.1, volume: 0.35 },
-    ...footageSfx(mTypo, mTypoAt, { pops: ['quickfix'], successes: ['fixed'] }),
-  ],
+  sfx: beats.slice(1).map((at) => ({ name: 'whoosh' as const, at: at - 0.05, volume: 0.3 })),
   render: () => (
     <>
-      <Part from={0} seconds={mTypoAt}>
-        <Background />
-        <ScreenShot clip={mDrift} shots={[{ at: 0, z: 1.5, x: 1230, y: 360, dur: 0.01 }, shotOnMark('drift', 'copied', { maxZ: 1.35, pad: 1.6, lead: 0.4 })]} />
+      <Part from={0} seconds={beats[1]!}>
+        <Still src="stills/dash-code-refs.png" bar="localhost:8000 · Code references, published by FlagLens" seconds={beats[1]!} focus={{ x: 0.75, y: 0.95 }} zoom={1.25} />
       </Part>
-      <Part from={mTypoAt} seconds={mStaleAt - mTypoAt}>
-        <Background />
-        <ScreenShot clip={mTypo} shots={[{ ...shotOnMark('typo', 'quickfix', { maxZ: 1.7, pad: 2.6, lead: 0.25, dx: -120 }), at: 0, dur: 0.01 }, { at: mark('typo', 'fixed')!.t - 0.2, z: 1.45, x: 800, y: 300, dur: 0.5 }]} />
+      <Part from={beats[1]!} seconds={beats[2]! - beats[1]!}>
+        <Still src="stills/user-override.png" seconds={beats[2]! - beats[1]!} focus={{ x: 0.5, y: 0.1 }} zoom={1.3} />
       </Part>
-      <Part from={mStaleAt} seconds={30}>
+      <Part from={beats[2]!} seconds={beats[3]! - beats[2]!}>
+        <VersionsCard />
+      </Part>
+      <Part from={beats[3]!} seconds={beats[4]! - beats[3]!}>
+        <Background />
+        <ScreenShot clip={mDrift} shots={[{ ...shotOnMark('drift', 'copied', { maxZ: 1.35, pad: 1.6 }), at: 0, dur: 0.01 }]} />
+      </Part>
+      <Part from={beats[4]!} seconds={beats[5]! - beats[4]!}>
+        <Background />
+        <ScreenShot clip={mTypo} shots={[{ ...shotOnMark('typo', 'quickfix', { maxZ: 1.7, pad: 2.6, dx: -120 }), at: 0, dur: 0.01 }]} />
+      </Part>
+      <Part from={beats[5]!} seconds={30}>
         <Background />
         <ScreenShot clip={mStale} shots={[{ ...shotOnMark('stale', 'problems', { maxZ: 1.45, pad: 1.05 }), at: 0, dur: 0.01 }]} />
-        <Callout from={sec(MONT_VO + word('montage', 'all') - mStaleAt)} x={960} y={120} anchor="center" text="Stale-flag detection: paid on Cloud, free here" tone="on" />
+        <Callout from={sec(MONT_VO + word('montage', 'all') - beats[5]!)} x={960} y={110} anchor="center" text="All on open-source, self-hosted Flagsmith" tone="on" />
       </Part>
-      <Chapter n={9} text="Drift · typos · stale flags" />
+      <Chapter n="+" text="And the rest" />
     </>
   ),
 };
 
-// 13. Outro, then "Nailed it."
-const OUT_VO = 0.4;
-const outMeme = OUT_VO + voDur('outro') + 0.15;
+// 13. Recap, then "Nailed it."
+const OUT_VO = 0.35;
+const outMeme = OUT_VO + voDur('outro') + 0.35;
 const outro: Scene = {
   id: 'outro',
-  seconds: outMeme + memeSeconds('nailedit') + 0.9,
+  seconds: outMeme + memeSeconds('nailedit') + 0.8,
   vo: [{ id: 'outro', at: OUT_VO }],
   memes: [{ name: 'nailedit', at: outMeme, volume: 0.95 }],
   sfx: [{ name: 'whoosh', at: 0.0, volume: 0.4 }],
-  render: () => <Outro fadeAt={outMeme + memeSeconds('nailedit') + 0.05} />,
+  render: () => <Recap fadeAt={outMeme + memeSeconds('nailedit') + 0.05} />,
 };
 
-export const SCENES: Scene[] = [hook, problem, title, devkit, connect, toggle, protectedScene, greyout, preview, rules, testplan, montage, outro];
+export const SCENES: Scene[] = [hook, problem, title, devkit, greyout, preview, fix, realtime, health, toggle, protectedScene, testplan, montage, outro];
 
 export const sceneStarts = (() => {
   const out: number[] = [];

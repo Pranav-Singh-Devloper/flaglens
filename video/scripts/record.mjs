@@ -5,6 +5,7 @@
 //
 // Each take writes recordings/<take>/{vscode,shop}/frames + index.json and recordings/<take>/<take>.events.json.
 import { spawn, execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright-core';
 import { launchVSCode, setViewport, repo } from './vscode.mjs';
@@ -57,7 +58,16 @@ async function take(name, fn, { withShop = false, shopUrl } = {}) {
   if (!want(name)) return;
   console.log(`● take ${name}`);
   if (withShop) {
-    await shopPage.goto(shopUrl ?? 'http://localhost:3030/');
+    // The shop reloads itself now and then, which can interrupt a navigation: try again.
+    for (let i = 0; ; i++) {
+      try {
+        await shopPage.goto(shopUrl ?? 'http://localhost:3030/');
+        break;
+      } catch (e) {
+        if (i === 2) throw e;
+        await shopPage.waitForTimeout(500);
+      }
+    }
     await shopPage.waitForTimeout(800);
   }
   const d = new Director(p, join(REC, name), name);
@@ -375,6 +385,8 @@ await take('stale', async (d) => {
   await d.mark('problems', p.locator('.part.panel').first());
   await d.wait(3200);
 });
+// Off camera: later takes need the editor's full height.
+if (want('stale')) await command('View: Close Panel');
 
 // ---------------------------------------------------------------------------------------------------------------
 // v0.3 takes: greyed-out code, Preview as user, rule check, pairwise test plan, and the hook.
@@ -516,6 +528,187 @@ await take('testplan', async (d) => {
   await d.mark('plan', p.locator('.editor-group-container').last());
   await d.wait(3200);
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+// v0.5 takes: fixing a rule from the editor, real time from the Flagsmith dashboard, Feature Health.
+// ---------------------------------------------------------------------------------------------------------------
+const seed = () => execFileSync('node', [join(repo, 'devkit/seed.mjs')], { stdio: 'ignore' });
+const lensText = (key, re) =>
+  p.waitForFunction(
+    ([k, src]) => [...document.querySelectorAll('.codelens-decoration a')].some((a) => a.textContent.includes(k) && new RegExp(src).test(a.textContent)),
+    [key, re.source],
+    { timeout: 30_000 },
+  );
+const lensLacks = (key, re) =>
+  p.waitForFunction(
+    ([k, src]) => {
+      const a = [...document.querySelectorAll('.codelens-decoration a')].find((x) => x.textContent.includes(k));
+      return !!a && !new RegExp(src).test(a.textContent);
+    },
+    [key, re.source],
+    { timeout: 30_000 },
+  );
+async function closeAll() {
+  await p.keyboard.press('Escape');
+  await command('View: Close All Editors');
+  const dont = sel.dialogButton("Don't Save");
+  for (let i = 0; i < 3 && (await dont.isVisible().catch(() => false)); i++) {
+    await dont.click();
+    await p.waitForTimeout(500);
+  }
+}
+
+if (want('segfix')) {
+  await closeAll();
+  await paletteChoose('FlagLens: Switch Active Environment', 'Production');
+  await paletteChoose('FlagLens: Preview Flags as User', 'Everyone');
+  await prepServer();
+  await lensText('rate_limit_per_minute', /rule issue/);
+}
+await take('segfix', async (d) => {
+  await hoverToken(d, 'rate_limit_per_minute');
+  await d.wait(1500);
+  // The hover is taller than the room above the line: scroll its links into view, as a person would.
+  const link = p.locator('.monaco-hover:visible a', { hasText: /Segment overrides/ }).first();
+  await d.moveToLocator(p.locator('.monaco-hover:visible').first(), { ms: 500, dy: 0.6 });
+  await link.scrollIntoViewIfNeeded();
+  await d.mark('hover-links', sel.hover);
+  await d.wait(500);
+  await d.clickLocator(link, { ms: 500 });
+  await sel.quickPickItem('Production').waitFor({ state: 'visible' });
+  await d.wait(400);
+  await d.clickLocator(sel.quickPickItem('Production'), { ms: 600, dx: 0.2 });
+  await sel.quickPickItem('pro_eu').waitFor({ state: 'visible' });
+  await d.mark('list', sel.quickInput);
+  await d.wait(1500);
+  await d.clickLocator(sel.quickPickItem('pro_eu'), { ms: 600, dx: 0.2 });
+  await sel.quickPickItem('Move up').waitFor({ state: 'visible' });
+  await d.mark('actions', sel.quickInput);
+  await d.wait(800);
+  await d.clickLocator(sel.quickPickItem('Move up'), { ms: 600, dx: 0.2 });
+  await sel.dialog.waitFor({ state: 'visible' });
+  await d.mark('dialog', sel.dialog);
+  await d.wait(1300);
+  await d.clickLocator(sel.dialogButton('Move pro_eu to position 1 of 2'), { ms: 600 });
+  await sel.quickInput.waitFor({ state: 'visible' });
+  await d.mark('typed-confirm', sel.quickInput);
+  await d.type('rate_limit_per_minute', { cps: 28 });
+  await d.key('Enter');
+  await toast('Move pro_eu').waitFor({ state: 'visible', timeout: 15_000 });
+  await d.mark('toast', toast('Move pro_eu'));
+  await lensLacks('rate_limit_per_minute', /rule issue/);
+  await d.mark('fixed', sel.lens('rate_limit_per_minute'));
+  await d.wait(2200);
+});
+if (want('segfix')) {
+  await clearToasts();
+  seed();
+  await lensText('rate_limit_per_minute', /rule issue/);
+}
+
+// Real time: the Flagsmith dashboard (left) and VS Code (right) are captured together; the cursor is in the dashboard.
+if (want('realtime')) {
+  await closeAll();
+  await paletteChoose('FlagLens: Switch Active Environment', 'Development');
+  await prepServer();
+  await scrollLineToTop(68);
+  await p.mouse.move(1500, 900);
+  // The real-time webhook must be live (lightning bolt in the status bar).
+  await p.locator('.statusbar-item', { hasText: 'Demo Shop' }).locator('.codicon-zap').first().waitFor({ state: 'attached', timeout: 30_000 });
+}
+if (want('realtime')) {
+  const env = Object.fromEntries(
+    readFileSync(join(repo, '.env'), 'utf8')
+      .split('\n')
+      .map((l) => /^([A-Z_]+)=(.*)$/.exec(l))
+      .filter(Boolean)
+      .map((m) => [m[1], m[2]]),
+  );
+  const dashCtx = await browser.newContext({ viewport: { width: 960, height: 900 }, deviceScaleFactor: 2 });
+  const dash = await dashCtx.newPage();
+  const dashCdp = await dashCtx.newCDPSession(dash);
+  // Log in off camera with the dev kit's local demo account.
+  await dash.goto(`${env.FLAGSMITH_API_URL}/login`);
+  await dash.locator('input').first().fill(env.ADMIN_EMAIL);
+  await dash.locator('input[type=password]').fill(env.ADMIN_PASSWORD);
+  await dash.getByRole('button', { name: /log in/i }).click();
+  await dash.waitForURL(/organisation/);
+  await dash.goto(`${env.FLAGSMITH_API_URL}/project/${env.FLAGSMITH_PROJECT_ID}/environment/${env.FLAGSMITH_ENV_KEY_DEVELOPMENT}/features`);
+  const sw = dash.locator('.list-item', { hasText: 'maintenance_mode' }).locator('[role=switch]:visible').first();
+  await sw.waitFor({ state: 'visible', timeout: 20_000 });
+  await dash.waitForTimeout(800);
+
+  console.log('● take realtime');
+  const d = new Director(dash, join(REC, 'realtime'), 'realtime');
+  d.cursor = { x: 640, y: 420 };
+  const tracks = [new Track('dash', dashCdp, join(REC, 'realtime'), SHOP_CAPTURE), new Track('vscode', cdp, join(REC, 'realtime'), VS_CAPTURE)];
+  for (const t of tracks) await t.start();
+  d.log('start');
+  await d.wait(900);
+  await d.clickLocator(sw, { ms: 900 });
+  const confirm = dash.locator('.modal button:visible, [role=dialog] button:visible', { hasText: /^Confirm$/ }).first();
+  await confirm.waitFor({ state: 'visible' });
+  await d.mark('modal', dash.locator('.modal-content:visible, [role=dialog]:visible').first());
+  await d.wait(900);
+  await d.clickLocator(confirm, { ms: 600 });
+  await d.mark('confirmed');
+  const t0 = Date.now();
+  await lensText('maintenance_mode', /Development\s*●\s*on/);
+  await d.mark('vscode-updated');
+  console.log(`  VS Code updated ${((Date.now() - t0) / 1000).toFixed(1)} s after the dashboard confirmed`);
+  await d.wait(3000);
+  d.log('end');
+  for (const t of tracks) console.log(`  ${t.name}: ${await t.stop()} frames`);
+  d.save();
+  for (const t of tracks) {
+    const r = await framesToVideo(join(REC, 'realtime', t.name), join(FOOTAGE, `realtime-${t.name}.mp4`));
+    console.log(`  → realtime-${t.name}.mp4 ${r.seconds.toFixed(1)}s`);
+  }
+  await dashCtx.close();
+  seed();
+  await lensText('maintenance_mode', /Development\s*○\s*off/);
+}
+
+if (want('health')) {
+  await closeAll();
+  await paletteChoose('FlagLens: Switch Active Environment', 'Production');
+  await prepServer();
+  await scrollLineToTop(68);
+}
+await take('health', async (d) => {
+  await d.wait(700);
+  await d.mark('alert');
+  execFileSync('node', [join(repo, 'devkit/health.mjs'), 'alert'], { stdio: 'ignore' });
+  await lensText('new_checkout', /unhealthy/);
+  await d.mark('badge', sel.lens('new_checkout'));
+  await d.wait(1300);
+  // Aim at the token on its own line (the badge appearing can shift the layout), and only go on once the hover
+  // really is new_checkout's.
+  const token = p.locator('.view-line', { hasText: "isFeatureEnabled('new_checkout')" }).locator('span', { hasText: /new_checkout/ }).last();
+  const healthHover = p.locator('.monaco-hover:visible', { hasText: 'UNHEALTHY' }).first();
+  for (let i = 0; i < 3 && !(await healthHover.isVisible().catch(() => false)); i++) {
+    await p.keyboard.press('Escape');
+    await d.moveToLocator(token, { ms: 700, dx: 0.45 });
+    await d.wait(400);
+    await p.mouse.move(d.cursor.x + 1, d.cursor.y);
+    await healthHover.waitFor({ state: 'visible', timeout: 2500 }).catch(() => {});
+  }
+  await healthHover.waitFor({ state: 'visible', timeout: 1000 });
+  await d.mark('hover:new_checkout', healthHover);
+  await d.wait(3000);
+  await d.moveTo(1300, 900, 500);
+  await p.keyboard.press('Escape');
+  await d.clickLocator(sel.lens('new_checkout'), { ms: 800, dx: 0.3 });
+  await sel.quickInput.waitFor({ state: 'visible' });
+  await d.wait(500);
+  await d.clickLocator(sel.quickPickItem('Turn on in Production'), { ms: 600, dx: 0.3 });
+  await sel.dialog.waitFor({ state: 'visible' });
+  await d.mark('dialog', sel.dialog);
+  await d.wait(2800);
+  await d.clickLocator(sel.dialogButton('Cancel'), { ms: 600 });
+  await d.wait(600);
+});
+if (want('health')) execFileSync('node', [join(repo, 'devkit/health.mjs'), 'recover'], { stdio: 'ignore' });
 
 await browser.close();
 vs.close();

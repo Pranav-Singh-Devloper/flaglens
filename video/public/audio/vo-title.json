@@ -1,94 +1,135 @@
 {
  "id": "title",
- "duration": 9.44,
+ "duration": 10.452018,
+ "tempo": 1.08,
  "words": [
   {
    "word": "So",
    "start": 0,
-   "end": 0.08
+   "end": 0.2222222222222222
   },
   {
    "word": "I",
-   "start": 0.16,
-   "end": 0.24
+   "start": 0.2962962962962963,
+   "end": 0.37037037037037035
   },
   {
    "word": "built",
-   "start": 0.267,
-   "end": 0.4
+   "start": 0.41944444444444445,
+   "end": 0.6666666666666666
   },
   {
-   "word": "FlagLens.",
-   "start": 0.48,
-   "end": 1.28
+   "word": "FlagLens:",
+   "start": 0.7703703703703703,
+   "end": 1.8518518518518516
   },
   {
-   "word": "Your",
-   "start": 1.702,
-   "end": 1.766
+   "word": "self-hosted",
+   "start": 1.8962962962962961,
+   "end": 2.3703703703703702
   },
   {
-   "word": "Flagsmith",
-   "start": 1.859,
-   "end": 2.486
+   "word": "Flagsmith,",
+   "start": 2.444444444444444,
+   "end": 3.259259259259259
   },
   {
-   "word": "flags,",
-   "start": 2.593,
-   "end": 3.486
-  },
-  {
-   "word": "live,",
-   "start": 3.558,
-   "end": 4.046
-  },
-  {
-   "word": "right",
-   "start": 4.079,
-   "end": 4.246
+   "word": "live",
+   "start": 3.333333333333333,
+   "end": 3.6296296296296293
   },
   {
    "word": "inside",
-   "start": 4.303,
-   "end": 4.646
+   "start": 3.682407407407407,
+   "end": 4
   },
   {
    "word": "VS",
-   "start": 4.779,
-   "end": 5.046
+   "start": 4.099074074074074,
+   "end": 4.296296296296296
   },
   {
    "word": "Code.",
-   "start": 5.142,
-   "end": 5.606
+   "start": 4.37037037037037,
+   "end": 4.7407407407407405
   },
   {
-   "word": "Made",
-   "start": 5.734,
-   "end": 6.246
+   "word": "It",
+   "start": 4.937962962962962,
+   "end": 5.333333333333333
   },
   {
-   "word": "for",
-   "start": 6.286,
-   "end": 6.406
+   "word": "does",
+   "start": 5.377777777777777,
+   "end": 5.555555555555555
   },
   {
-   "word": "self-hosted,",
-   "start": 6.486,
-   "end": 7.526
+   "word": "three",
+   "start": 5.580555555555556,
+   "end": 5.703703703703703
   },
   {
-   "word": "open-source",
-   "start": 7.59,
-   "end": 8.326
+   "word": "things.",
+   "start": 5.777777777777778,
+   "end": 6.481481481481481
   },
   {
-   "word": "Flagsmith.",
-   "start": 8.446,
-   "end": 9.446
+   "word": "It",
+   "start": 6.567592592592592,
+   "end": 6.7407407407407405
+  },
+  {
+   "word": "knows",
+   "start": 6.777777777777778,
+   "end": 6.962962962962962
+  },
+  {
+   "word": "what",
+   "start": 6.992592592592592,
+   "end": 7.111111111111111
+  },
+  {
+   "word": "runs.",
+   "start": 7.199999999999999,
+   "end": 7.703703703703703
+  },
+  {
+   "word": "It",
+   "start": 7.802777777777777,
+   "end": 8
+  },
+  {
+   "word": "proves",
+   "start": 8.052777777777777,
+   "end": 8.370370370370368
+  },
+  {
+   "word": "your",
+   "start": 8.385185185185184,
+   "end": 8.444444444444443
+  },
+  {
+   "word": "rules.",
+   "start": 8.530555555555555,
+   "end": 9.296296296296294
+  },
+  {
+   "word": "And",
+   "start": 9.37962962962963,
+   "end": 9.62962962962963
+  },
+  {
+   "word": "it's",
+   "start": 9.728703703703703,
+   "end": 10
+  },
+  {
+   "word": "live.",
+   "start": 10.074074074074074,
+   "end": 10.444444444444443
   }
  ],
- "heard": "So I built Flag Lens. Your Flagsmith flags live right inside VS Code. Made for self-hosted open source Flagsmith",
- "accuracy": 0.9,
+ "heard": "So I built Flag Lens, self-hosted Flagsmith, live inside VS Code. It does three things. It knows what runs, it proves your rules, and it's live.",
+ "accuracy": 1,
  "events": []
 }

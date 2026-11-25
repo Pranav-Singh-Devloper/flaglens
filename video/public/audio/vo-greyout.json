@@ -1,174 +1,140 @@
 {
  "id": "greyout",
- "duration": 14.16,
+ "duration": 9.556553,
+ "tempo": 1.08,
  "words": [
   {
-   "word": "Okay,",
+   "word": "One.",
    "start": 0,
-   "end": 0.48
+   "end": 0.2962962962962963
   },
   {
-   "word": "my",
-   "start": 0.56,
-   "end": 0.72
+   "word": "It",
+   "start": 0.4935185185185185,
+   "end": 0.8888888888888888
   },
   {
-   "word": "favourite",
-   "start": 0.76,
-   "end": 1.12
+   "word": "knows",
+   "start": 0.9379629629629628,
+   "end": 1.1851851851851851
   },
   {
-   "word": "part.",
-   "start": 1.168,
-   "end": 1.44
+   "word": "what",
+   "start": 1.2296296296296296,
+   "end": 1.4074074074074074
   },
   {
-   "word": "FlagLens",
-   "start": 1.6,
-   "end": 2.48
+   "word": "runs.",
+   "start": 1.4962962962962962,
+   "end": 2
   },
   {
-   "word": "greys",
-   "start": 2.54,
-   "end": 2.88
-  },
-  {
-   "word": "out",
-   "start": 2.92,
-   "end": 3.04
-  },
-  {
-   "word": "code",
-   "start": 3.136,
-   "end": 3.52
+   "word": "Code",
+   "start": 2.103703703703703,
+   "end": 2.5185185185185186
   },
   {
    "word": "that",
-   "start": 3.552,
-   "end": 3.68
+   "start": 2.533333333333333,
+   "end": 2.592592592592592
   },
   {
    "word": "can't",
-   "start": 3.74,
-   "end": 4
+   "start": 2.6296296296296293,
+   "end": 2.814814814814815
   },
   {
    "word": "run",
-   "start": 4.1,
-   "end": 4.4
+   "start": 2.8703703703703702,
+   "end": 3.0370370370370368
   },
   {
-   "word": "in",
-   "start": 4.427,
-   "end": 4.48
+   "word": "here?",
+   "start": 3.081481481481481,
+   "end": 3.333333333333333
   },
   {
-   "word": "the",
-   "start": 4.5,
-   "end": 4.56
+   "word": "Greyed",
+   "start": 3.466666666666667,
+   "end": 4.074074074074074
   },
   {
-   "word": "environment",
-   "start": 4.607,
-   "end": 5.12
+   "word": "out,",
+   "start": 4.12962962962963,
+   "end": 4.37037037037037
   },
   {
-   "word": "you're",
-   "start": 5.14,
-   "end": 5.28
+   "word": "like",
+   "start": 4.4148148148148145,
+   "end": 4.592592592592593
   },
   {
-   "word": "looking",
-   "start": 5.32,
-   "end": 5.6
+   "word": "an",
+   "start": 4.617592592592592,
+   "end": 4.666666666666666
   },
   {
-   "word": "at.",
-   "start": 5.68,
-   "end": 5.92
+   "word": "inactive",
+   "start": 4.724074074074074,
+   "end": 5.185185185185184
+  },
+  {
+   "word": "ifdef.",
+   "start": 5.274074074074074,
+   "end": 5.703703703703703
   },
   {
    "word": "Switch",
-   "start": 6.023,
-   "end": 6.64
+   "start": 5.8092592592592585,
+   "end": 6.444444444444444
   },
   {
    "word": "to",
-   "start": 6.667,
-   "end": 6.72
+   "start": 6.469444444444444,
+   "end": 6.518518518518518
   },
   {
    "word": "Production,",
-   "start": 6.771,
-   "end": 7.36
+   "start": 6.565740740740741,
+   "end": 7.259259259259259
   },
   {
    "word": "and",
-   "start": 7.46,
-   "end": 7.76
+   "start": 7.277777777777778,
+   "end": 7.333333333333333
   },
   {
    "word": "it",
-   "start": 7.813,
-   "end": 7.92
+   "start": 7.3583333333333325,
+   "end": 7.4074074074074066
   },
   {
    "word": "updates.",
-   "start": 7.99,
-   "end": 8.64
+   "start": 7.472222222222222,
+   "end": 8.074074074074074
   },
   {
-   "word": "Hmm...",
-   "start": 8.96,
-   "end": 10.48
+   "word": "Only",
+   "start": 8.222222222222223,
+   "end": 8.814814814814813
   },
   {
-   "word": "and",
-   "start": 10.5,
-   "end": 10.56
+   "word": "when",
+   "start": 8.844444444444443,
+   "end": 8.962962962962962
   },
   {
-   "word": "it",
-   "start": 10.64,
-   "end": 10.8
-  },
-  {
-   "word": "only",
-   "start": 10.88,
-   "end": 11.2
-  },
-  {
-   "word": "greys",
-   "start": 11.28,
-   "end": 11.68
-  },
-  {
-   "word": "what's",
-   "start": 11.728,
-   "end": 12
+   "word": "it's",
+   "start": 8.987962962962962,
+   "end": 9.11111111111111
   },
   {
    "word": "certain.",
-   "start": 12.06,
-   "end": 12.56
-  },
-  {
-   "word": "No",
-   "start": 12.72,
-   "end": 13.04
-  },
-  {
-   "word": "false",
-   "start": 13.093,
-   "end": 13.36
-  },
-  {
-   "word": "alarms.",
-   "start": 13.451,
-   "end": 14.16
+   "start": 9.157407407407407,
+   "end": 9.555555555555555
   }
  ],
- "heard": "Okay, my favorite part. Flag lens grays out code that can't run in the environment you're looking at. Switch to production and it updates. Hmm. And it only grays what's certain. No false alarms",
- "accuracy": 0.8529411764705882,
+ "heard": "One, it knows what runs. Code that can't run here, grayed out, like an inactive #endif. Switch to production, and it updates, only when it's certain.",
+ "accuracy": 0.9230769230769231,
  "events": []
 }

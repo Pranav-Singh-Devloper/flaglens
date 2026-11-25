@@ -1,109 +1,85 @@
 {
  "id": "hook",
- "duration": 9.84,
+ "duration": 7.791678,
+ "tempo": 1.08,
  "words": [
   {
-   "word": "Okay...",
-   "start": 0.336,
-   "end": 0.8
-  },
-  {
-   "word": "see",
-   "start": 0.86,
-   "end": 1.04
+   "word": "See",
+   "start": 0.13425925925925924,
+   "end": 0.14814814814814814
   },
   {
    "word": "this",
-   "start": 1.088,
-   "end": 1.28
+   "start": 0.19259259259259257,
+   "end": 0.37037037037037035
   },
   {
    "word": "code?",
-   "start": 1.344,
-   "end": 1.68
+   "start": 0.42962962962962964,
+   "end": 0.7407407407407407
   },
   {
    "word": "It",
-   "start": 1.867,
-   "end": 2.24
+   "start": 0.9138888888888889,
+   "end": 1.2592592592592593
   },
   {
    "word": "shipped",
-   "start": 2.29,
-   "end": 2.64
+   "start": 1.296296296296296,
+   "end": 1.5555555555555554
   },
   {
    "word": "three",
-   "start": 2.707,
-   "end": 3.04
+   "start": 1.5925925925925926,
+   "end": 1.7777777777777777
   },
   {
    "word": "sprints",
-   "start": 3.12,
-   "end": 3.44
+   "start": 1.8148148148148147,
+   "end": 2.148148148148148
   },
   {
-   "word": "ago.",
-   "start": 3.52,
-   "end": 3.84
+   "word": "ago...",
+   "start": 2.2407407407407405,
+   "end": 3.1111111111111107
   },
   {
-   "word": "And",
-   "start": 4.02,
-   "end": 4.56
+   "word": "and",
+   "start": 3.1666666666666665,
+   "end": 3.333333333333333
   },
   {
    "word": "it",
-   "start": 4.64,
-   "end": 4.8
+   "start": 3.432407407407407,
+   "end": 3.6296296296296293
   },
   {
    "word": "has",
-   "start": 4.9,
-   "end": 5.2
+   "start": 3.7037037037037033,
+   "end": 3.925925925925926
   },
   {
    "word": "never",
-   "start": 5.28,
-   "end": 5.68
+   "start": 4.012037037037037,
+   "end": 4.444444444444444
   },
   {
    "word": "run.",
-   "start": 5.86,
-   "end": 6.48
+   "start": 4.555555555555555,
+   "end": 5.037037037037037
   },
   {
-   "word": "Not",
-   "start": 6.68,
-   "end": 7.28
-  },
-  {
-   "word": "once.",
-   "start": 7.36,
-   "end": 7.76
-  },
-  {
-   "word": "Can",
-   "start": 8.72,
-   "end": 8.96
-  },
-  {
-   "word": "you",
-   "start": 8.98,
-   "end": 9.04
-  },
-  {
-   "word": "spot",
-   "start": 9.104,
-   "end": 9.36
+   "word": "Spot",
+   "start": 6.0740740740740735,
+   "end": 6.518518518518518
   },
   {
    "word": "why?",
-   "start": 9.44,
-   "end": 9.84
+   "start": 6.592592592592593,
+   "end": 7.777777777777778
   }
  ],
- "heard": "Okay, see this code? It shipped three sprints ago, and it has never run, not once. [chuckles] Can you spot why?",
+ "heard": "See this code? It shipped three sprints ago, and it has never run. [chuckles] Spot why?",
  "accuracy": 1,
  "events": [
   "[chuckles]"

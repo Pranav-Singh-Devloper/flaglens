@@ -1,89 +1,105 @@
 {
  "id": "montage",
- "duration": 8.48,
+ "duration": 10.227778,
+ "tempo": 1.08,
  "words": [
   {
    "word": "Plus",
    "start": 0,
-   "end": 0.24
+   "end": 0.2222222222222222
   },
   {
-   "word": "drift",
-   "start": 0.36,
-   "end": 0.96
+   "word": "code",
+   "start": 0.28148148148148144,
+   "end": 0.5185185185185185
   },
   {
-   "word": "between",
-   "start": 1.01,
-   "end": 1.36
+   "word": "references",
+   "start": 0.5722222222222222,
+   "end": 1.111111111111111
   },
   {
-   "word": "staging",
-   "start": 1.42,
-   "end": 1.84
+   "word": "in",
+   "start": 1.160185185185185,
+   "end": 1.2592592592592593
   },
   {
-   "word": "and",
-   "start": 1.86,
-   "end": 1.92
+   "word": "Flagsmith,",
+   "start": 1.3333333333333333,
+   "end": 2.074074074074074
   },
   {
-   "word": "production,",
-   "start": 1.964,
-   "end": 2.8
+   "word": "overrides",
+   "start": 2.1555555555555554,
+   "end": 2.888888888888889
   },
   {
-   "word": "one-click",
-   "start": 2.86,
-   "end": 3.28
+   "word": "for",
+   "start": 2.9074074074074074,
+   "end": 2.962962962962963
   },
   {
-   "word": "typo",
-   "start": 3.36,
-   "end": 3.68
+   "word": "one",
+   "start": 3.0370370370370368,
+   "end": 3.259259259259259
   },
   {
-   "word": "fixes,",
-   "start": 3.787,
-   "end": 4.64
+   "word": "user,",
+   "start": 3.333333333333333,
+   "end": 4
+  },
+  {
+   "word": "versioned",
+   "start": 4.046296296296296,
+   "end": 4.777777777777778
+  },
+  {
+   "word": "environments,",
+   "start": 4.8092592592592585,
+   "end": 5.4074074074074066
+  },
+  {
+   "word": "drift,",
+   "start": 5.481481481481481,
+   "end": 6.222222222222221
+  },
+  {
+   "word": "typos,",
+   "start": 6.296296296296296,
+   "end": 7.037037037037036
   },
   {
    "word": "stale",
-   "start": 4.693,
-   "end": 4.96
+   "start": 7.099074074074074,
+   "end": 7.4074074074074066
   },
   {
-   "word": "flags...",
-   "start": 5.053,
-   "end": 5.92
+   "word": "flags.",
+   "start": 7.493518518518518,
+   "end": 8.074074074074074
   },
   {
-   "word": "all",
-   "start": 6.055,
-   "end": 6.085
-  },
-  {
-   "word": "free,",
-   "start": 6.165,
-   "end": 6.645
+   "word": "All",
+   "start": 8.185185185185185,
+   "end": 8.518518518518517
   },
   {
    "word": "on",
-   "start": 6.778,
-   "end": 7.045
+   "start": 8.592592592592592,
+   "end": 8.74074074074074
   },
   {
-   "word": "open",
-   "start": 7.093,
-   "end": 7.285
+   "word": "open-source",
+   "start": 8.785185185185185,
+   "end": 9.333333333333332
   },
   {
-   "word": "source.",
-   "start": 7.354,
-   "end": 8.485
+   "word": "Flagsmith.",
+   "start": 9.419444444444444,
+   "end": 10.222222222222221
   }
  ],
- "heard": "Plus drift between staging and production, one-click typo fixes, stale flags, all free on open source",
+ "heard": "Plus code references in Flagsmith, overrides for one user, versioned environments, drift, typos, stale flags, all on open source Flagsmith.",
  "accuracy": 1,
  "events": []
 }

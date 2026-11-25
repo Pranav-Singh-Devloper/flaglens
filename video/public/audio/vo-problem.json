@@ -1,151 +1,130 @@
 {
  "id": "problem",
- "duration": 14.56,
+ "duration": 9.643243,
+ "tempo": 1.08,
  "words": [
   {
    "word": "One",
    "start": 0,
-   "end": 0.24
+   "end": 0.14814814814814814
   },
   {
-   "word": "typo...",
-   "start": 0.368,
-   "end": 1.36
+   "word": "typo,",
+   "start": 0.2518518518518518,
+   "end": 0.8888888888888888
   },
   {
    "word": "and",
-   "start": 1.4,
-   "end": 1.52
+   "start": 0.9259259259259258,
+   "end": 1.037037037037037
   },
   {
    "word": "every",
-   "start": 1.56,
-   "end": 1.76
+   "start": 1.074074074074074,
+   "end": 1.2592592592592593
   },
   {
    "word": "Flagsmith",
-   "start": 1.84,
-   "end": 2.48
+   "start": 1.3333333333333333,
+   "end": 1.9259259259259258
   },
   {
    "word": "SDK",
-   "start": 2.64,
-   "end": 3.12
-  },
-  {
-   "word": "just",
-   "start": 3.184,
-   "end": 3.44
+   "start": 2.074074074074074,
+   "end": 2.5185185185185186
   },
   {
    "word": "quietly",
-   "start": 3.5,
-   "end": 3.92
+   "start": 2.5740740740740735,
+   "end": 2.962962962962963
   },
   {
    "word": "says:",
-   "start": 4.032,
-   "end": 4.64
+   "start": 3.0666666666666664,
+   "end": 3.6296296296296293
   },
   {
    "word": "off.",
-   "start": 4.92,
-   "end": 5.84
+   "start": 3.8333333333333326,
+   "end": 4.777777777777778
+  },
+  {
+   "word": "No",
+   "start": 4.888888888888888,
+   "end": 5.111111111111111
+  },
+  {
+   "word": "error.",
+   "start": 5.160185185185186,
+   "end": 5.481481481481481
   },
   {
    "word": "Because",
-   "start": 7.63,
-   "end": 7.84
+   "start": 5.5740740740740735,
+   "end": 6.222222222222221
   },
   {
    "word": "your",
-   "start": 7.872,
-   "end": 8
+   "start": 6.266666666666666,
+   "end": 6.444444444444444
   },
   {
    "word": "flags",
-   "start": 8.067,
-   "end": 8.4
+   "start": 6.518518518518518,
+   "end": 6.888888888888888
   },
   {
    "word": "live",
-   "start": 8.448,
-   "end": 8.64
+   "start": 6.9185185185185185,
+   "end": 7.037037037037036
   },
   {
    "word": "in",
-   "start": 8.667,
-   "end": 8.72
+   "start": 7.062037037037037,
+   "end": 7.111111111111111
   },
   {
    "word": "a",
-   "start": 8.76,
-   "end": 8.8
+   "start": 7.148148148148147,
+   "end": 7.185185185185184
   },
   {
    "word": "dashboard,",
-   "start": 8.864,
-   "end": 9.76
+   "start": 7.244444444444444,
+   "end": 7.925925925925926
   },
   {
    "word": "five",
-   "start": 9.824,
-   "end": 10.08
+   "start": 7.985185185185185,
+   "end": 8.222222222222223
   },
   {
    "word": "clicks",
-   "start": 10.137,
-   "end": 10.48
+   "start": 8.264814814814814,
+   "end": 8.518518518518517
   },
   {
    "word": "away",
-   "start": 10.544,
-   "end": 10.8
+   "start": 8.577777777777776,
+   "end": 8.814814814814813
   },
   {
    "word": "from",
-   "start": 10.832,
-   "end": 10.96
+   "start": 8.85925925925926,
+   "end": 9.037037037037036
   },
   {
    "word": "your",
-   "start": 10.992,
-   "end": 11.12
+   "start": 9.066666666666666,
+   "end": 9.185185185185185
   },
   {
    "word": "code.",
-   "start": 11.216,
-   "end": 12.08
-  },
-  {
-   "word": "Super",
-   "start": 12.6,
-   "end": 12.64
-  },
-  {
-   "word": "fun",
-   "start": 12.74,
-   "end": 13.04
-  },
-  {
-   "word": "at",
-   "start": 13.12,
-   "end": 13.28
-  },
-  {
-   "word": "two",
-   "start": 13.32,
-   "end": 13.44
-  },
-  {
-   "word": "A.M.",
-   "start": 13.56,
-   "end": 14.08
+   "start": 9.25925925925926,
+   "end": 9.62962962962963
   }
  ],
- "heard": "One typo and every Flagsmith SDK just quietly says off. [sighs] Because your flags live in a dashboard five clicks away from your code. Super fun at two AM",
- "accuracy": 0.9310344827586207,
- "events": [
-  "[sighs]"
- ]
+ "heard": "One typo and every Flagsmith SDK quietly says, \"Off.\" No error, because your flags live in a dashboard five clicks away from your code.",
+ "accuracy": 1,
+ "events": []
 }

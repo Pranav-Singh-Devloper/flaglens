@@ -1,107 +1,85 @@
 {
  "id": "testplan",
- "duration": 12.64,
+ "duration": 8.220136,
+ "tempo": 1.08,
  "words": [
   {
    "word": "Testing",
    "start": 0,
-   "end": 0.4
+   "end": 0.2962962962962963
   },
   {
    "word": "six",
-   "start": 0.46,
-   "end": 0.64
+   "start": 0.37037037037037035,
+   "end": 0.5925925925925926
   },
   {
-   "word": "flags",
-   "start": 0.707,
-   "end": 1.04
+   "word": "flags?",
+   "start": 0.6787037037037037,
+   "end": 1.1851851851851851
   },
   {
-   "word": "together?",
-   "start": 1.084,
-   "end": 1.84
+   "word": "Ninety-six",
+   "start": 1.3333333333333333,
+   "end": 2.222222222222222
   },
   {
-   "word": "That's",
-   "start": 1.92,
-   "end": 2.32
+   "word": "combinations...",
+   "start": 2.2962962962962963,
+   "end": 3.6296296296296293
   },
   {
-   "word": "ninety-six",
-   "start": 2.389,
-   "end": 3.04
-  },
-  {
-   "word": "combinations.",
-   "start": 3.102,
-   "end": 4.56
-  },
-  {
-   "word": "Or...",
-   "start": 5.68,
-   "end": 6.08
+   "word": "or",
+   "start": 3.7287037037037036,
+   "end": 3.925925925925926
   },
   {
    "word": "seven",
-   "start": 6.28,
-   "end": 7.28
+   "start": 4.025,
+   "end": 4.518518518518518
   },
   {
    "word": "runs",
-   "start": 7.344,
-   "end": 7.6
+   "start": 4.592592592592593,
+   "end": 4.888888888888888
   },
   {
    "word": "that",
-   "start": 7.632,
-   "end": 7.76
+   "start": 4.9185185185185185,
+   "end": 5.037037037037037
   },
   {
    "word": "cover",
-   "start": 7.827,
-   "end": 8.16
+   "start": 5.074074074074074,
+   "end": 5.259259259259259
   },
   {
    "word": "every",
-   "start": 8.213,
-   "end": 8.48
+   "start": 5.308333333333333,
+   "end": 5.555555555555555
   },
   {
    "word": "pair.",
-   "start": 8.56,
-   "end": 8.96
+   "start": 5.62962962962963,
+   "end": 6.0740740740740735
   },
   {
    "word": "Provably",
-   "start": 9.168,
-   "end": 10.16
+   "start": 6.207407407407406,
+   "end": 7.037037037037036
   },
   {
    "word": "the",
-   "start": 10.18,
-   "end": 10.24
+   "start": 7.111111111111111,
+   "end": 7.333333333333333
   },
   {
    "word": "minimum.",
-   "start": 10.29,
-   "end": 10.72
-  },
-  {
-   "word": "Thanks,",
-   "start": 11.691,
-   "end": 12.08
-  },
-  {
-   "word": "maths.",
-   "start": 12.147,
-   "end": 12.64
+   "start": 7.379629629629629,
+   "end": 8.222222222222223
   }
  ],
- "heard": "Testing six flags together? That's ninety-six combinations [sighs] or seven runs that cover every pair. Provably the minimum. [chuckles] Thanks, maths",
- "accuracy": 1,
- "events": [
-  "[sighs]",
-  "[chuckles]"
- ]
+ "heard": "Testing six flags, 96 combinations, or seven runs that cover every pair, provably the minimum.",
+ "accuracy": 0.875,
+ "events": []
 }

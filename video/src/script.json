@@ -2,60 +2,65 @@
  "voice": {
   "name": "Liam",
   "id": "TX3LPaxmHKxFdv7VOQHJ",
-  "model": "eleven_v3"
+  "model": "eleven_v3",
+  "tempo": 1.08
  },
  "scenes": [
   {
    "id": "hook",
-   "text": "[whispers] Okay... see this code? It shipped three sprints ago. And it has never run. Not once. [laughs] Can you spot why?"
+   "text": "[whispers] See this code? It shipped three sprints ago... and it has never run. [laughs] Spot why?"
   },
   {
    "id": "problem",
-   "text": "One typo... and every Flagsmith SDK just quietly says: off. [sighs] Because your flags live in a dashboard, five clicks away from your code. [sarcastic] Super fun at two A.M."
+   "text": "One typo, and every Flagsmith SDK quietly says: off. No error. Because your flags live in a dashboard, five clicks away from your code."
   },
   {
    "id": "title",
-   "text": "So I built FlagLens. [excited] Your Flagsmith flags, live, right inside VS Code. Made for self-hosted, open-source Flagsmith."
+   "text": "So I built FlagLens: self-hosted Flagsmith, live inside VS Code. It does three things. It knows what runs. It proves your rules. And it's live."
   },
   {
    "id": "devkit",
-   "text": "Two commands. Make up, make seed... and real Flagsmith is running in Docker, with a demo project. [laughs softly] Zero clicking."
-  },
-  {
-   "id": "connect",
-   "text": "Open the project, click connect, and boom: every flag lights up with its live state, in every environment."
-  },
-  {
-   "id": "toggle",
-   "text": "Flip one. Confirm. The shop changes on the very next request. No redeploy."
-  },
-  {
-   "id": "protected",
-   "text": "Production, though? [laughs] Nope. You type the flag's name first. And yes, there's an undo."
+   "text": "Make up, make seed: real open-source Flagsmith in Docker, demo included. Click connect... and every flag shows its state, in every environment."
   },
   {
    "id": "greyout",
-   "text": "Okay, my favourite part. FlagLens greys out code that can't run in the environment you're looking at. Switch to Production, and it updates. Hmm... and it only greys what's certain. No false alarms."
+   "text": "One. It knows what runs. Code that can't run here? Greyed out, like an inactive ifdef. Switch to Production, and it updates. Only when it's certain."
   },
   {
    "id": "preview",
-   "text": "But users aren't all the same. [curious] So what does Alice, our beta tester, actually get? FlagLens runs Flagsmith's own rules, locally: her segment, her bucket, her values. And it matches the real server. Fourteen thousand checks... zero misses."
+   "text": "Pick a user, say Alice, our beta tester. Now every line shows what she gets, and why. Flagsmith's own rules, run locally: fifteen thousand checks against the real server. Zero misses."
   },
   {
    "id": "rules",
-   "text": "It even checks your targeting rules. This EU override? It never fires. Pro plan grabs those users first. And this UK one... [laughs] changes absolutely nothing."
+   "text": "Two. It proves your rules. This EU override can never fire. Pro plan catches those users first."
+  },
+  {
+   "id": "segfix",
+   "text": "So fix it, right here. Move it up, confirm... [excited] and the warning's gone. Written straight to Flagsmith."
+  },
+  {
+   "id": "realtime",
+   "text": "Three. It's live. Someone flips a flag in the Flagsmith dashboard... and seconds later, your editor knows. The whole handler just went grey."
+  },
+  {
+   "id": "health",
+   "text": "And when monitoring marks a flag unhealthy, Flagsmith Feature Health tells FlagLens. It's right there on the code, and in the confirmation, before anyone touches it."
+  },
+  {
+   "id": "safety",
+   "text": "Every change is safe. One click in Development, and the shop updates. Production? [laughs] Nope. You type the flag name first."
   },
   {
    "id": "testplan",
-   "text": "Testing six flags together? That's ninety-six combinations. [sighs] Or... seven runs that cover every pair. Provably the minimum. [laughs softly] Thanks, maths."
+   "text": "Testing six flags? Ninety-six combinations... or seven runs that cover every pair. Provably the minimum."
   },
   {
    "id": "montage",
-   "text": "Plus drift between staging and production, one-click typo fixes, stale flags... [excited] all free, on open source."
+   "text": "Plus code references in Flagsmith, overrides for one user, versioned environments, drift, typos, stale flags. All on open-source Flagsmith."
   },
   {
    "id": "outro",
-   "text": "FlagLens. Clone it, make up, make seed, and you're live in five minutes. [laughs softly] Your future self will thank you."
+   "text": "FlagLens. It knows what runs, it proves your rules, and it's live. Make up, make seed, and you're in. [laughs softly] Go try it."
   }
  ]
 }

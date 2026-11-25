@@ -1,199 +1,165 @@
 {
  "id": "preview",
- "duration": 18.48,
+ "duration": 13.056236,
+ "tempo": 1.08,
  "words": [
   {
-   "word": "But",
+   "word": "Pick",
    "start": 0,
-   "end": 0.08
+   "end": 0.14814814814814814
   },
   {
-   "word": "users",
-   "start": 0.147,
-   "end": 0.48
+   "word": "a",
+   "start": 0.18518518518518517,
+   "end": 0.2222222222222222
   },
   {
-   "word": "aren't",
-   "start": 0.512,
-   "end": 0.72
+   "word": "user,",
+   "start": 0.2962962962962963,
+   "end": 0.7407407407407407
   },
   {
-   "word": "all",
-   "start": 0.74,
-   "end": 0.8
-  },
-  {
-   "word": "the",
-   "start": 0.84,
-   "end": 0.96
-  },
-  {
-   "word": "same.",
-   "start": 1.04,
-   "end": 1.44
-  },
-  {
-   "word": "So",
-   "start": 2.107,
-   "end": 2.128
-  },
-  {
-   "word": "what",
-   "start": 2.134,
-   "end": 2.16
-  },
-  {
-   "word": "does",
-   "start": 2.192,
-   "end": 2.32
+   "word": "say",
+   "start": 0.8148148148148148,
+   "end": 1.037037037037037
   },
   {
    "word": "Alice,",
-   "start": 2.413,
-   "end": 3.04
+   "start": 1.1231481481481482,
+   "end": 1.6296296296296295
   },
   {
    "word": "our",
-   "start": 3.06,
-   "end": 3.12
+   "start": 1.6481481481481481,
+   "end": 1.7037037037037037
   },
   {
    "word": "beta",
-   "start": 3.184,
-   "end": 3.44
+   "start": 1.748148148148148,
+   "end": 1.9259259259259258
   },
   {
-   "word": "tester,",
-   "start": 3.497,
-   "end": 4.08
+   "word": "tester.",
+   "start": 1.9898148148148147,
+   "end": 2.444444444444444
   },
   {
-   "word": "actually",
-   "start": 4.124,
-   "end": 4.48
+   "word": "Now",
+   "start": 2.592592592592592,
+   "end": 3.0370370370370368
   },
   {
-   "word": "get?",
-   "start": 4.56,
-   "end": 4.96
+   "word": "every",
+   "start": 3.0861111111111112,
+   "end": 3.333333333333333
   },
   {
-   "word": "FlagLens",
-   "start": 5.184,
-   "end": 6.4
+   "word": "line",
+   "start": 3.4074074074074074,
+   "end": 3.7037037037037033
   },
   {
-   "word": "runs",
-   "start": 6.464,
-   "end": 6.72
+   "word": "shows",
+   "start": 3.765740740740741,
+   "end": 4.074074074074074
+  },
+  {
+   "word": "what",
+   "start": 4.103703703703704,
+   "end": 4.222222222222221
+  },
+  {
+   "word": "she",
+   "start": 4.259259259259259,
+   "end": 4.37037037037037
+  },
+  {
+   "word": "gets,",
+   "start": 4.459259259259259,
+   "end": 4.962962962962963
+  },
+  {
+   "word": "and",
+   "start": 5,
+   "end": 5.111111111111111
+  },
+  {
+   "word": "why.",
+   "start": 5.222222222222221,
+   "end": 5.62962962962963
   },
   {
    "word": "Flagsmith's",
-   "start": 6.787,
-   "end": 7.44
+   "start": 5.7407407407407405,
+   "end": 6.592592592592593
   },
   {
    "word": "own",
-   "start": 7.5,
-   "end": 7.68
+   "start": 6.666666666666666,
+   "end": 6.888888888888888
   },
   {
    "word": "rules,",
-   "start": 7.76,
-   "end": 8.32
+   "start": 6.975,
+   "end": 7.703703703703703
+  },
+  {
+   "word": "run",
+   "start": 7.777777777777778,
+   "end": 8
   },
   {
    "word": "locally:",
-   "start": 8.38,
-   "end": 9.28
+   "start": 8.055555555555554,
+   "end": 8.962962962962962
   },
   {
-   "word": "her",
-   "start": 9.32,
-   "end": 9.44
-  },
-  {
-   "word": "segment,",
-   "start": 9.5,
-   "end": 10.24
-  },
-  {
-   "word": "her",
-   "start": 10.28,
-   "end": 10.4
-  },
-  {
-   "word": "bucket,",
-   "start": 10.457,
-   "end": 11.12
-  },
-  {
-   "word": "her",
-   "start": 11.16,
-   "end": 11.28
-  },
-  {
-   "word": "values.",
-   "start": 11.371,
-   "end": 12
-  },
-  {
-   "word": "And",
-   "start": 12.16,
-   "end": 12.64
-  },
-  {
-   "word": "it",
-   "start": 12.667,
-   "end": 12.72
-  },
-  {
-   "word": "matches",
-   "start": 12.78,
-   "end": 13.2
-  },
-  {
-   "word": "the",
-   "start": 13.24,
-   "end": 13.36
-  },
-  {
-   "word": "real",
-   "start": 13.44,
-   "end": 13.76
-  },
-  {
-   "word": "server.",
-   "start": 13.829,
-   "end": 14.32
-  },
-  {
-   "word": "Fourteen",
-   "start": 14.48,
-   "end": 15.36
+   "word": "fifteen",
+   "start": 9.018518518518517,
+   "end": 9.407407407407407
   },
   {
    "word": "thousand",
-   "start": 15.413,
-   "end": 15.84
+   "start": 9.473148148148148,
+   "end": 10
   },
   {
-   "word": "checks...",
-   "start": 15.931,
-   "end": 17.36
+   "word": "checks",
+   "start": 10.063888888888888,
+   "end": 10.444444444444443
   },
   {
-   "word": "zero",
-   "start": 17.424,
-   "end": 17.68
+   "word": "against",
+   "start": 10.472222222222221,
+   "end": 10.666666666666666
+  },
+  {
+   "word": "the",
+   "start": 10.703703703703704,
+   "end": 10.814814814814813
+  },
+  {
+   "word": "real",
+   "start": 10.85925925925926,
+   "end": 11.037037037037036
+  },
+  {
+   "word": "server.",
+   "start": 11.100925925925926,
+   "end": 11.555555555555555
+  },
+  {
+   "word": "Zero",
+   "start": 11.703703703703704,
+   "end": 12.296296296296294
   },
   {
    "word": "misses.",
-   "start": 17.771,
-   "end": 18.48
+   "start": 12.380555555555555,
+   "end": 13.037037037037036
   }
  ],
- "heard": "But users aren't all the same. So what does Alice, our beta tester, actually get? FlagLens runs Flagsmith's own rules locally, her segment, her bucket, her values, and it matches the real server. Fourteen thousand checks, zero misses",
- "accuracy": 1,
+ "heard": "Pick a user, say Alice, our beta tester. Now every line shows what she gets and why. Flagsmith's own rules run locally. 15,000 checks against the real server, zero misses.",
+ "accuracy": 0.9354838709677419,
  "events": []
 }

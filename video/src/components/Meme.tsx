@@ -73,13 +73,13 @@ export const Meme: React.FC<{ name: MemeName; caption?: string; tilt?: number; v
   );
 };
 
-/** "14,400 / 14,400": FlagLens's local evaluation against the live server, counting up. */
+/** "15,050 / 15,050": FlagLens's local evaluation against the live server, counting up. */
 export const StatCard: React.FC<{ countAt: number; missesAt: number }> = ({ countAt, missesAt }) => {
   const f = useCurrentFrame();
   const t = f / FPS;
   const { fps } = useVideoConfig();
   const k = spring({ frame: f, fps, config: { damping: 16, stiffness: 170 } });
-  const n = Math.round(14400 * clamp01((t - countAt) / 1.3) ** 0.6);
+  const n = Math.round(15050 * clamp01((t - countAt) / 1.3) ** 0.6);
   const miss = spring({ frame: f - missesAt * fps, fps, config: { damping: 12, stiffness: 220 } });
   return (
     <div
@@ -101,7 +101,7 @@ export const StatCard: React.FC<{ countAt: number; missesAt: number }> = ({ coun
     >
       <div style={{ color: C.muted, fontSize: 22, fontWeight: 600, marginBottom: 10 }}>Local evaluation vs. the live Flagsmith server</div>
       <div style={{ color: C.text, fontSize: 84, fontWeight: 800, letterSpacing: -3, fontVariantNumeric: 'tabular-nums' }}>
-        {n.toLocaleString('en-GB')} <span style={{ color: C.muted, fontSize: 48 }}>/ 14,400</span>
+        {n.toLocaleString('en-GB')} <span style={{ color: C.muted, fontSize: 48 }}>/ 15,050</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14 }}>
         <div

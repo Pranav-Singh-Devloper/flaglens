@@ -1,106 +1,120 @@
 {
  "id": "devkit",
- "duration": 9.68,
+ "duration": 9.56873,
+ "tempo": 1.08,
  "words": [
   {
-   "word": "Two",
-   "start": 0,
-   "end": 0.16
-  },
-  {
-   "word": "commands.",
-   "start": 0.213,
-   "end": 0.72
-  },
-  {
    "word": "Make",
-   "start": 0.848,
-   "end": 1.36
+   "start": 0,
+   "end": 0.14814814814814814
   },
   {
    "word": "up,",
-   "start": 1.467,
-   "end": 1.76
+   "start": 0.2222222222222222,
+   "end": 0.4444444444444444
   },
   {
    "word": "make",
-   "start": 1.888,
-   "end": 2.4
+   "start": 0.4888888888888889,
+   "end": 0.6666666666666666
   },
   {
-   "word": "seed...",
-   "start": 2.496,
-   "end": 3.28
-  },
-  {
-   "word": "and",
-   "start": 3.42,
-   "end": 3.84
+   "word": "seed:",
+   "start": 0.7703703703703703,
+   "end": 1.4074074074074074
   },
   {
    "word": "real",
-   "start": 3.936,
-   "end": 4.32
+   "start": 1.4666666666666666,
+   "end": 1.7037037037037037
+  },
+  {
+   "word": "open-source",
+   "start": 1.7629629629629628,
+   "end": 2.3703703703703702
   },
   {
    "word": "Flagsmith",
-   "start": 4.4,
-   "end": 5.12
-  },
-  {
-   "word": "is",
-   "start": 5.173,
-   "end": 5.28
-  },
-  {
-   "word": "running",
-   "start": 5.32,
-   "end": 5.6
+   "start": 2.444444444444444,
+   "end": 3.0370370370370368
   },
   {
    "word": "in",
-   "start": 5.653,
-   "end": 5.76
+   "start": 3.0861111111111112,
+   "end": 3.185185185185185
   },
   {
    "word": "Docker,",
-   "start": 5.817,
-   "end": 6.24
-  },
-  {
-   "word": "with",
-   "start": 6.304,
-   "end": 6.56
-  },
-  {
-   "word": "a",
-   "start": 6.6,
-   "end": 6.64
+   "start": 3.249074074074074,
+   "end": 3.8518518518518516
   },
   {
    "word": "demo",
-   "start": 6.704,
-   "end": 6.96
+   "start": 3.911111111111111,
+   "end": 4.148148148148148
   },
   {
-   "word": "project.",
-   "start": 7.03,
-   "end": 7.6
+   "word": "included.",
+   "start": 4.205555555555555,
+   "end": 4.7407407407407405
   },
   {
-   "word": "Zero",
-   "start": 8.4,
-   "end": 9.04
+   "word": "Click",
+   "start": 4.863888888888889,
+   "end": 5.481481481481481
   },
   {
-   "word": "clicking.",
-   "start": 9.084,
-   "end": 9.68
+   "word": "connect...",
+   "start": 5.537037037037037,
+   "end": 6.296296296296296
+  },
+  {
+   "word": "and",
+   "start": 6.314814814814815,
+   "end": 6.37037037037037
+  },
+  {
+   "word": "every",
+   "start": 6.432407407407407,
+   "end": 6.7407407407407405
+  },
+  {
+   "word": "flag",
+   "start": 6.814814814814815,
+   "end": 7.111111111111111
+  },
+  {
+   "word": "shows",
+   "start": 7.160185185185185,
+   "end": 7.4074074074074066
+  },
+  {
+   "word": "its",
+   "start": 7.444444444444443,
+   "end": 7.555555555555555
+  },
+  {
+   "word": "state,",
+   "start": 7.617592592592592,
+   "end": 8
+  },
+  {
+   "word": "in",
+   "start": 8.123148148148147,
+   "end": 8.370370370370368
+  },
+  {
+   "word": "every",
+   "start": 8.432407407407407,
+   "end": 8.74074074074074
+  },
+  {
+   "word": "environment.",
+   "start": 8.802777777777777,
+   "end": 9.555555555555555
   }
  ],
- "heard": "Two commands. Make up, make seed, and Real Flag Smith is running in Docker with a demo project. [laughs] Zero clicking",
+ "heard": "Make up, make seed. Real open source Flagsmith in Docker, demo included. Click connect, and every flag shows its state in every environment.",
  "accuracy": 1,
- "events": [
-  "[laughs]"
- ]
+ "events": []
 }

@@ -1,104 +1,120 @@
 {
  "id": "outro",
- "duration": 6.64,
+ "duration": 7.777778,
+ "tempo": 1.08,
  "words": [
   {
    "word": "FlagLens.",
    "start": 0,
-   "end": 0.8
+   "end": 0.6666666666666666
   },
   {
-   "word": "Clone",
-   "start": 0.907,
-   "end": 1.44
+   "word": "It",
+   "start": 0.7898148148148147,
+   "end": 1.037037037037037
   },
   {
-   "word": "it,",
-   "start": 1.467,
-   "end": 1.76
+   "word": "knows",
+   "start": 1.074074074074074,
+   "end": 1.2592592592592593
   },
   {
-   "word": "make",
-   "start": 1.824,
-   "end": 2.08
+   "word": "what",
+   "start": 1.3037037037037036,
+   "end": 1.4814814814814814
   },
   {
-   "word": "up,",
-   "start": 2.16,
-   "end": 2.48
+   "word": "runs,",
+   "start": 1.5703703703703702,
+   "end": 2.148148148148148
   },
   {
-   "word": "make",
-   "start": 2.528,
-   "end": 2.72
+   "word": "it",
+   "start": 2.1972222222222224,
+   "end": 2.2962962962962963
   },
   {
-   "word": "seed,",
-   "start": 2.8,
-   "end": 3.2
+   "word": "proves",
+   "start": 2.3388888888888886,
+   "end": 2.592592592592592
+  },
+  {
+   "word": "your",
+   "start": 2.622222222222222,
+   "end": 2.7407407407407405
+  },
+  {
+   "word": "rules,",
+   "start": 2.814814814814815,
+   "end": 3.4074074074074074
   },
   {
    "word": "and",
-   "start": 3.24,
-   "end": 3.36
+   "start": 3.444444444444444,
+   "end": 3.5555555555555554
+  },
+  {
+   "word": "it's",
+   "start": 3.5805555555555553,
+   "end": 3.7037037037037033
+  },
+  {
+   "word": "live.",
+   "start": 3.8074074074074074,
+   "end": 4.296296296296296
+  },
+  {
+   "word": "Make",
+   "start": 4.385185185185184,
+   "end": 4.7407407407407405
+  },
+  {
+   "word": "up,",
+   "start": 4.814814814814815,
+   "end": 5.111111111111111
+  },
+  {
+   "word": "make",
+   "start": 5.17037037037037,
+   "end": 5.4074074074074066
+  },
+  {
+   "word": "seed,",
+   "start": 5.481481481481481,
+   "end": 6.0740740740740735
+  },
+  {
+   "word": "and",
+   "start": 6.092592592592593,
+   "end": 6.148148148148147
   },
   {
    "word": "you're",
-   "start": 3.38,
-   "end": 3.52
+   "start": 6.185185185185184,
+   "end": 6.37037037037037
   },
   {
-   "word": "live",
-   "start": 3.568,
-   "end": 3.76
+   "word": "in.",
+   "start": 6.444444444444444,
+   "end": 6.666666666666666
   },
   {
-   "word": "in",
-   "start": 3.813,
-   "end": 3.92
+   "word": "Go",
+   "start": 7.2212962962962965,
+   "end": 7.270370370370371
   },
   {
-   "word": "five",
-   "start": 3.984,
-   "end": 4.24
+   "word": "try",
+   "start": 7.325925925925925,
+   "end": 7.492592592592593
   },
   {
-   "word": "minutes.",
-   "start": 4.29,
-   "end": 4.64
-  },
-  {
-   "word": "Your",
-   "start": 5.104,
-   "end": 5.12
-  },
-  {
-   "word": "future",
-   "start": 5.177,
-   "end": 5.52
-  },
-  {
-   "word": "self",
-   "start": 5.584,
-   "end": 5.84
-  },
-  {
-   "word": "will",
-   "start": 5.872,
-   "end": 6
-  },
-  {
-   "word": "thank",
-   "start": 6.053,
-   "end": 6.32
-  },
-  {
-   "word": "you.",
-   "start": 6.36,
-   "end": 6.64
+   "word": "it.",
+   "start": 7.541666666666666,
+   "end": 7.788888888888889
   }
  ],
- "heard": "Flag lens. Clone it, make up, make seed, and you're live in five minutes. Your future self will thank you",
+ "heard": "Flag Lens. It knows what runs, it proves your rules, and it's live. Make up, make seed, and you're in. Go try it.",
  "accuracy": 1,
  "events": []
 }

@@ -107,7 +107,17 @@ async function vo(only) {
     // Keep the best take, not the last one.
     writeFileSync(mp3, best.audio);
     const c = best.check;
-    writeFileSync(meta, JSON.stringify({ id: scene.id, duration: duration(mp3), words: words(best.alignment), heard: c.heard, accuracy: c.accuracy, events: c.events }, null, 1));
+    // A slightly faster delivery than the voice's natural pace keeps the video brisk. atempo keeps the pitch, and the
+    // word timings are scaled to match.
+    const tempo = script.voice.tempo ?? 1;
+    let wordTimes = words(best.alignment);
+    if (tempo !== 1) {
+      const tmp = `${mp3}.tmp.mp3`;
+      execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', mp3, '-filter:a', `atempo=${tempo}`, '-b:a', '128k', tmp]);
+      execFileSync('mv', [tmp, mp3]);
+      wordTimes = wordTimes.map((w) => ({ ...w, start: w.start / tempo, end: w.end / tempo }));
+    }
+    writeFileSync(meta, JSON.stringify({ id: scene.id, duration: duration(mp3), tempo, words: wordTimes, heard: c.heard, accuracy: c.accuracy, events: c.events }, null, 1));
   }
 }
 
@@ -190,12 +200,12 @@ async function music() {
 /** Free-tier music: the Music API needs a paid plan, so build the bed from seamless sound-generation loops. */
 const BEDS = {
   'music-loop': {
-    text: 'Instrumental background music loop for a modern tech product video: confident driving electronic beat at 120 BPM, warm analog synth bass, bright arpeggiated plucks, clean punchy drums, uplifting, polished, seamless loop, no vocals',
+    text: 'Instrumental background music loop for a modern tech product video: confident, energetic electronic beat at 128 BPM, warm analog synth bass, bright arpeggiated plucks, clean punchy drums, uplifting, polished, seamless loop, no vocals',
     seconds: 30,
     loop: true,
   },
   'music-end': {
-    text: 'Short uplifting electronic music ending sting for a tech product video, final synth chord with drum hit and shimmering tail, 120 BPM, no vocals',
+    text: 'Short uplifting electronic music ending sting for a tech product video, final synth chord with drum hit and shimmering tail, 128 BPM, no vocals',
     seconds: 8,
     loop: false,
   },

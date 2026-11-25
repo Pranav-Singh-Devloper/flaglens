@@ -41,6 +41,11 @@ scripts/record-dashboard.mjs   └─ scripts/manim.sh   vo + word timings, sfx,
   used for one to three seconds with its watermark intact, and credited in the outro.
 - **ElevenLabs** also provides the sound effects (including the meme boom and record scratch) and a seamless music
   loop. Every file is cached, so re-running never spends credits twice.
+- **Story.** The edit is built around three promises (it knows what runs, it proves your rules, it's live): a card
+  names them after the title, each proving scene keeps its promise in the corner, and a recap card ends the video.
+  The real-time scene captures the Flagsmith dashboard and VS Code together and times the update with a stopwatch.
+- **Pace.** The voiceover is sped up slightly after generation (`tempo` in `src/script.json`, ffmpeg `atempo`, which
+  keeps the pitch) and its word timings are scaled to match.
 - **Manim** scenes from the first cut are still in `manim/`; the current edit doesn't use them.
 
 ## Rebuild it
@@ -52,7 +57,7 @@ node scripts/audio.mjs vo && node scripts/audio.mjs sfx && node scripts/audio.mj
 node scripts/record.mjs && node scripts/record-dashboard.mjs                               # real footage (opens VS Code)
 node scripts/memes.mjs                                                                     # reaction clips (not committed)
 node scripts/export-data.mjs
-node scripts/stills-at.mjs out/stills 10.3 74.5 115.5                                      # optional: check moments
+node scripts/stills-at.mjs out/stills 28 70 88 104                                              # optional: check moments
 npm run render                                                                             # → out/flaglens-demo.mp4
 ```
 
