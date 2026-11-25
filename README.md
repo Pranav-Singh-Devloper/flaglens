@@ -40,10 +40,14 @@ a check against your own Flagsmith server.
 | **Preview as any user**: pick an identity and traits; every CodeLens, hover and greyed line shows what *they* get, and which segment, split bucket or override decided | Flagsmith's own engine, run locally. **15,050 of 15,050** results match the live server across every rule operator and flag dependencies (`make verify-engine`). |
 | **Targeting-rule check**: overrides that can never apply (shadowed), change nothing (redundant), segments that match nobody, defaults nobody gets | Each finding is **proven for every possible user**: trait values are split into equivalence classes, and anything that can't be split is over-approximated. |
 | **Smallest test plan** for a set of flags: every pair of values meets in some run | **96 combinations → 7 runs**, provably minimal (Kleitman–Spencer for on/off flags, plus a lower bound we prove for mixed flags). |
+| **Fix targeting where you read it**: set a flag for one user, add or reorder segment overrides, and the rule check re-runs at once | Every edit is a confirmed Flagsmith write. Move the shadowed `pro_eu` override up and its finding disappears. |
+| **Real time**: a change made anywhere shows up in the editor in about two seconds | A Flagsmith organisation webhook to a listener in the editor; every call's HMAC-SHA256 signature is checked. |
 
 And the essentials, done carefully: live state for every environment above each flag, safe toggles with typed
-confirmation for Production and Undo, environment drift and a Markdown diff for PRs, typo detection with quick fixes,
-archived and stale flags (free on open-source Flagsmith), autocomplete, history.
+confirmation for Production and Undo (published as a new version in v2-versioned environments), environment drift and
+a Markdown diff for PRs, typo detection with quick fixes, archived and stale flags (free on open-source Flagsmith),
+autocomplete, history. Plus Flagsmith's own flag-management data, in the editor: flag dependencies, Feature Health
+alerts, lifecycle stages, owners and Code References.
 
 ![Toggling a flag from VS Code with FlagLens; the demo shop picks it up on its next request](docs/demo.gif)
 
@@ -61,8 +65,9 @@ verification method and 27 references.
   FlagLens does nothing.
 - **Uses Flagsmith's newer open-source features, not just flags and environments.** Flag dependencies, Code
   References (FlagLens publishes them, and Flagsmith then shows each flag's files and lines and moves it through its
-  lifecycle), lifecycle stages, flag owners and Feature Health alerts all show up where the flag is used. See
-  [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses).
+  lifecycle), lifecycle stages, flag owners and Feature Health alerts all show up where the flag is used. Organisation
+  webhooks give real-time updates; identity overrides, segment overrides and v2 feature versions are edited from the
+  editor; trait keys feed *Preview as*. See [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses).
 - **Fits the Flagsmith toolchain.** It reads the Flagsmith CLI's `flagsmith.json` and finds flags with the same pattern
   as Flagsmith's Code References scanner, in JS/TS, Python, Go, Java, Kotlin, C#, Dart and Ruby.
 - **Tested against the real thing.** 190 unit tests, 22 end-to-end tests in a real VS Code against self-hosted
@@ -92,6 +97,9 @@ It is a community project, not an official Flagsmith product.
 | ![Typo quick fix](docs/screenshots/typo-quick-fix.png) **Typo detection**: unknown keys are underlined, with *Replace with…* and *Create flag…* quick fixes. | ![Typed confirmation for Production](docs/screenshots/protected-confirm.png) **Protected environments**: changing Production means typing the flag's name. |
 | ![Hover card](docs/screenshots/hover.png) **Hover card**: every environment's state and value, variant weights, overrides, last change, one-click toggles. | ![The demo shop](docs/screenshots/demo-shop.png) **The demo shop** (`make demo`): banner, checkout and button colour all come from self-hosted Flagsmith. |
 | ![Problems panel with archived and stale flags](docs/screenshots/archived-and-stale.png) **Archived and stale flags** show up as problems, computed locally on open-source Flagsmith. | ![The self-hosted Flagsmith dashboard](docs/screenshots/dashboard-production.png) **Same data as the dashboard**: every value comes from your self-hosted Flagsmith. |
+| ![Segment override editor](docs/screenshots/segment-overrides.png) **Edit segment overrides** in priority order, right from the editor. Move `pro_eu` above `pro_plan` and the rule check's finding disappears. | ![Set a flag for the previewed user](docs/screenshots/user-override.png) **Set a flag for one user**: an identity override for the user you are previewing as, with Undo. |
+| ![Feature Health and real time in the editor](docs/screenshots/flagsmith-hover.png) **Feature Health in the hover**: Flagsmith reports `new_checkout` unhealthy in Production, with the reason. The lightning bolt in the status bar means real-time updates are on. | ![Trait suggestions](docs/screenshots/trait-suggestions.png) **Trait suggestions** for a custom identity, from the traits the segment rules read. |
+| ![Code References in the Flagsmith dashboard](docs/screenshots/dash-code-refs.png) **Code References in Flagsmith**, published by FlagLens: each flag gets a GitHub badge with its count, and links to the lines in this repository. | ![Feature Health in the Flagsmith dashboard](docs/screenshots/dash-health.png) **The same alert in Flagsmith**: the Feature Health event that FlagLens shows in the editor (`make alert`). |
 
 ## Why
 
@@ -191,6 +199,16 @@ Finally open the demo workspace: **File → Open Folder… → `flaglens/example
   **7 runs instead of 96**.
 - The Flagsmith dashboard at http://localhost:8000 shows the same change. Log in with
   `admin@flaglens.local` / `FlagLens-demo-2026`.
+- **Real time:** the status bar shows a lightning bolt (`⚑ Demo Shop · Development ⚡`). Toggle a flag in the
+  dashboard: the CodeLens in VS Code changes within about two seconds.
+- **Fix the rule from the editor:** hover `rate_limit_per_minute` → **Segment overrides…** → Production → `pro_eu` →
+  **Move up**. After confirming, the "never applies" finding is gone. (`make seed` puts the mistake back.)
+- **One user only:** while previewing as *Beta tester*, hover a flag → **Set for Beta tester…** → *Turn OFF*. Only
+  that user changes; *Everyone* still sees the default.
+- **Feature Health:** `make alert` marks `new_checkout` unhealthy in Production: on the next refresh (within half a minute) its
+  CodeLens shows *unhealthy*, the hover shows the reason, and toggling it warns you. `make recover` clears it.
+- **Code References:** run `make code-refs` (or **FlagLens: Publish Code References to Flagsmith…**), then open
+  `new_checkout` in the dashboard: its *Code References* list links to the lines in this repository.
 
 Something wrong? See [Troubleshooting](#troubleshooting).
 
@@ -208,13 +226,14 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 
 | Command | |
 |---|---|
-| FlagLens: Connect to Flagsmith… / Sign Out | Connect, or forget the stored API key |
+| FlagLens: Connect to Flagsmith… / Sign Out (Forget API Key) | Connect, or forget the stored API key |
 | FlagLens: Toggle Flag… / Set Flag Value… | Change a flag in one environment (with confirmation) |
 | FlagLens: Create Flag in Flagsmith… | Create a flag (starts OFF everywhere) |
 | FlagLens: Open Environment Matrix | Every flag × environment, differences highlighted, click to toggle |
 | FlagLens: Copy Environment Diff as Markdown… | Paste-ready table of differences between two environments |
 | FlagLens: Show Flag History… | Audit log (if the server exposes it), last change per environment, changes made with FlagLens |
 | FlagLens: Find Unused Flags in Workspace | Project flags that no file references |
+| Sidebar: click a flag / right-click | *Flag Actions…* (toggle, set value, history, …); right-click for *Open in Flagsmith Dashboard* and *Copy Flag Key* |
 | FlagLens: Set Flag for Previewed User… | Identity override for the user you are previewing as (also a link in the hover) |
 | FlagLens: Edit Segment Overrides… | A flag's overrides in one environment, in priority order: add, change, reorder, remove (also a link in the hover) |
 | FlagLens: Publish Code References to Flagsmith… | Upload every flag reference in this repository (git HEAD, GitHub remote) to Flagsmith's Code References, after a confirmation |
@@ -275,6 +294,11 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | `make down` / `make reset` | `npm run devkit:down` / `devkit:reset` | Stop / stop **and delete all data** |
 | `make logs` | `npm run devkit:logs` | Follow Flagsmith logs |
 | `make mcp` | `npm run devkit:mcp` | Also start Flagsmith's MCP server on :8002 |
+| `make help` | | List every target |
+| `make install` / `make ext` / `make package` | `npm install` / `npm run build` / `npm run package` | Install dependencies, build the extension, build `extension/flaglens.vsix` |
+| `make install-ext` | | Build the `.vsix` and install it with the `code` command |
+| `make test` / `make lint` / `make typecheck` / `make check` | `npm test` / `npm run lint` / `npm run typecheck` / `npm run check` | Unit tests, lint, type-check, or all three |
+| `make verify-engine` | `npm run verify:engine -w extension` | Compare FlagLens's local evaluation with the running Flagsmith |
 | `make code-refs` | `npm run code-refs -w extension` | Publish this repository's flag references to Flagsmith's Code References (what a CI job would run) |
 | `make alert` / `make recover` | `node devkit/health.mjs alert\|recover` | Mark `new_checkout` unhealthy (or healthy again) in Production through the Feature Health webhook, as a monitoring tool would |
 
@@ -340,8 +364,16 @@ flowchart LR
   all 14 rule operators), which powers *Preview as* and tells the greying-out exactly which flags are the same for
   every user.
 - **Management API, write.** Toggles and values are `PATCH /environments/{key}/featurestates/{id}/` on the
-  environment's default state (raw JSON values keep their type). New flags are `POST /projects/{id}/features/`. Every
-  write also appears in Flagsmith's own audit log.
+  environment's default state (raw JSON values keep their type); in v2-versioned environments they are one
+  `POST /environments/{id}/features/{id}/versions/` that creates and publishes a version. New flags are
+  `POST /projects/{id}/features/`. Identity overrides use `/environments/{key}/identities/` (find or create the
+  identity) and its `featurestates/`. Segment overrides use `create-segment-override/`, `PUT /features/featurestates/{id}/`,
+  `DELETE /features/feature-segments/{id}/` and `update-priorities/`, with the project's segments from
+  `GET /projects/{id}/segments/`. Every write also appears in Flagsmith's own audit log.
+- **Webhooks.** On connect FlagLens registers `POST /organisations/{id}/webhooks/` with a random secret, receives
+  `FLAG_UPDATED` and `AUDIT_LOG_CREATED` events, refreshes, and deletes the webhook when the window closes.
+- **Trait keys.** `GET /environments/{key}/trait-keys/` (traits stored on identities) plus the traits segment rules
+  read become suggestions when you preview as a custom identity.
 - **Newer project APIs.** The features list with `?environment=` adds each flag's lifecycle stage, code-reference
   count and owners. `GET /projects/{id}/feature-health/events/` gives the latest Feature Health status per flag and
   environment. *Publish Code References* sends `POST /projects/{id}/code-references/` with the repository, the commit
@@ -349,7 +381,10 @@ flowchart LR
   environment document as system segments.
 - **SDK API.** The demo shop uses the official `@flagsmith/nodejs` SDK with remote evaluation and per-visitor
   identities, so it serves multivariate variants and picks up changes on the next request.
-- **Dev kit.** The seed uses only the public REST API (signup → organisation → project → environments → tags → flags →
+- **Dev kit.** It runs Flagsmith's official Docker images (API and task processor; the task processor sends the
+  webhooks) and allows `host.docker.internal` in `SSRF_ALLOWED_HOSTS` so Flagsmith may call the editor. The seed also
+  creates a Feature Health *Webhook* provider (`POST /projects/{id}/feature-health/providers/`) for `make alert`.
+  The seed uses only the public REST API (signup → organisation → project → environments → tags → flags →
   Organisation API key), so it doubles as a worked example of bootstrapping Flagsmith without clicking.
 
 ## How much of Flagsmith it uses
@@ -374,6 +409,8 @@ the open-source edition offers, then built on as much of it as an editor tool ca
 | | v2 feature versioning (versions, publish) | Toggles and value changes publish a version |
 | | Trait keys | Suggestions when previewing as a custom identity |
 | | Flagsmith CLI (`flagsmith.json`), Code References scanner pattern, Node SDK, MCP server | Config, flag detection, demo shop, `make mcp` |
+| | Flagsmith's open-source evaluation engine | Ported to TypeScript for local evaluation; verified against the server (15,050 checks) |
+| | Official Docker images (`flagsmith/flagsmith` API and task processor, `flagsmith/flagsmith-mcp`) | The dev kit: `make up`, `make mcp` |
 | **Not yet** (open source) | Metadata fields, usage analytics, segment and flag-dependency editing, Edge identities | Analytics needs server-side setup; the others are dashboard work that doesn't need the code next to it |
 | **Not in open source** | Change requests (4-eyes approval), scheduled changes, real-time flag updates (SSE), full audit-log visibility, SSO and role-based access | Webhooks give FlagLens real-time updates anyway; its typed confirmation for protected environments and its change journal cover part of change requests and the audit log |
 
@@ -401,24 +438,28 @@ distinct length-N column that starts with 0 and has ⌈N/2⌉ ones. That is 6 ru
 ## Architecture
 
 ```
-devkit/            compose.yaml (pinned 2.295.2 + optional MCP), seed.mjs + seed-data.json (zero-dependency Node)
+devkit/            compose.yaml (pinned 2.295.2 + optional MCP), seed.mjs + seed-data.json (zero-dependency Node),
+                   health.mjs (make alert / make recover)
 extension/src/
   api/             typed Management API client: fetch, Api-Key auth, pagination, timeouts, typed errors
   core/            PURE logic, unit-tested: scanner (Code References pattern), model (matrix), analysis (drift,
                    stale, typo suggestions, name rules), report (Markdown diff), engine (Flagsmith's evaluation
                    rules, ported), deadcode (lexer + if/else/ternary/alias analysis with three-valued logic),
-                   rules (override anomalies over trait equivalence classes), pairwise + testPlan (covering arrays)
-  store/           FlagStore: polling, change detection, offline handling with backoff
+                   rules (override anomalies over trait equivalence classes), pairwise + testPlan (covering arrays),
+                   webhook (signature check, event parsing), traitHints (trait suggestions)
+  store/           FlagStore: refresh, change detection, offline handling with backoff, dependencies, health
+  realtime.ts      webhook listener: registers and removes the Flagsmith webhook, refreshes on signed events
   providers/       CodeLens, hover, diagnostics + quick fixes, autocomplete, greyed-out code decorations
   views/           sidebar tree, status bar, Environment Matrix webview
   commands/        connect, toggle, set value, create, history, diff, find unused, preview as user, rule check,
-                   test plan
+                   test plan, identity and segment overrides, publish code references
+  scripts/         verify-engine (differential test), publish-code-references (CLI for CI)
   safety.ts        confirmations, protected environments, write journal
 examples/demo-shop the shop (Node SDK), plus Python / React / TypeScript files used in the demo
 ```
 
 - **Zero runtime dependencies.** The extension uses only the VS Code API and Node's global `fetch`. The packaged
-  `.vsix` is about 51 KB.
+  `.vsix` is about 62 KB.
 - Activation is cheap (`workspaceContains:**/flagsmith.json` or after startup). The matrix webview loads only when opened.
 - Only open documents are scanned (debounced, cached by document version). *Find unused flags* scans the workspace on
   demand.
@@ -430,6 +471,12 @@ examples/demo-shop the shop (Node SDK), plus Python / React / TypeScript files u
 - Every change asks for confirmation. Protected environments also require typing the flag name, and Undo goes through
   the same check. Changes are logged to the *FlagLens* output channel and to Flagsmith's audit log.
 - FlagLens warns when you connect to a remote server over plain `http://`.
+- The real-time listener accepts only POSTs to a random 128-bit path, signed with a random 256-bit secret (HMAC-SHA256,
+  compared in constant time), and a valid call only triggers a refresh: nothing in the payload is trusted. It listens
+  on loopback where Docker Desktop allows it (macOS, Windows); on Linux it has to accept Docker's bridge network.
+  `flaglens.realtime.mode: off` turns it off.
+- Identity and segment override edits go through the same confirmation, which says who is affected.
+- `FLAGSMITH_HEALTH_WEBHOOK_URL` contains the Feature Health webhook's token, so it stays in the git-ignored `.env`.
 - In untrusted workspaces FlagLens ignores the workspace's `flagsmith.json` and `.env`, because they decide which server
   receives your key.
 - The webview has a strict Content-Security-Policy (no remote content, nonce-only scripts).
@@ -546,11 +593,18 @@ Checked against a live 2.295.2 instance (these shaped the design):
 | "Flagsmith rejected the API key" | After `make reset` the old key is gone. Run `make seed`, then **FlagLens: Connect to Flagsmith** → *Use the key from .env* |
 | No "Connect with it?" prompt | Open the `examples/demo-shop` folder itself (the prompt reads `.env` at the workspace root), or run **FlagLens: Connect to Flagsmith** |
 | `make demo` exits with "No FLAGSMITH_ENV_KEY_*" | Run `make seed` first |
+| No lightning bolt in the status bar (polling only) | Hover the status bar item for the reason. The dev kit must be started with the current `compose.yaml` (`make up` again) so Flagsmith may call `host.docker.internal`. For a Flagsmith on another machine, set `flaglens.realtime.mode` to `on` and `flaglens.realtime.callbackHost` to an address it can reach |
+| *Publish Code References* says it needs a GitHub remote | Flagsmith links references to GitHub; the repository needs an `origin` on github.com |
+| `make alert` says the webhook URL is missing | Run `make seed` again; it writes `FLAGSMITH_HEALTH_WEBHOOK_URL` to `.env` |
 | No CodeLens | Check `editor.codeLens` and `flaglens.codeLens.enabled` are on, and that the status bar says connected |
 
 ## Demo
 
 **Demo video (2:47, 1080p60):** [flaglens-demo.mp4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.3.1/flaglens-demo.mp4)
+
+The video shows v0.3 (greying out, *Preview as*, the rule check, test plans). Real-time updates, override editing,
+v2 versions, dependencies, Feature Health and Code References came later; [What success looks like](#what-success-looks-like)
+walks through them.
 
 Everything on screen is real: the VS Code footage is the released extension, driven by a script against the
 self-hosted Flagsmith from `make up && make seed`. The video itself is built in code (Playwright-driven capture,
