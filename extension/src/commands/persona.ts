@@ -4,6 +4,7 @@
 import * as vscode from 'vscode';
 import type { App } from '../app';
 import { parseTraits, type Persona } from '../core/engine';
+import { applyCompletion, completeTraits, traitSuggestions } from '../core/traitHints';
 import { personaName, traitsText } from '../present';
 
 const LAST_PERSONA = 'flaglens.persona';
@@ -60,12 +61,7 @@ export async function previewAsCommand(app: App, arg?: Persona | null): Promise<
 
   const identifier = await vscode.window.showInputBox({ title: 'Identity identifier', prompt: 'The identifier your app passes to Flagsmith, e.g. a user id or email', value: current?.identifier ?? '' });
   if (!identifier) return;
-  const traits = await vscode.window.showInputBox({
-    title: 'Traits (optional)',
-    prompt: 'Comma-separated key=value pairs. Numbers and true/false keep their type.',
-    placeHolder: 'plan=pro, country=IN, age=31',
-    value: current ? traitsText(current) : '',
-  });
+  const traits = await pickTraits(app, current ? traitsText(current) : '');
   if (traits === undefined) return;
   await setPersona(app, { identifier: identifier.trim(), traits: parseTraits(traits) });
 }
@@ -75,4 +71,49 @@ export async function toggleDimmingCommand(): Promise<void> {
   const next = !cfg.get<boolean>('dimInactiveCode', true);
   await cfg.update('dimInactiveCode', next, vscode.ConfigurationTarget.Global);
   void vscode.window.setStatusBarMessage(`FlagLens: greying out code that won't run is ${next ? 'on' : 'off'}`, 2500);
+}
+
+/**
+ * The traits of a custom identity, typed as "plan=pro, country=IN", with suggestions for the pair being typed: the
+ * traits the project's segment rules read (and the values they compare against) and traits stored on identities.
+ */
+async function pickTraits(app: App, initial: string): Promise<string | undefined> {
+  const { store } = app;
+  const stored = await Promise.all(store.environments.map((e) => store.connection!.client.listTraitKeys(e.apiKey).catch(() => [] as string[])));
+  const suggestions = traitSuggestions(store.documents.values(), stored.flat());
+
+  type Item = vscode.QuickPickItem & { insert?: string };
+  const qp = vscode.window.createQuickPick<Item>();
+  qp.title = 'Traits (optional)';
+  qp.placeholder = 'plan=pro, country=IN, age=31: pick a suggestion, or press Enter to use what you typed';
+  qp.value = initial;
+  // Every item must show whatever is typed: the list is computed here, not filtered by VS Code.
+  const update = () => {
+    const parsed = traitsText({ identifier: '', traits: parseTraits(qp.value) });
+    qp.items = [
+      { label: `$(check) Use ${parsed || 'no traits'}`, alwaysShow: true },
+      ...completeTraits(qp.value, suggestions).map((c) => ({ label: c.insert, description: c.description, insert: c.insert, alwaysShow: true })),
+    ];
+  };
+  update();
+  return new Promise((resolve) => {
+    let done = false;
+    qp.onDidChangeValue(update);
+    qp.onDidAccept(() => {
+      const item = qp.activeItems[0];
+      if (item?.insert) {
+        qp.value = applyCompletion(qp.value, item.insert);
+        update();
+        return;
+      }
+      done = true;
+      resolve(qp.value);
+      qp.hide();
+    });
+    qp.onDidHide(() => {
+      if (!done) resolve(undefined);
+      qp.dispose();
+    });
+    qp.show();
+  });
 }

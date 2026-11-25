@@ -146,6 +146,11 @@ export class FlagsmithClient {
     return this.listAll<ApiFeatureHealthEvent>(`/projects/${projectId}/feature-health/events/`);
   }
 
+  /** Trait keys stored on identities in an environment (verified on 2.295.2: {"keys": [...]}). */
+  async listTraitKeys(environmentKey: string): Promise<string[]> {
+    return (await this.request<{ keys?: string[] }>('GET', `/environments/${encodeURIComponent(environmentKey)}/trait-keys/`)).keys ?? [];
+  }
+
   // --- identity overrides ----------------------------------------------------------------------------------------
   // Verified on 2.295.2 (core identities, not Edge): ?q= is a substring search, so callers filter for an exact match.
 
