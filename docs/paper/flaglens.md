@@ -9,7 +9,7 @@ abstract: |
   whether the flag's targeting rules even make sense. We present FlagLens, a VS Code extension for the open-source
   feature-flag platform Flagsmith, that answers these questions inside the editor with guarantees rather than
   heuristics. FlagLens (1) re-implements Flagsmith's evaluation semantics locally and validates them by differential
-  testing against a live server (14,400 checks over every rule operator, no mismatches); (2) detects code that
+  testing against a live server (15,050 checks over every rule operator and flag dependencies, no mismatches); (2) detects code that
   cannot run in a given environment or for a given user, using Kleene's three-valued logic so that it never greys out
   code that might execute; (3) finds anomalies in segment overrides (shadowed, redundant and unsatisfiable rules),
   adapting the firewall-policy anomaly taxonomy of Al-Shaer and Hamed, and proves each finding for every possible user
@@ -17,8 +17,8 @@ abstract: |
   analysis sound in the presence of operators it cannot partition; and (4) generates pairwise test plans for sets of
   flags that are provably minimal for on/off flags (the Katona--Kleitman--Spencer construction) and near-minimal with
   a stated lower bound otherwise, including a simple new bound that certifies optimality for a common mixed case. All
-  analyses run in milliseconds on real projects, ship in a 52 KB extension with no runtime dependencies, and are
-  covered by 169 unit tests and 15 end-to-end tests against a self-hosted Flagsmith instance.
+  analyses run in milliseconds on real projects, ship in a 54 KB extension with no runtime dependencies, and are
+  covered by 177 unit tests and 18 end-to-end tests against a self-hosted Flagsmith instance.
 geometry: margin=2.3cm
 fontsize: 10pt
 numbersections: true
@@ -48,7 +48,7 @@ four analyses that are exact or provably sound:
 1. **Server-faithful local evaluation** (Section 3). We port Flagsmith's evaluation engine to TypeScript and evaluate
    the *environment document*, the same data structure server-side SDKs use for local evaluation. Differential testing
    [8] against a live server, using transient identities with random traits, found no disagreement in
-   14,400 flag evaluations, including one throwaway segment per rule operator.
+   15,050 flag evaluations, including one throwaway segment per rule operator and a flag dependency.
 2. **Dead-code detection under flag states** (Section 4). FlagLens greys out branches that cannot run in the selected
    environment, or for a previewed user, like an inactive `#ifdef`. Conditions are evaluated in Kleene's strong
    three-valued logic [9], an abstract interpretation [10] in which unknown operands stay unknown,
@@ -93,6 +93,14 @@ or `False`. A segment with no rules matches nobody.
 **Resolution.** For a flag $f$, the matching segment override with the smallest priority number wins (ties keep the
 earlier segment); identity overrides beat all segment overrides; otherwise the environment default applies.
 
+**Flag dependencies.** A flag $c$ can require a flag $p$. Flagsmith does not add a new mechanism for this: it creates a
+*system segment* named `c-depends-on-p` whose single condition is $\langle$`$.flags["p"].enabled`, `NOT_EQUAL`,
+`true`$\rangle$, with an override that disables $c$. The condition reads the *evaluated* state of $p$ for the
+current identity (or for no identity), so a dependency is an ordinary override competing by priority: an override of
+$c$ with a smaller priority number still wins over it. Flagsmith rejects chains (a prerequisite that has a
+prerequisite of its own) with HTTP 400, so the flags referenced by `$.flags` conditions are never themselves the
+subject of one.
+
 # Server-faithful local evaluation
 
 FlagLens downloads $D$ for every environment (`GET /environments/{key}/document/`, readable with the same
@@ -109,14 +117,24 @@ per rule operator, each switching on its own throwaway flag, and deletes them af
 
 | Pass | Identities | Flags | Checks | Agree |
 |---|---:|---:|---:|---:|
-| Seeded demo (3 environments, 6 segments with overrides) | 300 per env. | 7 | 6,300 | 6,300 |
-| Operator coverage (20 single-operator segments) | 300 | 27 | 8,100 | 8,100 |
+| Seeded demo (3 environments, 6 segments with overrides) | 300 + none, per env. | 7 | 6,321 | 6,321 |
+| Operator coverage (20 single-operator segments and a dependency) | 300 + none | 29 | 8,729 | 8,729 |
+
+"None" is the evaluation with no identity (the environment's flags), compared once per pass.
 
 Each operator segment matched a non-trivial share of identities (for example `EQUAL plan pro` 86 of 400,
 `PERCENTAGE_SPLIT 37.5` 142 of 400), so agreement is not vacuous. The verifier surfaced two semantic details that
 the engine port must (and does) reproduce: `REGEX` is anchored at the start of the trait, as with Python's
 `re.match` (a rule `demo-shop` matches no email in the sample, on both sides), and the Boolean cast above, which makes
 a Boolean trait `true` equal to *any* condition value except `"false"`.
+
+**Dependencies in two passes.** Let $R$ be the regular segments and $S$ the dependency segments of $D$. FlagLens
+first resolves every flag with the overrides of $R$ only (pass 1), then evaluates each condition of $S$ against the
+pass-1 states and resolves again with the matching segments of $R \cup S$ in document order (pass 2). Pass 2 is exact:
+a condition of $S$ reads a prerequisite $p$, and since chains are rejected no segment of $S$ overrides $p$, so $p$'s
+pass-1 state already equals its final state. The same argument gives each dependency's *blocked* status for the editor:
+$c$ is blocked in an environment when its default is on but it resolves to off with no identity. The differential test
+includes a dependency whose prerequisite is on only for one segment, so both outcomes occur.
 
 **Uniformity.** For dead-code detection without a previewed user we also need to know whether a flag is the same for
 everybody in an environment. A flag's enabled bit is *uniform* in $D$ if no segment or identity override touches it;
@@ -293,17 +311,24 @@ short annealing budget do not find. FlagLens states the bound alongside the plan
 
 # Implementation and evaluation
 
-FlagLens is written in strict TypeScript with no runtime dependencies (the packaged extension is 52 KB). The analyses
+FlagLens is written in strict TypeScript with no runtime dependencies (the packaged extension is 54 KB). The analyses
 are pure modules with no editor dependencies: the engine (about 400 lines), dead-code analysis (about 900, including
 the lexer and parser), rule analysis (about 330) and covering arrays (about 250). The editor layer adds CodeLens, hovers,
 decorations, diagnostics, a status-bar persona switch and Markdown reports.
 
-**Tests.** 169 unit tests (including the randomised soundness test of Section 5 and the exhaustive size checks of
-Section 6); 15 end-to-end tests that launch VS Code against a self-hosted Flagsmith 2.295.2 started by the project's
+**Tests.** 177 unit tests (including the randomised soundness test of Section 5 and the exhaustive size checks of
+Section 6); 18 end-to-end tests that launch VS Code against a self-hosted Flagsmith 2.295.2 started by the project's
 one-command dev kit, including a comparison of *Preview as* with the server's answer for the same identity, a check that
-nothing is greyed where users can differ, the rule check and the test plan; and the differential verifier of Section 3.
+nothing is greyed where users can differ, the rule check, the test plan, and a flag dependency evaluated per identity; and the differential verifier of
+Section 3.
 Continuous integration runs the unit and end-to-end suites on every push, seeding Flagsmith twice to prove the seed is
 idempotent.
+
+**Integration with Flagsmith's lifecycle.** FlagLens also feeds and reads Flagsmith's own flag-management data. It
+publishes every flag reference in the repository through the Code References API, in the format of Flagsmith's CI
+scanner, after which Flagsmith links each flag to its files and moves it from the *new* to the *live* lifecycle stage.
+It reads lifecycle stages, owners and the latest Feature Health event per flag and environment, so a flag that
+monitoring has reported unhealthy is marked at every reference and in the confirmation before it is changed.
 
 **Performance.** On the demo project every analysis completes within a few milliseconds per document; the rule
 analysis of the Production document takes 3 ms; pairwise plans with annealing finish in under 100 ms for the cases
@@ -347,9 +372,9 @@ Everything in this paper can be reproduced from the repository
 
 ```bash
 make up && make seed          # self-hosted Flagsmith 2.295.2 with the demo project
-npm run check                 # lint, type-check, 169 unit tests
+npm run check                 # lint, type-check, 177 unit tests
 make verify-engine            # differential test against the live server
-npm run test:integration -w extension   # 15 end-to-end tests in VS Code
+npm run test:integration -w extension   # 18 end-to-end tests in VS Code
 ```
 
 # References

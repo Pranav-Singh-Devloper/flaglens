@@ -80,7 +80,7 @@ const FEATURES = [
     body: 'Choose an identity and its traits from the status bar. CodeLens, hovers and greyed code then show what that user gets in every environment, and which segment, split bucket or override decided it.',
     proof: (
       <>
-        Flagsmith&apos;s own evaluation rules, run locally. <b className="text-go">14,400 of 14,400</b> results match the live server, across every rule operator.
+        Flagsmith&apos;s own evaluation rules, run locally. <b className="text-go">15,050 of 15,050</b> results match the live server, across every rule operator and flag dependencies.
       </>
     ),
     img: '/assets/screenshots/preview-as.png',
@@ -217,10 +217,10 @@ export default function App() {
 
           <div className="mx-auto mt-14 grid max-w-5xl grid-cols-2 overflow-hidden rounded-2xl border border-line bg-white text-left shadow-sm md:grid-cols-4">
             {[
-              { n: <><CountUp to={14400} separator="," duration={1.6} /> / 14,400</>, l: 'local evaluations match the live server' },
+              { n: <><CountUp to={15050} separator="," duration={1.6} /> / 15,050</>, l: 'local evaluations match the live server' },
               { n: <><CountUp from={7} to={96} direction="down" duration={1.8} /> runs</>, l: 'instead of 96: a provably minimal test plan' },
-              { n: <><CountUp to={169} duration={1.4} /> + <CountUp to={15} duration={1.4} /></>, l: 'unit and end-to-end tests, run in CI' },
-              { n: <><CountUp to={52} duration={1.2} /> KB</>, l: 'zero runtime dependencies' },
+              { n: <><CountUp to={177} duration={1.4} /> + <CountUp to={18} duration={1.4} /></>, l: 'unit and end-to-end tests, run in CI' },
+              { n: <><CountUp to={54} duration={1.2} /> KB</>, l: 'zero runtime dependencies' },
             ].map((s, i) => (
               <div key={i} className={`p-5 ${i % 2 ? '' : 'border-r'} border-line md:border-r md:last:border-r-0 ${i < 2 ? 'border-b md:border-b-0' : ''}`}>
                 <div className="text-[26px] font-extrabold tracking-tight tabular-nums">{s.n}</div>
@@ -351,6 +351,9 @@ export default function App() {
               ['Self-hosted first.', 'Works against your own instance, with Flagsmith Cloud supported too.'],
               ["Flagsmith's own semantics.", 'Environment documents evaluated exactly as the server does, verified with transient identities.'],
               ['Fits the toolchain.', "Reads the Flagsmith CLI's flagsmith.json and finds flags like Flagsmith's Code References scanner."],
+              ['Code References, published.', 'One command uploads every flag reference, so the Flagsmith dashboard links each flag to its files and lines.'],
+              ['Feature Health in the editor.', 'When monitoring marks a flag unhealthy in Flagsmith, every reference shows it, and so does the confirmation.'],
+              ['Dependencies and lifecycle.', "A flag that requires another is marked blocked where it can't serve; lifecycle stage and owners are in the hover."],
               ['Safe by default.', "API keys live in VS Code's SecretStorage; every write is confirmed and logged in Flagsmith's audit log."],
             ].map(([b, t], i) => (
               <Reveal key={b} delay={i * 0.06}>

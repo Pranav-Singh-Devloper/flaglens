@@ -37,7 +37,7 @@ a check against your own Flagsmith server.
 | Feature | Why you can trust it |
 |---|---|
 | **Greys out code that can't run** in the environment you pick (or for one user), like an inactive `#ifdef`, with the reason at the end of the line | Conditions are evaluated in three-valued logic: anything uncertain stays visible. It **never greys code that might execute**. |
-| **Preview as any user**: pick an identity and traits; every CodeLens, hover and greyed line shows what *they* get, and which segment, split bucket or override decided | Flagsmith's own engine, run locally. **14,400 of 14,400** results match the live server across every rule operator (`make verify-engine`). |
+| **Preview as any user**: pick an identity and traits; every CodeLens, hover and greyed line shows what *they* get, and which segment, split bucket or override decided | Flagsmith's own engine, run locally. **15,050 of 15,050** results match the live server across every rule operator and flag dependencies (`make verify-engine`). |
 | **Targeting-rule check**: overrides that can never apply (shadowed), change nothing (redundant), segments that match nobody, defaults nobody gets | Each finding is **proven for every possible user**: trait values are split into equivalence classes, and anything that can't be split is over-approximated. |
 | **Smallest test plan** for a set of flags: every pair of values meets in some run | **96 combinations → 7 runs**, provably minimal (Kleitman–Spencer for on/off flags, plus a lower bound we prove for mixed flags). |
 
@@ -59,10 +59,14 @@ verification method and 27 references.
 - **Flagsmith is the whole point.** Every badge, value and finding comes from the Flagsmith API (management API,
   environment documents, transient identities), and every change is a confirmed Flagsmith write. Remove Flagsmith and
   FlagLens does nothing.
+- **Uses Flagsmith's newer open-source features, not just flags and environments.** Flag dependencies, Code
+  References (FlagLens publishes them, and Flagsmith then shows each flag's files and lines and moves it through its
+  lifecycle), lifecycle stages, flag owners and Feature Health alerts all show up where the flag is used. See
+  [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses).
 - **Fits the Flagsmith toolchain.** It reads the Flagsmith CLI's `flagsmith.json` and finds flags with the same pattern
   as Flagsmith's Code References scanner, in JS/TS, Python, Go, Java, Kotlin, C#, Dart and Ruby.
-- **Tested against the real thing.** 169 unit tests, 15 end-to-end tests in a real VS Code against self-hosted
-  Flagsmith, and a differential verifier for the local engine. Zero runtime dependencies; the extension is 52 KB.
+- **Tested against the real thing.** 177 unit tests, 18 end-to-end tests in a real VS Code against self-hosted
+  Flagsmith, and a differential verifier for the local engine. Zero runtime dependencies; the extension is 54 KB.
 
 ```
 ⚑ new_checkout   Development ● on · Staging ● on · Production ○ off   ⚠ drift
@@ -117,6 +121,10 @@ It is a community project, not an official Flagsmith product.
 | **Typo detection** for unknown keys with *Replace with…* and *Create flag in Flagsmith…* quick fixes (respects the project's naming rules) | `POST /projects/{id}/features/` |
 | **Stale flags on open-source Flagsmith**: identical in every environment for N days, no targeting, not tagged permanent | `updated_at` of feature states, tags (`is_permanent`) |
 | **Archived flags still referenced** in code are flagged for removal | `is_archived` |
+| **Flag dependencies**: a flag that requires another shows *Requires `parent`* in the hover and a *blocked* badge where the parent is off, so it can't serve on however it is set. *Preview as* evaluates dependencies per user exactly as the server does | environment documents (Flagsmith stores a dependency as a system segment with a `$.flags[...]` condition) |
+| **Publish Code References to Flagsmith**: one command (or `make code-refs` in CI) uploads every flag reference in the repository, in the format of Flagsmith's own scanner. The Flagsmith dashboard then lists each flag's files and lines with links to GitHub, counts them in the flag list, and moves flags from *new* to *live* | `POST /projects/{id}/code-references/` |
+| **Feature Health**: when monitoring (Grafana, Alertmanager, anything that can POST) reports a flag unhealthy through Flagsmith's Feature Health webhook, FlagLens badges it *unhealthy* at every reference, shows the reason and links in the hover, and repeats the warning in the confirmation before anyone toggles it | `GET /projects/{id}/feature-health/events/` |
+| **Lifecycle and owners**: Flagsmith's lifecycle stage (*new*, *live*, *stale*, *permanent*, *to remove*…), its code-reference count and the flag's owners appear in the hover; *to remove* is also a badge | `GET /projects/{id}/features/?environment=` |
 | **Experiment lock**: flags in a running experiment are badged and can't be toggled | `GET /environments/{key}/experiments/` (beta) |
 | Autocomplete flag keys inside `isFeatureEnabled("…")`, sidebar tree, status-bar environment switcher, flag history, *Find unused flags* in the workspace | all of the above |
 | **Dev kit**: pinned official images, idempotent REST seed, demo shop using the official Node SDK | Docker, REST, SDK API |
@@ -149,7 +157,7 @@ is healthy.
 
 Then install the extension, in either of two ways:
 
-- **Download** `flaglens-0.3.1.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
+- **Download** `flaglens-0.4.0.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
   then in VS Code: Command Palette → **Extensions: Install from VSIX…** → pick the file.
 - **Or build it**: `make package` (npm: `npm install && npm run package`) creates `extension/flaglens.vsix`. If the
   `code` command is on your PATH, `make install-ext` builds and installs it in one step.
@@ -204,6 +212,7 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | FlagLens: Copy Environment Diff as Markdown… | Paste-ready table of differences between two environments |
 | FlagLens: Show Flag History… | Audit log (if the server exposes it), last change per environment, changes made with FlagLens |
 | FlagLens: Find Unused Flags in Workspace | Project flags that no file references |
+| FlagLens: Publish Code References to Flagsmith… | Upload every flag reference in this repository (git HEAD, GitHub remote) to Flagsmith's Code References, after a confirmation |
 | FlagLens: Preview Flags as User… | Pick a test user (from `flaglens.personas`, or type an identifier and traits). Also: click the persona item in the status bar |
 | FlagLens: Toggle Greying Out Code That Won't Run | Turn the greying on or off |
 | FlagLens: Check Targeting Rules | Report of segment overrides that never apply, change nothing or match nobody, per environment |
@@ -243,6 +252,7 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | `FLAGSMITH_ORGANISATION_ID` | written by seed | reference | |
 | `FLAGSMITH_PROJECT_ID` | written by seed | extension | |
 | `FLAGSMITH_ENV_KEY_DEVELOPMENT`, `…_STAGING`, `…_PRODUCTION` | written by seed | demo shop | Client-side environment keys (public by design) |
+| `FLAGSMITH_HEALTH_WEBHOOK_URL` | written by seed | `make alert` / `make recover` | Feature Health webhook of the demo project. **Secret** (the URL contains its token) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | `admin@flaglens.local` / `FlagLens-demo-2026` | seed | Dev-kit dashboard login |
 | `DEMO_PORT` | `3030` | demo shop | |
 | `DEMO_ENVIRONMENT` | `Development` | demo shop | Environment the shop reads by default (`?env=Production` overrides) |
@@ -258,6 +268,8 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | `make down` / `make reset` | `npm run devkit:down` / `devkit:reset` | Stop / stop **and delete all data** |
 | `make logs` | `npm run devkit:logs` | Follow Flagsmith logs |
 | `make mcp` | `npm run devkit:mcp` | Also start Flagsmith's MCP server on :8002 |
+| `make code-refs` | `npm run code-refs -w extension` | Publish this repository's flag references to Flagsmith's Code References (what a CI job would run) |
+| `make alert` / `make recover` | `node devkit/health.mjs alert\|recover` | Mark `new_checkout` unhealthy (or healthy again) in Production through the Feature Health webhook, as a monitoring tool would |
 
 The seeded flags are designed so every feature is visible:
 
@@ -305,6 +317,8 @@ flowchart LR
   Shop["Demo shop<br/>@flagsmith/nodejs"] -- "environment key<br/>SDK API" --> API
   Seed["devkit/seed.mjs"] -- "REST: signup, org, project,<br/>environments, flags, API key" --> API
   CLI["flagsmith.json<br/>(Flagsmith CLI v2)"] -.-> ST
+  CI["make code-refs<br/>(or the command)"] -- "Code References" --> API
+  Mon["Monitoring<br/>(make alert)"] -- "Feature Health webhook" --> API
 ```
 
 - **Management API, read.** On each refresh: environments, `GET /projects/{id}/features/`, tags, and one
@@ -320,10 +334,38 @@ flowchart LR
 - **Management API, write.** Toggles and values are `PATCH /environments/{key}/featurestates/{id}/` on the
   environment's default state (raw JSON values keep their type). New flags are `POST /projects/{id}/features/`. Every
   write also appears in Flagsmith's own audit log.
+- **Newer project APIs.** The features list with `?environment=` adds each flag's lifecycle stage, code-reference
+  count and owners. `GET /projects/{id}/feature-health/events/` gives the latest Feature Health status per flag and
+  environment. *Publish Code References* sends `POST /projects/{id}/code-references/` with the repository, the commit
+  and every `{file_path, line_number, feature_name}`. Flag dependencies need no extra request: they are in the
+  environment document as system segments.
 - **SDK API.** The demo shop uses the official `@flagsmith/nodejs` SDK with remote evaluation and per-visitor
   identities, so it serves multivariate variants and picks up changes on the next request.
 - **Dev kit.** The seed uses only the public REST API (signup → organisation → project → environments → tags → flags →
   Organisation API key), so it doubles as a worked example of bootstrapping Flagsmith without clicking.
+
+## How much of Flagsmith it uses
+
+We went through Flagsmith 2.295.2's OpenAPI spec (about 300 paths) and probed the self-hosted instance to see what
+the open-source edition offers, then built on as much of it as an editor tool can use well.
+
+| | Flagsmith feature | In FlagLens |
+|---|---|---|
+| **Used** | Projects, environments, flags, feature states, tags, project settings (`feature_name_regex`, `stale_flags_limit_days`) | Everything inline, toggles, value edits, create flag, naming rules, staleness |
+| | Environment documents: segments, rules (all 14 operators), priorities, % splits, multivariate variants, identity overrides | *Preview as*, greying out, rule check, test plans |
+| | Flag dependencies (system segments with `$.flags[...]` conditions) | *Requires* / *blocked*, evaluated per user like the server |
+| | Code References API | Publish from the editor or CI; counts in the hover |
+| | Lifecycle stages and flag owners | Hover, *to remove* badge |
+| | Feature Health (Webhook provider and events) | *Unhealthy* badge, reason, warning in the confirmation; `make alert` / `make recover` |
+| | Transient identities (SDK API) | Differential test of the local engine against the server |
+| | Experiments (beta) | Lock badge; experiment flags can't be toggled |
+| | Audit log | *Show history*, when the server exposes it |
+| | Flagsmith CLI (`flagsmith.json`), Code References scanner pattern, Node SDK, MCP server | Config, flag detection, demo shop, `make mcp` |
+| **Not yet** (open source, on the roadmap) | Environment webhooks | FlagLens polls every 10 s; push through a local listener is next |
+| | Editing identity and segment overrides | Shown, previewed and checked, but edited in the dashboard |
+| | v2 feature versioning (versions, publish) | v2 environments are read-only in FlagLens |
+| | Trait keys, metadata fields, usage analytics | Trait-key autocomplete in *Preview as* would be next; analytics needs server-side setup |
+| **Not in open source** | Change requests (4-eyes approval), scheduled changes, real-time flag updates, full audit-log visibility, SSO and role-based access | FlagLens's typed confirmation for protected environments and its change journal cover part of the first and fourth |
 
 ## How the checks work
 
@@ -397,7 +439,7 @@ npm run test:integration -w extension   # end-to-end: real VS Code + real self-h
 make verify-engine                      # local evaluation vs the live server (npm run verify:engine -w extension)
 ```
 
-- **Unit tests** (Vitest, ~170 tests) cover the scanner (call styles in 9 languages, multi-line calls, false
+- **Unit tests** (Vitest, ~180 tests) cover the scanner (call styles in 9 languages, multi-line calls, false
   positives), drift and staleness rules, typo suggestions, the API client (pagination, internal hostnames in `next`,
   timeouts, retry rules, error mapping), the Markdown diff, the evaluation engine (hashes checked against values
   computed independently with Python's `hashlib`, a chi-square test that splits are uniform, priorities, every
@@ -407,13 +449,15 @@ make verify-engine                      # local evaluation vs the live server (n
 - **Engine verification** (`make verify-engine`) asks the running Flagsmith what hundreds of random identities get,
   using *transient* identities so nothing is stored, and compares every flag with FlagLens's local answer. A second
   pass creates one temporary segment per rule operator (`EQUAL` … `REGEX`, `IN`, `MODULO`, SemVer, `IS_SET`, % split,
-  JSONPath properties), runs the comparison, and deletes them again. Last run: 6,300 + 8,100 checks, **100% match**.
+  JSONPath properties) plus a flag dependency, runs the comparison, and deletes them again. Each pass also compares the
+  flags served with no identity. Last run: 6,321 + 8,729 checks, **100% match**.
   It also checks the rule checker's "never applies" findings against the server.
 - **End-to-end tests** launch VS Code with the demo workspace against the seeded Flagsmith and check CodeLens, hover,
   diagnostics, quick fixes, autocomplete, a real toggle and toggle-back, pick-up of a change made outside the editor,
   that a declined confirmation changes nothing, the Markdown diff, *Preview as* (including a comparison with the
   server's answer for the same user), greying out (including that nothing is greyed when users can differ), the rule
-  check and the test plan.
+  check, the test plan, publishing Code References, a Feature Health alert (badge, hover and the warning in the
+  confirmation) and a flag dependency evaluated per user.
 - **CI** runs both on every push, including `make up && make seed` (twice, to prove the seed is idempotent) on a
   fresh Ubuntu runner.
 
@@ -423,7 +467,9 @@ make verify-engine                      # local evaluation vs the live server (n
   (create version → edit → publish) is on the roadmap.
 - **Polling, not push.** Changes appear within `refreshIntervalSeconds` (default 10). Real-time updates are an
   Enterprise feature; environment webhooks to a local listener are on the roadmap.
-- **Segment and identity overrides are previewed and counted, not edited.**
+- **Segment and identity overrides are previewed, counted and checked, not edited.**
+- **Flag dependencies are read, not created.** Add them in the dashboard; FlagLens shows and evaluates them.
+- **Code References need a GitHub `origin` remote**, as Flagsmith's links point into GitHub.
 - **Greying out is an analysis of common shapes, not a full parser.** It understands `if`/`else`, guards that return,
   ternaries and `const` aliases in the same block; JSX `{flag && <X/>}`, `switch` and values passed through other
   functions are left alone (never greyed by mistake: when unsure it does nothing).
@@ -455,6 +501,15 @@ Checked against a live 2.295.2 instance (these shaped the design):
   environment key.
 - A segment override of a multivariate flag copies the flag's variant split unless you send
   `multivariate_feature_state_values` with 0%, so the override's own value would never be served. The seed does that.
+- A **flag dependency** is stored as an ordinary system segment named `<child>-depends-on-<parent>`, with the
+  condition `$.flags["parent"].enabled NOT_EQUAL true` and an override that turns the child off. It applies with or
+  without an identity and competes with the child's other overrides by priority, so a higher-priority override still
+  wins. Chains (a prerequisite with its own prerequisite) are rejected with HTTP 400, so two evaluation passes give the
+  exact answer.
+- Publishing **Code References** moves a flag's lifecycle stage from *new* to *live*, and the stage is only returned
+  by the features list when `?environment=` is passed.
+- The **Feature Health** webhook answers HTTP 400 unless `reason` has both `text_blocks` and `url_blocks`, even if one
+  is empty.
 - The `REGEX` operator is anchored at the start (Python's `re.match`): `demo-shop` doesn't match `a@demo-shop.dev`.
 - Rule values are cast to the trait's type before comparing, so a boolean trait `true` EQUALs *any* value except
   `"false"`: a segment `plan = pro AND plan = free` does match someone (`plan: true`). The rule checker accounts for it.

@@ -26,6 +26,11 @@ typos and stale flags before they bite.
   hovers, the Problems panel and a Markdown report (*FlagLens: Check Targeting Rules*).
 - **Pairwise test plan**: the smallest set of runs covering every pair of values of chosen flags, provably optimal for
   on/off flags (Kleitman–Spencer), with JSON and a GitHub Actions matrix (*FlagLens: Generate Pairwise Test Plan…*).
+- **Flagsmith's flag lifecycle, in the editor**: flag dependencies (*Requires `x`*, and a *blocked* badge where the
+  prerequisite is off), Feature Health alerts (an *unhealthy* badge, the reason, and a warning before you change the
+  flag), lifecycle stage, owners and code-reference counts in the hover.
+- **Publish Code References to Flagsmith**: upload every flag reference in the repository, so the Flagsmith
+  dashboard links each flag to its files and lines.
 - **Drift**: a ⚠ badge when Staging and Production disagree; Environment Matrix; *Copy diff as Markdown*.
 - **Stale flags** on open-source Flagsmith: flags identical in every environment for N days.
 - **Archived flags still in use**, autocomplete of flag keys, sidebar tree, history, *Find unused flags*.
