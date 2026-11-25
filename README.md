@@ -1,34 +1,71 @@
-# FlagLens for Flagsmith
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/flaglens-wordmark-dark.png">
+    <img alt="FlagLens" src="docs/brand/flaglens-wordmark-light.png" width="420">
+  </picture>
+</p>
 
-> See and safely change your **self-hosted Flagsmith** flags right where they live in your code, and catch environment
-> drift, typos and stale flags before they bite.
+<p align="center"><b>See, test and trust your self-hosted Flagsmith flags, right where they live in your code.</b></p>
 
-[![CI](https://github.com/Pranav-Singh-Devloper/flaglens/actions/workflows/ci.yml/badge.svg)](https://github.com/Pranav-Singh-Devloper/flaglens/actions/workflows/ci.yml)
-· **Toggle Wars 2026, Track 03: Build on Open Source Flagsmith**
-· [▶ Demo video](#demo) · [⬇ Download the .vsix](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest)
+<p align="center">
+  <a href="https://github.com/Pranav-Singh-Devloper/flaglens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Pranav-Singh-Devloper/flaglens/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Pranav-Singh-Devloper/flaglens?color=7C6CFF"></a>
+  <img alt="Flagsmith 2.295.2, self-hosted" src="https://img.shields.io/badge/Flagsmith-2.295.2%20self--hosted-2ECC71">
+  <img alt="Zero runtime dependencies" src="https://img.shields.io/badge/runtime%20deps-0-blue">
+  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/licence-MIT-lightgrey"></a>
+</p>
 
-FlagLens is two things that work together:
+<p align="center">
+  <b><a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.3.1/flaglens-demo.mp4">▶ Watch the 2:47 demo</a></b> ·
+  <a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest">⬇ Download the .vsix</a> ·
+  <a href="docs/paper/flaglens.pdf">📄 Research paper (PDF)</a> ·
+  <a href="#quick-start-about-5-minutes">🚀 Quick start</a>
+</p>
 
-1. **A VS Code extension** that puts live Flagsmith state next to every flag in your code: every environment's
-   on/off and value, a ⚠ when Staging and Production disagree, squiggles under misspelled flag keys, and safe,
-   confirmed toggles without leaving the editor. It also **greys out code that can't run** in the environment you
-   pick, and lets you **preview every flag as a specific user**, evaluated locally with Flagsmith's own segment,
-   % split and override rules (checked against the server: 14,400 checks, 100% match). It **checks your targeting
-   rules** for overrides that can never apply or change nothing, and builds the **smallest test plan** that tries every
-   pair of flag values together.
-2. **A one-command self-hosted dev kit**: `make up && make seed` starts the official open-source Flagsmith 2.295.2
-   in Docker and fills it with a realistic demo project, so anyone can try the extension in about five minutes.
+<p align="center"><i>Toggle Wars 2026 · Track 03: Build on Open Source Flagsmith</i></p>
 
-It is a community project, not an official Flagsmith product.
+![FlagLens greys out code that can't run, then previews flags as a beta tester: Production is off for everyone but on for this user, via the beta_testers segment](docs/hero.gif)
+
+A flag check like `if (flags.isFeatureEnabled("new_checkout"))` hides the most important fact about the code below
+it: **does it run, and for whom?** The answer lives in a dashboard, spread over environments, segments, priorities,
+percentage splits and per-user overrides. FlagLens brings it into the editor, and backs every answer with a proof or
+a check against your own Flagsmith server.
+
+## What makes it different
+
+| | Feature | Why you can trust it |
+|---|---|---|
+| 🌫 | **Greys out code that can't run** in the environment you pick (or for one user), like an inactive `#ifdef`, with the reason at the end of the line | Conditions are evaluated in three-valued logic: anything uncertain stays visible. It **never greys code that might execute**. |
+| 👤 | **Preview as any user**: pick an identity and traits; every CodeLens, hover and greyed line shows what *they* get, and which segment, split bucket or override decided | Flagsmith's own engine, run locally. **14,400 of 14,400** results match the live server across every rule operator (`make verify-engine`). |
+| 🧭 | **Targeting-rule check**: overrides that can never apply (shadowed), change nothing (redundant), segments that match nobody, defaults nobody gets | Each finding is **proven for every possible user**: trait values are split into equivalence classes, and anything that can't be split is over-approximated. |
+| 🧪 | **Smallest test plan** for a set of flags: every pair of values meets in some run | **96 combinations → 7 runs**, provably minimal (Kleitman–Spencer for on/off flags, plus a lower bound we prove for mixed flags). |
+
+And the essentials, done carefully: live state for every environment above each flag, safe toggles with typed
+confirmation for Production and Undo, environment drift and a Markdown diff for PRs, typo detection with quick fixes,
+archived and stale flags (free on open-source Flagsmith), autocomplete, history.
 
 ![Toggling a flag from VS Code with FlagLens; the demo shop picks it up on its next request](docs/demo.gif)
+
+The math behind these four is written up in a short paper, **[FlagLens: Exact, Server-Verified Reasoning about
+Feature Flags in the Editor](docs/paper/flaglens.pdf)** ([Markdown](docs/paper/flaglens.md)), with proofs, the
+verification method and 27 references.
+
+## Built on open-source Flagsmith
+
+- **Self-hosted first.** `make up && make seed` starts the official open-source Flagsmith 2.295.2 images in Docker and
+  seeds a realistic demo (3 environments, 7 flags, 6 segments, an API key) through Flagsmith's own REST API. No
+  clicking, idempotent, tested in CI on a fresh machine.
+- **Flagsmith is the whole point.** Every badge, value and finding comes from the Flagsmith API (management API,
+  environment documents, transient identities), and every change is a confirmed Flagsmith write. Remove Flagsmith and
+  FlagLens does nothing.
+- **Fits the Flagsmith toolchain.** It reads the Flagsmith CLI's `flagsmith.json` and finds flags with the same pattern
+  as Flagsmith's Code References scanner, in JS/TS, Python, Go, Java, Kotlin, C#, Dart and Ruby.
+- **Tested against the real thing.** 169 unit tests, 15 end-to-end tests in a real VS Code against self-hosted
+  Flagsmith, and a differential verifier for the local engine. Zero runtime dependencies; the extension is 52 KB.
 
 ```
 ⚑ new_checkout   Development ● on · Staging ● on · Production ○ off   ⚠ drift
 if (flags.isFeatureEnabled('new_checkout')) {
-
-⚑ rate_limit_per_minute   Development ● on 1000 · Staging ● on 100 · Production ● on 50   ⚠ drift
-const limit = flags.getFeatureValue('rate_limit_per_minute');
 
 if (flags.isFeatureEnabled('new_chekout')) {      ← Flag "new_chekout" doesn't exist in Flagsmith. Did you mean "new_checkout"?
                             ~~~~~~~~~~~              Quick fix: Replace with "new_checkout" · Create flag in Flagsmith…
@@ -37,6 +74,8 @@ if (flags.isFeatureEnabled('new_chekout')) {      ← Flag "new_chekout" doesn't
 ${newCheckout ? 'new' : 'old'}                    ⟵ new_checkout is on → never runs (Production · Beta tester)
                         ░░░░░                        (greyed out, like an inactive #ifdef)
 ```
+
+It is a community project, not an official Flagsmith product.
 
 ## Screenshots
 
@@ -109,7 +148,7 @@ is healthy.
 
 Then install the extension, in either of two ways:
 
-- **Download** `flaglens-0.3.0.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
+- **Download** `flaglens-0.3.1.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
   then in VS Code: Command Palette → **Extensions: Install from VSIX…** → pick the file.
 - **Or build it**: `make package` (npm: `npm install && npm run package`) creates `extension/flaglens.vsix`. If the
   `code` command is on your PATH, `make install-ext` builds and installs it in one step.
@@ -303,7 +342,7 @@ missed, but never invented. A randomised test checks this against the evaluation
 values together in some run catches them without trying every combination. For on/off flags the minimum is known
 exactly: the smallest N with C(N−1, ⌈N/2⌉) ≥ k (Katona; Kleitman & Spencer, 1973), reached by giving each flag a
 distinct length-N column that starts with 0 and has ⌈N/2⌉ ones. That is 6 runs for 10 flags, 10 for 100 and 14 for
-1,000. With multivariate flags FlagLens builds a plan with IPOG (Lei & Tai, 2007), shrinks it with simulated annealing
+1,000. With multivariate flags FlagLens builds a plan with IPOG (Lei et al., 2007), shrinks it with simulated annealing
 (Cohen, Colbourn & Ling, 2003), and states a lower bound so you know how close it is.
 
 ## Architecture
@@ -433,12 +472,22 @@ Checked against a live 2.295.2 instance (these shaped the design):
 
 ## Demo
 
-▶ **Demo video (2:29, 1080p60):** [flaglens-demo.mp4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.1.1/flaglens-demo.mp4)
-(recorded with v0.1; *Preview as* and greying out are shown in the screenshots above)
+▶ **Demo video (2:47, 1080p60):** [flaglens-demo.mp4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.3.1/flaglens-demo.mp4)
 
-Everything in the video is real: the VS Code footage is the released extension, driven by a script against the
+Everything on screen is real: the VS Code footage is the released extension, driven by a script against the
 self-hosted Flagsmith from `make up && make seed`. The video itself is built in code (Playwright-driven capture,
-Manim, Remotion, ElevenLabs audio); see [video/](video/) to rebuild it.
+Remotion, an ElevenLabs voiceover checked by speech-to-text); see [video/](video/) to rebuild it. Reaction clips via
+[Vlipsy](https://vlipsy.com), © their respective owners; they are not part of this repository.
+
+## Research
+
+[**FlagLens: Exact, Server-Verified Reasoning about Feature Flags in the Editor**](docs/paper/flaglens.pdf)
+([Markdown version](docs/paper/flaglens.md)) describes the four analyses: the engine port and its differential
+testing; dead-code detection with Kleene's three-valued logic; targeting-rule anomalies adapted from firewall-policy
+analysis (Al-Shaer & Hamed), with a soundness theorem for the equivalence-class method; and covering arrays
+(Katona; Kleitman & Spencer; IPOG; simulated annealing), including a lower bound for one multi-valued flag among
+on/off flags. It cites the work we built on, from feature-toggle studies (Rahman et al., MSR 2016) and flag cleanup at
+Uber and DoorDash to abstract interpretation and combinatorial testing.
 
 ## Built with AI assistance
 
