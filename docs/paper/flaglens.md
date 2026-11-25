@@ -333,7 +333,7 @@ monitoring has reported unhealthy is marked at every reference and in the confir
 **Closing the loop.** Segment overrides and identity overrides can be edited from the editor, and every edit is
 followed by the rule analysis of Section 5 on the new document. A developer who sees that an override is shadowed can
 move it above the override that shadows it and watch the finding disappear; one who creates a redundant override is
-told so immediately. A signed Flagsmith webhook delivers changes made elsewhere within about two seconds, so the
+told so immediately. A signed Flagsmith webhook delivers changes made elsewhere within a few seconds, so the
 analyses always run on current rules.
 
 **Performance.** On the demo project every analysis completes within a few milliseconds per document; the rule

@@ -1,5 +1,5 @@
 // Real-time updates: FlagLens registers a Flagsmith organisation webhook that points at a small HTTP listener inside
-// the editor, so a change made anywhere (dashboard, API, another developer) shows up within about two seconds instead
+// the editor, so a change made anywhere (dashboard, API, another developer) shows up within a few seconds instead
 // of at the next poll. Polling continues as a fallback, at a slower pace while the webhook works.
 //
 // The listener accepts only POSTs to /flaglens/<random token> signed with a random secret (HMAC-SHA256, checked in

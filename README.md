@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <b><a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.3.1/flaglens-demo.mp4">Watch the 2:47 demo</a></b> ·
+  <b><a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.5.1/flaglens-demo.mp4">Watch the 2:33 demo</a></b> ·
   <a href="https://flaglens-one.vercel.app">Website</a> ·
   <a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest">Download the .vsix</a> ·
   <a href="docs/paper/flaglens.pdf">Research paper (PDF)</a> ·
@@ -32,7 +32,39 @@ it: **does it run, and for whom?** The answer lives in a dashboard, spread over 
 percentage splits and per-user overrides. FlagLens brings it into the editor, and backs every answer with a proof or
 a check against your own Flagsmith server.
 
-## What makes it different
+## In 60 seconds
+
+FlagLens makes three promises, and proves each one:
+
+| | What you see | Proof |
+|---|---|---|
+| **1. It knows what runs** | Code that can't run is greyed out, like an inactive `#ifdef`. Preview any user and every flag shows what they get, and why. | **15,050 of 15,050** local evaluations match the live Flagsmith server |
+| **2. It proves your rules** | Segment overrides that can never apply, or change nothing, are flagged; fix them from the editor and the finding disappears. | Each finding holds for **every possible user** |
+| **3. It's live** | A toggle in the Flagsmith dashboard reaches the editor in seconds. Feature Health alerts land on the code and in the confirmation. | **About 3 s** measured, through a signed Flagsmith webhook |
+
+All of it runs on **self-hosted, open-source Flagsmith 2.295.2**, and every change is a confirmed Flagsmith write.
+
+### Try it in 5 minutes
+
+```bash
+git clone https://github.com/Pranav-Singh-Devloper/flaglens && cd flaglens
+make up && make seed      # self-hosted Flagsmith in Docker, with a demo project
+make install-ext          # build and install the extension (or install the .vsix from Releases)
+code examples/demo-shop   # then click "Connect" in the notification
+```
+
+Then, in `server.mjs`:
+
+1. Read the live state above every flag, and the greyed-out code.
+2. Click **Everyone** in the status bar → **Beta tester**: the code and CodeLens change to what that user gets.
+3. Hover `rate_limit_per_minute` → **Segment overrides…** → Production → `pro_eu` → **Move up**. The rule warning disappears.
+4. Toggle `maintenance_mode` in the dashboard (http://localhost:8000, `admin@flaglens.local` / `FlagLens-demo-2026`)
+   and watch the editor follow.
+
+Everything else is below: [what it does](#what-it-does), [how it uses Flagsmith](#how-much-of-flagsmith-it-uses),
+[architecture](#architecture), [the research paper](#research).
+
+## What makes it different, in detail
 
 | Feature | Why you can trust it |
 |---|---|
@@ -41,7 +73,7 @@ a check against your own Flagsmith server.
 | **Targeting-rule check**: overrides that can never apply (shadowed), change nothing (redundant), segments that match nobody, defaults nobody gets | Each finding is **proven for every possible user**: trait values are split into equivalence classes, and anything that can't be split is over-approximated. |
 | **Smallest test plan** for a set of flags: every pair of values meets in some run | **96 combinations → 7 runs**, provably minimal (Kleitman–Spencer for on/off flags, plus a lower bound we prove for mixed flags). |
 | **Fix targeting where you read it**: set a flag for one user, add or reorder segment overrides, and the rule check re-runs at once | Every edit is a confirmed Flagsmith write. Move the shadowed `pro_eu` override up and its finding disappears. |
-| **Real time**: a change made anywhere shows up in the editor in about two seconds | A Flagsmith organisation webhook to a listener in the editor; every call's HMAC-SHA256 signature is checked. |
+| **Real time**: a change made anywhere shows up in the editor in a few seconds | A Flagsmith organisation webhook to a listener in the editor; every call's HMAC-SHA256 signature is checked. |
 
 And the essentials, done carefully: live state for every environment above each flag, safe toggles with typed
 confirmation for Production and Undo (published as a new version in v2-versioned environments), environment drift and
@@ -125,7 +157,7 @@ It is a community project, not an official Flagsmith product.
 | **Targeting rule check**: finds segment overrides that can **never apply** (every user they match is caught first by higher-priority overrides), overrides that **change nothing**, segments that **match nobody**, and defaults **nobody gets**. Each finding is proven for every possible user (see [How the checks work](#how-the-checks-work)). Shown in CodeLens, hovers, the Problems panel and a Markdown report | environment documents |
 | **Pairwise test plan**: the smallest set of runs in which every pair of values of the chosen flags appears together. Provably optimal for on/off flags (Kleitman–Spencer); near-optimal with a stated lower bound for multivariate flags. Exports a table, JSON and a GitHub Actions matrix | feature states, variants, environment documents |
 | **Safe toggles and value edits**: modal confirmation, typed confirmation for protected environments (`prod\|live\|main`), Undo, every change logged. In environments with **feature versioning (v2)** a change is published as a new version | `PATCH /environments/{key}/featurestates/{id}/`; v2: `POST /environments/{id}/features/{id}/versions/` |
-| **Real-time updates**: a change made anywhere (dashboard, API, a teammate) shows up within about two seconds. FlagLens registers a Flagsmith organisation webhook pointing at a small listener in the editor (random port and path, every call checked against its HMAC-SHA256 signature) and removes it when the window closes; polling stays as the fallback | `POST /organisations/{id}/webhooks/` |
+| **Real-time updates**: a change made anywhere (dashboard, API, a teammate) shows up within a few seconds. FlagLens registers a Flagsmith organisation webhook pointing at a small listener in the editor (random port and path, every call checked against its HMAC-SHA256 signature) and removes it when the window closes; polling stays as the fallback | `POST /organisations/{id}/webhooks/` |
 | **Set a flag for one user**: while previewing as a user, turn a flag on or off or set its value for that identity only, or remove the override. The confirmation says exactly who is affected | `/environments/{key}/identities/{id}/featurestates/` |
 | **Edit segment overrides**: add one for a segment, turn it on or off, change its value, move it up or down, remove it. The rule check runs again straight away, so moving a shadowed override up makes the finding disappear | `create-segment-override`, `feature-segments`, `update-priorities` |
 | **Drift badge** when Staging ≠ Production, **Environment Matrix** of every flag × environment, **Copy diff as Markdown** for a PR | feature states × environments |
@@ -200,7 +232,7 @@ Finally open the demo workspace: **File → Open Folder… → `flaglens/example
 - The Flagsmith dashboard at http://localhost:8000 shows the same change. Log in with
   `admin@flaglens.local` / `FlagLens-demo-2026`.
 - **Real time:** the status bar shows a lightning bolt (`⚑ Demo Shop · Development ⚡`). Toggle a flag in the
-  dashboard: the CodeLens in VS Code changes within about two seconds.
+  dashboard: the CodeLens in VS Code changes within a few seconds.
 - **Fix the rule from the editor:** hover `rate_limit_per_minute` → **Segment overrides…** → Production → `pro_eu` →
   **Move up**. After confirming, the "never applies" finding is gone. (`make seed` puts the mistake back.)
 - **One user only:** while previewing as *Beta tester*, hover a flag → **Set for Beta tester…** → *Turn OFF*. Only
@@ -600,11 +632,11 @@ Checked against a live 2.295.2 instance (these shaped the design):
 
 ## Demo
 
-**Demo video (2:47, 1080p60):** [flaglens-demo.mp4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.3.1/flaglens-demo.mp4)
+**Demo video (2:33, 1080p60):** [flaglens-demo.mp4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.5.1/flaglens-demo.mp4)
 
-The video shows v0.3 (greying out, *Preview as*, the rule check, test plans). Real-time updates, override editing,
-v2 versions, dependencies, Feature Health and Code References came later; [What success looks like](#what-success-looks-like)
-walks through them.
+It follows the [three promises](#in-60-seconds): greying out and *Preview as* (it knows what runs), the rule check
+and fixing a shadowed override from the editor (it proves your rules), a toggle in the Flagsmith dashboard reaching
+VS Code in about 3 s and a Feature Health alert (it's live), then safe writes, the test plan and a montage of the rest.
 
 Everything on screen is real: the VS Code footage is the released extension, driven by a script against the
 self-hosted Flagsmith from `make up && make seed`. The video itself is built in code (Playwright-driven capture,

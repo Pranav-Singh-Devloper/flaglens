@@ -29,7 +29,7 @@ typos and stale flags before they bite.
 - **Flagsmith's flag lifecycle, in the editor**: flag dependencies (*Requires `x`*, and a *blocked* badge where the
   prerequisite is off), Feature Health alerts (an *unhealthy* badge, the reason, and a warning before you change the
   flag), lifecycle stage, owners and code-reference counts in the hover.
-- **Real-time updates** through a signed Flagsmith webhook: changes made anywhere show up within about two seconds.
+- **Real-time updates** through a signed Flagsmith webhook: changes made anywhere show up within a few seconds.
 - **Change targeting from the editor**: set a flag for the user you are previewing as (identity override), and add,
   change, reorder or remove segment overrides, with the rule check re-run after each change. Environments with
   feature versioning get a new published version per change.
