@@ -30,8 +30,15 @@ function readDotenv(path) {
 }
 
 // Bundle the TypeScript engine in memory, so this script runs with plain Node.
-const bundle = await build({ entryPoints: [join(here, '..', 'src', 'core', 'engine.ts')], bundle: true, platform: 'node', format: 'esm', write: false, logLevel: 'silent' });
-const { evaluateFlags } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
+const bundle = await build({
+  stdin: { contents: "export * from './engine'; export { analyseRules } from './rules';", resolveDir: join(here, '..', 'src', 'core'), loader: 'ts' },
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  write: false,
+  logLevel: 'silent',
+});
+const { evaluateFlags, matchingSegments, analyseRules } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
 
 const env = { ...readDotenv(envFile), ...process.env };
 const api = (env.FLAGSMITH_API_URL ?? 'http://localhost:8000').replace(/\/+$/, '').replace(/\/api\/v1$/, '');
@@ -47,16 +54,24 @@ function randomPersona(i) {
   const id = `${pick(['user', 'cust', 'visitor'])}-${i}-${Math.floor(rand() * 1e9).toString(36)}`;
   const traits = {};
   if (rand() < 0.3) traits.email = `${id}@${pick(['demo-shop.dev', 'example.com', 'demo-shop.dev.evil.com'])}`;
-  if (rand() < 0.7) traits.plan = pick(['free', 'pro', 'team']);
-  if (rand() < 0.7) traits.country = pick(['IN', 'GB', 'US', 'in']);
+  if (rand() < 0.7) traits.plan = pick(['free', 'pro', 'team', true, false]);
+  if (rand() < 0.7) traits.country = pick(['IN', 'GB', 'DE', 'US', 'in']);
   if (rand() < 0.5) traits.age = Math.floor(rand() * 80);
   if (rand() < 0.5) traits.app_version = pick(['1.9.0', '2.0.0', '2.0.0-beta.1', '2.10.1', 'not-a-version']);
   if (rand() < 0.3) traits.beta = pick([true, false]);
   return { identifier: id, traits };
 }
 
-async function json(path, init) {
-  const res = await fetch(`${api}/api/v1${path}`, { ...init, signal: AbortSignal.timeout(15_000) });
+async function json(path, init, attempt = 1) {
+  let res;
+  try {
+    res = await fetch(`${api}/api/v1${path}`, { ...init, signal: AbortSignal.timeout(15_000) });
+  } catch (e) {
+    // A dev-kit server under load sometimes drops a keep-alive connection: retry network errors a few times.
+    if (attempt >= 4) throw e;
+    await new Promise((r) => setTimeout(r, 250 * attempt));
+    return json(path, init, attempt + 1);
+  }
   if (!res.ok) throw new Error(`${init?.method ?? 'GET'} ${path} → HTTP ${res.status}`);
   return res.json();
 }
@@ -103,7 +118,14 @@ if (OPERATORS) {
   const project = env.FLAGSMITH_PROJECT_ID;
   const devKey = env.FLAGSMITH_ENV_KEY_DEVELOPMENT;
   if (!project || !devKey) throw new Error('--operators needs FLAGSMITH_PROJECT_ID and FLAGSMITH_ENV_KEY_DEVELOPMENT in .env');
+  // Leftovers from an aborted run would make the names clash: remove them first.
+  const stale = [
+    ...(await admin('GET', `/projects/${project}/features/?search=flaglens_verify_&page_size=100`)).results.map((f) => `/projects/${project}/features/${f.id}/`),
+    ...(await admin('GET', `/projects/${project}/segments/?page_size=100`)).results.filter((x) => x.name.startsWith('flaglens_verify_')).map((x) => `/projects/${project}/segments/${x.id}/`),
+  ];
+  for (const path of stale) await admin('DELETE', path);
   console.log(`Creating ${OPERATOR_RULES.length} temporary segments and flags in Development…`);
+  process.on('SIGINT', () => void runCleanup().then(() => process.exit(130)));
   try {
     for (const [i, [operator, property, value]] of OPERATOR_RULES.entries()) {
       const feature = await admin('POST', `/projects/${project}/features/`, { name: `flaglens_verify_${i}`, default_enabled: false });
@@ -132,33 +154,40 @@ async function runCleanup() {
 
 let failures = 0;
 const onCount = new Map();
-for (const [name, key] of environments) {
-  if (OPERATORS && !name.endsWith('DEVELOPMENT')) continue;
-  const doc = await json(`/environments/${key}/document/`, { headers: { Authorization: `Api-Key ${env.FLAGSMITH_API_KEY}` } });
-  let checks = 0;
-  let agree = 0;
-  const personas = Array.from({ length: COUNT }, (_, i) => randomPersona(i));
-  for (let i = 0; i < personas.length; i += 20) {
-    await Promise.all(
-      personas.slice(i, i + 20).map(async (p) => {
-        const server = await json('/identities/', {
-          method: 'POST',
-          headers: { 'X-Environment-Key': key, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: p.identifier, transient: true, traits: Object.entries(p.traits).map(([trait_key, trait_value]) => ({ trait_key, trait_value })) }),
-        });
+const samples = []; // { doc, persona, flags } for the rule check below
+try {
+  for (const [name, key] of environments) {
+    if (OPERATORS && !name.endsWith('DEVELOPMENT')) continue;
+    const doc = await json(`/environments/${key}/document/`, { headers: { Authorization: `Api-Key ${env.FLAGSMITH_API_KEY}` } });
+    let checks = 0;
+    let agree = 0;
+    const personas = Array.from({ length: COUNT }, (_, i) => randomPersona(i));
+    for (let i = 0; i < personas.length; i += 10) {
+      await Promise.all(
+        personas.slice(i, i + 10).map(async (p) => {
+          const server = await json('/identities/', {
+            method: 'POST',
+            headers: { 'X-Environment-Key': key, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ identifier: p.identifier, transient: true, traits: Object.entries(p.traits).map(([trait_key, trait_value]) => ({ trait_key, trait_value })) }),
+          });
+          samples.push({ doc, persona: p, flags: server.flags });
         const local = evaluateFlags(doc, p);
-        for (const f of server.flags) {
-          const mine = local.get(f.feature.name);
-          checks++;
-          if (f.feature.name.startsWith('flaglens_verify_') && f.enabled) onCount.set(f.feature.name, (onCount.get(f.feature.name) ?? 0) + 1);
-          if (mine && mine.enabled === f.enabled && mine.value === f.feature_state_value) agree++;
-          else if (failures++ < 10) console.log(`  ✖ ${name} ${f.feature.name} for ${JSON.stringify(p)}: server ${f.enabled}/${JSON.stringify(f.feature_state_value)}, local ${mine?.enabled}/${JSON.stringify(mine?.value)}`);
-        }
-      }),
-    );
+          for (const f of server.flags) {
+            const mine = local.get(f.feature.name);
+            checks++;
+            if (f.feature.name.startsWith('flaglens_verify_') && f.enabled) onCount.set(f.feature.name, (onCount.get(f.feature.name) ?? 0) + 1);
+            if (mine && mine.enabled === f.enabled && mine.value === f.feature_state_value) agree++;
+            else if (failures++ < 10) console.log(`  ✖ ${name} ${f.feature.name} for ${JSON.stringify(p)}: server ${f.enabled}/${JSON.stringify(f.feature_state_value)}, local ${mine?.enabled}/${JSON.stringify(mine?.value)}`);
+          }
+        }),
+      );
+    }
+    const segments = doc.project.segments.filter((s) => s.feature_states.length).length;
+    console.log(`${name.replace('FLAGSMITH_ENV_KEY_', '').padEnd(12)} ${COUNT} identities × ${server_flags(doc)} flags = ${checks} checks, ${agree} agree (${((agree / checks) * 100).toFixed(2)}%) · ${segments} segment(s) with overrides`);
   }
-  const segments = doc.project.segments.filter((s) => s.feature_states.length).length;
-  console.log(`${name.replace('FLAGSMITH_ENV_KEY_', '').padEnd(12)} ${COUNT} identities × ${server_flags(doc)} flags = ${checks} checks, ${agree} agree (${((agree / checks) * 100).toFixed(2)}%) · ${segments} segment(s) with overrides`);
+} finally {
+  // Always remove the temporary segments and flags, even when a request fails half-way.
+  if (OPERATORS) await runCleanup();
 }
 
 if (OPERATORS) {
@@ -166,8 +195,24 @@ if (OPERATORS) {
   for (const [i, [operator, property, value]] of OPERATOR_RULES.entries()) {
     console.log(`  ${`${operator} ${property ?? '(identity)'} ${value ?? ''}`.padEnd(48)} matched ${String(onCount.get(`flaglens_verify_${i}`) ?? 0).padStart(4)} of ${COUNT}`);
   }
-  await runCleanup();
   console.log('Temporary segments and flags removed.');
+}
+
+// The rule checker's "never applies" findings, against the server: users inside a shadowed segment must never be
+// served that override's value (checked when the value is unique to it, so serving it would be visible).
+if (!OPERATORS) {
+  for (const doc of new Set(samples.map((x) => x.doc))) {
+    for (const f of analyseRules(doc).filter((x) => x.kind === 'shadowed')) {
+      const segment = doc.project.segments.find((x) => x.name === f.segment);
+      const value = segment.feature_states.find((fs) => fs.feature.name === f.flag).feature_state_value;
+      const others = [...doc.feature_states, ...doc.project.segments.filter((x) => x !== segment).flatMap((x) => x.feature_states)].filter((fs) => fs.feature.name === f.flag);
+      if (others.some((fs) => fs.feature_state_value === value)) continue;
+      const inside = samples.filter((x) => x.doc === doc && matchingSegments(doc, x.persona).includes(segment));
+      const served = inside.filter((x) => x.flags.find((fl) => fl.feature.name === f.flag)?.feature_state_value === value).length;
+      if (served) failures++;
+      console.log(`${served ? '✖' : '✔'} Rule check, ${doc.name}: "${f.segment}" is shadowed; ${inside.length} sampled users are in it and the server served its value (${JSON.stringify(value)}) to ${served}.`);
+    }
+  }
 }
 
 function server_flags(doc) {
