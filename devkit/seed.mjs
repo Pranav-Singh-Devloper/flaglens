@@ -235,6 +235,57 @@ async function seedFlags(project, envs, tagIds) {
   }
 }
 
+/**
+ * Segments (who) and segment overrides (what they get). Re-running restores both: segment rules are rewritten, and
+ * every override on a seeded flag is removed and recreated, so the result always matches seed-data.json.
+ */
+async function seedSegments(project, envs) {
+  step('Segments');
+  const segments = new Map();
+  const existing = await listAll(`/projects/${project.id}/segments/`);
+  for (const s of data.segments ?? []) {
+    // The dashboard stores conditions as one top-level ALL rule wrapping the user's rules; do the same.
+    const body = { name: s.name, description: s.description ?? '', project: project.id, rules: [{ type: 'ALL', rules: s.rules.map((r) => ({ ...r, rules: [] })), conditions: [] }] };
+    const found = existing.find((e) => e.name === s.name);
+    const segment = found
+      ? await api('PUT', `/projects/${project.id}/segments/${found.id}/`, body)
+      : await api('POST', `/projects/${project.id}/segments/`, body);
+    segments.set(s.name, segment);
+    const rule = s.rules.flatMap((r) => r.conditions.map((c) => `${c.property ?? 'identity'} ${c.operator} ${c.value}`)).join(', ');
+    log(`${s.name.padEnd(24)} ${rule}`);
+  }
+
+  const overrides = data.segment_overrides ?? [];
+  if (!overrides.length) return;
+  const features = await listAll(`/projects/${project.id}/features/?page_size=100`);
+  const seededFlags = new Set(overrides.map((o) => o.flag));
+  for (const env of envs) {
+    for (const name of seededFlags) {
+      const feature = features.find((f) => f.name === name);
+      if (!feature) continue;
+      for (const fseg of await listAll(`/features/feature-segments/?feature=${feature.id}&environment=${env.id}`)) {
+        await api('DELETE', `/features/feature-segments/${fseg.id}/`);
+      }
+    }
+  }
+  for (const [priority, o] of overrides.entries()) {
+    const feature = features.find((f) => f.name === o.flag);
+    const env = envs.find((e) => e.name === o.environment);
+    const segment = segments.get(o.segment);
+    if (!feature || !env || !segment) throw new Error(`Unknown flag, environment or segment in override ${JSON.stringify(o)}`);
+    await api('POST', `/environments/${env.api_key}/features/${feature.id}/create-segment-override/`, {
+      enabled: o.enabled,
+      feature_state_value: 'value' in o ? typedValue(o.value) : { type: 'unicode', string_value: null },
+      feature_segment: { segment: segment.id, priority },
+      // Verified on 2.295.2: an override of a multivariate flag copies the flag's variant split unless told
+      // otherwise, which would hide the override's own value. 0% on every variant makes everyone get `value`.
+      ...(feature.type === 'MULTIVARIATE' &&
+        'value' in o && { multivariate_feature_state_values: feature.multivariate_options.map((m) => ({ multivariate_feature_option: m.id, percentage_allocation: 0 })) }),
+    });
+    log(`${o.flag} → ${o.segment} in ${o.environment}: ${o.enabled ? 'on' : 'off'}${'value' in o ? ` ${JSON.stringify(o.value)}` : ''}`);
+  }
+}
+
 async function getOrCreateOrgApiKey(org, project) {
   step('Organisation API key (for the FlagLens extension)');
   // Re-use the key in .env if it still works, so re-seeding doesn't pile up keys.
@@ -321,6 +372,7 @@ async function main() {
   const envs = await getOrCreateEnvironments(project);
   const tagIds = await getOrCreateTags(project);
   await seedFlags(project, envs, tagIds);
+  await seedSegments(project, envs);
   const apiKey = await getOrCreateOrgApiKey(org, project);
   writeEnvFiles({ apiKey, org, project, envs });
   printSuccess({ project, envs });

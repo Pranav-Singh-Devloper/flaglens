@@ -119,7 +119,7 @@ function maintenancePage(envName) {
 }
 
 function cssColor(value) {
-  const named = { blue: '#2563eb', green: '#16a34a', orange: '#ea580c' };
+  const named = { blue: '#2563eb', green: '#16a34a', orange: '#ea580c', purple: '#7c3aed' };
   return named[value] ?? (/^#[0-9a-f]{3,8}$/i.test(value) ? value : named.blue);
 }
 

@@ -83,5 +83,34 @@
         "Production": { "enabled": false }
       }
     }
+  ],
+  "segments": [
+    {
+      "name": "beta_testers",
+      "description": "Staff and beta testers, matched by email domain.",
+      "rules": [{ "type": "ANY", "conditions": [{ "property": "email", "operator": "REGEX", "value": ".*@demo-shop\\.dev$" }] }]
+    },
+    {
+      "name": "pro_plan",
+      "description": "Customers on the Pro plan.",
+      "rules": [{ "type": "ALL", "conditions": [{ "property": "plan", "operator": "EQUAL", "value": "pro" }] }]
+    },
+    {
+      "name": "india",
+      "description": "Visitors in India.",
+      "rules": [{ "type": "ALL", "conditions": [{ "property": "country", "operator": "EQUAL", "value": "IN" }] }]
+    },
+    {
+      "name": "canary_10pct",
+      "description": "A stable 10% of identities (percentage split on the identity key).",
+      "rules": [{ "type": "ALL", "conditions": [{ "property": null, "operator": "PERCENTAGE_SPLIT", "value": "10" }] }]
+    }
+  ],
+  "$comment_segment_overrides": "Production only, so Development and Staging behave exactly as before. Listed in priority order (first = highest).",
+  "segment_overrides": [
+    { "flag": "new_checkout", "segment": "beta_testers", "environment": "Production", "enabled": true },
+    { "flag": "rate_limit_per_minute", "segment": "pro_plan", "environment": "Production", "enabled": true, "value": 500 },
+    { "flag": "banner_text", "segment": "india", "environment": "Production", "enabled": true, "value": "Diwali sale: 40% off" },
+    { "flag": "checkout_button_color", "segment": "canary_10pct", "environment": "Production", "enabled": true, "value": "purple" }
   ]
 }
