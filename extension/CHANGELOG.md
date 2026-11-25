@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- Pairwise test plans prove a stronger lower bound when one flag has several values and the rest are on/off (2a+1
+  runs once there are more than 2^(a−1) on/off flags), so plans like the demo's 7 runs for 6 flags are reported as
+  optimal.
+- Corrected the IPOG citation (Lei, Kacker, Kuhn, Okun & Lawrence, 2007).
+
 ## 0.3.0
 
 - **Targeting rule check.** Finds segment overrides that can never apply (every user they match is caught first by a
