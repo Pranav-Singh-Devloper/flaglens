@@ -265,6 +265,26 @@ export class FlagsmithClient {
     return this.listAll<ApiFeatureState>(`/environments/${encodeURIComponent(environmentKey)}/featurestates/${q}`);
   }
 
+  /**
+   * Changes a flag's default in a v2-versioned environment: creates a version with the new state and publishes it in
+   * one call (verified on 2.295.2; variant weights are kept). Returns the new live default state.
+   */
+  async publishFeatureVersion(
+    environment: { id: number; apiKey: string },
+    featureId: number,
+    state: { enabled: boolean; value: FlagValue },
+    description: string,
+  ): Promise<ApiFeatureState> {
+    await this.request('POST', `/environments/${environment.id}/features/${featureId}/versions/`, {
+      description,
+      publish_immediately: true,
+      feature_states_to_update: [{ feature_segment: null, enabled: state.enabled, feature_state_value: typedValue(state.value) }],
+    });
+    const live = (await this.listFeatureStates(environment.apiKey, featureId)).find((s) => s.feature_segment === null && s.identity === null);
+    if (!live) throw new Error('The new version was published, but its state could not be read back');
+    return live;
+  }
+
   getFeatureState(environmentKey: string, featureStateId: number): Promise<ApiFeatureState> {
     return this.request<ApiFeatureState>('GET', `/environments/${encodeURIComponent(environmentKey)}/featurestates/${featureStateId}/`);
   }

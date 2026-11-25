@@ -70,6 +70,7 @@ export function writeNotes(ctx: Ctx, row: FlagRow, env: FsEnvironment): string {
   const notes: string[] = [];
   const sick = ctx.store.unhealthy(row.feature.id).filter((u) => !u.env || u.env.id === env.id);
   for (const u of sick) notes.push(`Flagsmith Feature Health reports this flag UNHEALTHY${u.env ? ` in ${u.env.name}` : ''}${healthReason(u.event) ? `: ${healthReason(u.event)}` : ''}.`);
+  if (env.v2Versioning) notes.push(`${env.name} uses feature versioning: this publishes a new version, and Flagsmith keeps the previous one in the flag's history.`);
   for (const d of ctx.store.dependencies(row.feature.name)) {
     if (d.env.id === env.id) notes.push(`Requires ${d.requires.join(', ')}${d.blocked ? `, which is off in ${env.name}: this flag is served OFF there until it is on` : ''}.`);
   }
@@ -213,7 +214,7 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
     const marks = `${env.protected ? ' $(shield)' : ''}${env.v2Versioning ? ' $(versions)' : ''}`;
     const state = s ? `${stateGlyph(s)} ${s.enabled ? 'on' : 'off'}` : '—';
     const action =
-      s && !env.v2Versioning && !f.isArchived && !runningExperiments(row).some((x) => x.envId === env.id)
+      s && !f.isArchived && !runningExperiments(row).some((x) => x.envId === env.id)
         ? `[$(debug-start) ${s.enabled ? 'Turn off' : 'Turn on'}](${commandUri('flaglens.toggleFlag', key, env.id)} "Toggle ${key} in ${env.name}")`
         : '';
     const p = persona ? personaState(ctx, row, env.id) : undefined;

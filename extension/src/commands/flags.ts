@@ -96,7 +96,14 @@ async function writeState(
   let updated: ApiFeatureState;
   try {
     updated = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `${label}: ${key} in ${env.name}…` }, () =>
-      conn.client.updateFeatureState(env.apiKey, state.featureStateId, patch),
+      env.v2Versioning
+        ? conn.client.publishFeatureVersion(
+            env,
+            row.feature.id,
+            { enabled: patch.enabled ?? state.enabled, value: patch.value !== undefined ? patch.value : state.value },
+            `FlagLens: ${label}`,
+          )
+        : conn.client.updateFeatureState(env.apiKey, state.featureStateId, patch),
     );
   } catch (e) {
     const message = (e as Error).message;

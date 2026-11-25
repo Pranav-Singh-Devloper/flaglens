@@ -48,7 +48,7 @@ export async function segmentOverridesCommand(app: App, arg?: Target, envArg?: u
   const envId = envFrom(arg, envArg);
   const env = envId !== undefined ? store.environment(envId) : await pickEnvironment(app, row, `Segment overrides of ${key}`);
   if (!env) return;
-  const blocked = row.feature.isArchived ? `${key} is archived in Flagsmith.` : writeBlockReason(row, env);
+  const blocked = row.feature.isArchived ? `${key} is archived in Flagsmith.` : writeBlockReason(row, env, 'segments');
   if (blocked) return void vscode.window.showWarningMessage(blocked);
 
   const overrides = await loadOverrides(app, row, env);

@@ -7,7 +7,7 @@ export interface FsEnvironment {
   id: number;
   name: string;
   apiKey: string;
-  /** v2 feature versioning: FlagLens shows these read-only. */
+  /** v2 feature versioning: changes to the default are published as a new version. */
   v2Versioning: boolean;
   /** Matches flaglens.protectedEnvironments: writes need a typed confirmation. */
   protected: boolean;
@@ -176,9 +176,12 @@ export function rowSignature(row: FlagRow): string {
   return `${f.id}:${f.isArchived ? 1 : 0}:${f.tags.map((t) => t.id).join(',')}:${f.segmentOverrides}:${f.description}|${states}|${x}`;
 }
 
-/** Whether a flag can be changed in an environment through the v1 API, and if not, why. */
-export function writeBlockReason(row: FlagRow, env: FsEnvironment): string | undefined {
-  if (env.v2Versioning) return `${env.name} uses feature versioning (v2). FlagLens shows it read-only; change it in the Flagsmith dashboard.`;
+/**
+ * Whether a flag can be changed in an environment, and if not, why. `what` is the environment default (published as
+ * a new version in v2-versioned environments) or its segment overrides (dashboard only in those environments).
+ */
+export function writeBlockReason(row: FlagRow, env: FsEnvironment, what: 'default' | 'segments' = 'default'): string | undefined {
+  if (env.v2Versioning && what === 'segments') return `${env.name} uses feature versioning (v2): change its segment overrides in the Flagsmith dashboard.`;
   if (row.experiments.some((x) => x.envId === env.id && x.status === 'running')) {
     return `${row.feature.name} is locked by a running experiment in ${env.name}.`;
   }

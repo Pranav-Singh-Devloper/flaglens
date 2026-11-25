@@ -102,7 +102,7 @@ export class MatrixPanel {
       status: store.status === 'offline' ? `Offline: showing last known state. ${store.lastError ?? ''}` : store.status === 'ok' ? '' : store.status,
       activeEnvId: store.activeEnvironment?.id,
       focus: this.focus,
-      envs: store.environments.map((e) => ({ id: e.id, name: e.name, protected: e.protected, readOnly: e.v2Versioning })),
+      envs: store.environments.map((e) => ({ id: e.id, name: e.name, protected: e.protected, readOnly: false })),
       rows: [...store.rows.values()]
         .sort((a, b) => Number(a.feature.isArchived) - Number(b.feature.isArchived) || a.feature.name.localeCompare(b.feature.name))
         .map((row) => {

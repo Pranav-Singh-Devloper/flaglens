@@ -229,7 +229,7 @@ export async function selectEnvironmentCommand(app: App): Promise<void> {
   if (!store.connected) return void vscode.commands.executeCommand('flaglens.connect');
   const items = store.environments.map((e) => ({
     label: `${e.id === store.activeEnvironment?.id ? '$(check) ' : ''}${e.name}`,
-    description: [e.protected ? '$(shield) protected' : '', e.v2Versioning ? '$(versions) read-only (v2 versioning)' : ''].filter(Boolean).join('  '),
+    description: [e.protected ? '$(shield) protected' : '', e.v2Versioning ? '$(versions) feature versioning (v2)' : ''].filter(Boolean).join('  '),
     env: e,
   }));
   const pick = await vscode.window.showQuickPick(items, { title: 'Active Flagsmith environment', placeHolder: 'Used by the status bar, tree and autocomplete' });

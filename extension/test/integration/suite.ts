@@ -419,6 +419,7 @@ export async function run(): Promise<void> {
     };
     assert.deepEqual(await order(), ['pro_plan', 'pro_eu']);
     assert.ok(shadowed(), 'the seeded mistake: pro_eu is shadowed by pro_plan');
+    const original = (await client.listFeatureSegments(feature, prd.id)).map((l) => ({ id: l.id, priority: l.priority }));
     try {
       await run({ op: 'add', segment: 'india', enabled: true, value: 777 });
       assert.match(detail, /1\. pro_plan: on 500\n2\. pro_eu: on 800/);
@@ -441,8 +442,43 @@ export async function run(): Promise<void> {
       app.confirm = async () => true;
       const leftover = (await client.listFeatureSegments(feature, prd.id)).find((l) => l.segment_name === 'india');
       if (leftover) await client.deleteSegmentOverride(leftover.id);
-      const links = (await client.listFeatureSegments(feature, prd.id)).sort((a, b) => (a.segment_name === 'pro_plan' ? -1 : b.segment_name === 'pro_plan' ? 1 : 0));
-      await client.reorderSegmentOverrides(links.map((l) => l.id));
+      // Back to the seeded priority numbers, which other tests quote.
+      await client.request('POST', '/features/feature-segments/update-priorities/', original);
+      await store.refresh();
+    }
+  });
+
+  await test('v2 versioned environment: a toggle publishes a new version, and Undo publishes another', async () => {
+    const client = store.connection!.client;
+    const created = await client.request<{ id: number; api_key: string }>('POST', '/environments/', { name: 'Versioned (e2e)', project: store.project!.id });
+    try {
+      await client.request('POST', `/environments/${created.api_key}/enable-v2-versioning/`);
+      const env = await waitFor('v2 versioning enabled', async () => {
+        await store.refresh();
+        const e = store.environment(created.id);
+        return e?.v2Versioning ? e : undefined;
+      }, 30_000);
+      const fid = store.row('dark_mode')!.feature.id;
+      const versions = async () => (await client.request<{ results: { description: string | null; is_live: boolean }[] }>('GET', `/environments/${env.id}/features/${fid}/versions/`)).results;
+      const before = (await versions()).length;
+      const wasOn = store.row('dark_mode')!.states.get(env.id)!.enabled;
+
+      let detail = '';
+      app.confirm = async (i) => {
+        detail = i.detail ?? '';
+        return true;
+      };
+      await vscode.commands.executeCommand('flaglens.toggleFlag', 'dark_mode', env.id);
+      assert.match(detail, /publishes a new version/);
+      const after = await versions();
+      assert.equal(after.length, before + 1, 'one new version');
+      assert.match(after.find((v) => v.is_live)?.description ?? '', /^FlagLens: Turn O(N|FF)$/);
+      const live = (await client.listFeatureStates(env.apiKey, fid)).find((s) => s.feature_segment === null && s.identity === null)!;
+      assert.equal(live.enabled, !wasOn);
+      await waitFor('store shows the published state', () => store.row('dark_mode')!.states.get(env.id)!.enabled === !wasOn);
+    } finally {
+      app.confirm = async () => true;
+      await client.request('DELETE', `/environments/${created.api_key}/`);
       await store.refresh();
     }
   });

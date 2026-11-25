@@ -70,7 +70,8 @@ describe('environments and writes', () => {
     const rows = buildRows([apiFeature(1, 'f')], [], new Map([[1, [apiState(10, 1, 1)]]]));
     const r = rows.get('f')!;
     expect(writeBlockReason(r, ENVS[0]!)).toBeUndefined();
-    expect(writeBlockReason(r, { ...ENVS[0]!, v2Versioning: true })).toMatch(/versioning/);
+    expect(writeBlockReason(r, { ...ENVS[0]!, v2Versioning: true })).toBeUndefined();
+    expect(writeBlockReason(r, { ...ENVS[0]!, v2Versioning: true }, 'segments')).toMatch(/versioning/);
     expect(writeBlockReason(r, ENVS[1]!)).toMatch(/no state/);
     r.experiments.push({ id: 1, name: 'e', status: 'running', envId: 1 });
     expect(writeBlockReason(r, ENVS[0]!)).toMatch(/experiment/);
