@@ -362,6 +362,45 @@ export async function run(): Promise<void> {
     }
   });
 
+  await test('identity override: set a flag for the previewed user only, confirmed, then remove it', async () => {
+    const client = store.connection!.client;
+    const user = { name: 'Override test', identifier: `flaglens-e2e-${Date.now()}@example.com`, traits: {} };
+    await vscode.commands.executeCommand('flaglens.previewAs', user);
+    let intent: { action: string; detail?: string; scope?: string } | undefined;
+    app.confirm = async (i) => {
+      intent = i;
+      return true;
+    };
+    try {
+      assert.equal(store.evaluation(prd.id)!.get('new_checkout')!.enabled, false, 'off for this user before');
+      await vscode.commands.executeCommand('flaglens.setUserOverride', 'new_checkout', prd.id, { enabled: true, value: null });
+      assert.equal(intent?.scope, `${user.identifier} only`);
+      assert.match(intent!.action, /^Turn ON for Override test$/);
+
+      // Flagsmith stores it, the local preview shows it, and everyone else is unaffected.
+      const identity = await client.findIdentity(prd.apiKey, user.identifier);
+      assert.ok(identity, 'identity created in Flagsmith');
+      const overrides = await client.listIdentityFeatureStates(prd.apiKey, identity!.id);
+      assert.deepEqual(overrides.map((o) => [o.feature, o.enabled]), [[store.row('new_checkout')!.feature.id, true]]);
+      await waitFor('override in the preview', () => store.evaluation(prd.id)!.get('new_checkout')!.reason.kind === 'identity');
+      assert.equal(store.evaluation(prd.id)!.get('new_checkout')!.enabled, true);
+      assert.equal(store.row('new_checkout')!.states.get(prd.id)!.enabled, false, 'the environment default is unchanged');
+
+      const doc = await open('server.mjs');
+      const hover = hoverText(await vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', doc.uri, positionOf(doc, "'new_checkout'", 3)));
+      assert.match(hover, /Set for Override test…/);
+
+      await vscode.commands.executeCommand('flaglens.setUserOverride', 'new_checkout', prd.id, 'remove');
+      assert.match(intent!.action, /^Remove override for Override test$/);
+      assert.equal((await client.listIdentityFeatureStates(prd.apiKey, identity!.id)).length, 0);
+      await waitFor('override gone from the preview', () => store.evaluation(prd.id)!.get('new_checkout')!.reason.kind !== 'identity');
+      await client.request('DELETE', `/environments/${prd.apiKey}/identities/${identity!.id}/`);
+    } finally {
+      app.confirm = async () => true;
+      await vscode.commands.executeCommand('flaglens.previewAs', null);
+    }
+  });
+
   await test('environment matrix opens', async () => {
     await vscode.commands.executeCommand('flaglens.openMatrix');
     const tab = await waitFor('matrix tab', () =>

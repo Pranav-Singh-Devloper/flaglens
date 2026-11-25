@@ -10,6 +10,8 @@ import type {
   ApiExperiment,
   ApiFeature,
   ApiFeatureState,
+  ApiIdentity,
+  ApiIdentityFeatureState,
   ApiOrganisation,
   ApiProject,
   ApiTag,
@@ -139,6 +141,42 @@ export class FlagsmithClient {
   /** Feature Health events for the project (open-source Flagsmith: Webhook and Grafana providers). */
   listFeatureHealthEvents(projectId: number): Promise<ApiFeatureHealthEvent[]> {
     return this.listAll<ApiFeatureHealthEvent>(`/projects/${projectId}/feature-health/events/`);
+  }
+
+  // --- identity overrides ----------------------------------------------------------------------------------------
+  // Verified on 2.295.2 (core identities, not Edge): ?q= is a substring search, so callers filter for an exact match.
+
+  async findIdentity(environmentKey: string, identifier: string): Promise<ApiIdentity | undefined> {
+    const env = encodeURIComponent(environmentKey);
+    const hits = await this.listAll<ApiIdentity>(`/environments/${env}/identities/?q=${encodeURIComponent(identifier)}`);
+    return hits.find((i) => i.identifier === identifier);
+  }
+
+  createIdentity(environmentKey: string, identifier: string): Promise<ApiIdentity> {
+    return this.request<ApiIdentity>('POST', `/environments/${encodeURIComponent(environmentKey)}/identities/`, { identifier });
+  }
+
+  listIdentityFeatureStates(environmentKey: string, identityId: number): Promise<ApiIdentityFeatureState[]> {
+    return this.listAll<ApiIdentityFeatureState>(`/environments/${encodeURIComponent(environmentKey)}/identities/${identityId}/featurestates/`);
+  }
+
+  /** Creates or changes one identity override. Values are sent raw, as for environment defaults. */
+  async setIdentityOverride(
+    environmentKey: string,
+    identityId: number,
+    featureId: number,
+    state: { enabled: boolean; value: FlagValue },
+    existingId?: number,
+  ): Promise<ApiIdentityFeatureState> {
+    const base = `/environments/${encodeURIComponent(environmentKey)}/identities/${identityId}/featurestates/`;
+    const body = { enabled: state.enabled, feature_state_value: state.value };
+    return existingId === undefined
+      ? this.request<ApiIdentityFeatureState>('POST', base, { feature: featureId, ...body })
+      : this.request<ApiIdentityFeatureState>('PATCH', `${base}${existingId}/`, body);
+  }
+
+  deleteIdentityOverride(environmentKey: string, identityId: number, featureStateId: number): Promise<unknown> {
+    return this.request('DELETE', `/environments/${encodeURIComponent(environmentKey)}/identities/${identityId}/featurestates/${featureStateId}/`);
   }
 
   // --- webhooks (real-time updates) -------------------------------------------------------------------------------

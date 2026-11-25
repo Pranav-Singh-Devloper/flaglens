@@ -169,6 +169,12 @@
         "title": "Publish Code References to Flagsmith…",
         "category": "FlagLens",
         "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "flaglens.setUserOverride",
+        "title": "Set Flag for Previewed User…",
+        "category": "FlagLens",
+        "icon": "$(person-add)"
       }
     ],
     "viewsContainers": {

@@ -12,21 +12,21 @@ import { dashboardUrl, stateShort, writeNotes } from '../present';
 import type { FlagNode } from '../views/flagsTree';
 
 /** Commands are invoked from CodeLens/hover (key, envId), the tree (node) or the palette (nothing). */
-type Target = string | FlagNode | undefined;
+export type Target = string | FlagNode | undefined;
 
-function keyFrom(arg: Target): string | undefined {
+export function keyFrom(arg: Target): string | undefined {
   if (typeof arg === 'string') return arg;
   if (arg && typeof arg === 'object' && 'key' in arg) return arg.key;
   return undefined;
 }
 
-function envFrom(arg: Target, envArg: unknown): number | undefined {
+export function envFrom(arg: Target, envArg: unknown): number | undefined {
   if (typeof envArg === 'number') return envArg;
   if (arg && typeof arg === 'object' && arg.kind === 'state') return arg.envId;
   return undefined;
 }
 
-function requireConnected(app: App): boolean {
+export function requireConnected(app: App): boolean {
   if (app.store.connected && app.store.rows.size > 0) return true;
   void vscode.window.showWarningMessage('FlagLens is not connected to Flagsmith.', 'Connect…').then((c) => {
     if (c) void vscode.commands.executeCommand('flaglens.connect');
@@ -34,7 +34,7 @@ function requireConnected(app: App): boolean {
   return false;
 }
 
-async function pickFlag(app: App, placeHolder: string): Promise<string | undefined> {
+export async function pickFlag(app: App, placeHolder: string): Promise<string | undefined> {
   const active = app.store.activeEnvironment;
   const items = [...app.store.rows.values()]
     .filter((r) => !r.feature.isArchived)
@@ -43,7 +43,7 @@ async function pickFlag(app: App, placeHolder: string): Promise<string | undefin
   return (await vscode.window.showQuickPick(items, { placeHolder, matchOnDetail: true }))?.label;
 }
 
-async function pickEnvironment(app: App, row: FlagRow, title: string): Promise<FsEnvironment | undefined> {
+export async function pickEnvironment(app: App, row: FlagRow, title: string): Promise<FsEnvironment | undefined> {
   const active = app.store.activeEnvironment;
   const envs = [...app.store.environments].sort((a, b) => Number(b.id === active?.id) - Number(a.id === active?.id));
   const items = envs.map((env) => {
@@ -144,7 +144,7 @@ export async function toggleCommand(app: App, arg?: Target, envArg?: unknown): P
 }
 
 /** Parses user input into the same type as the current value (Flagsmith stores string, integer or boolean). */
-function parseValue(input: string, kind: 'string' | 'integer' | 'boolean'): FlagValue | Error {
+export function parseValue(input: string, kind: 'string' | 'integer' | 'boolean'): FlagValue | Error {
   if (kind === 'integer') return /^-?\d+$/.test(input.trim()) ? Number(input.trim()) : new Error('Enter a whole number');
   if (kind === 'boolean') return /^(true|false)$/i.test(input.trim()) ? input.trim().toLowerCase() === 'true' : new Error('Enter true or false');
   return input;

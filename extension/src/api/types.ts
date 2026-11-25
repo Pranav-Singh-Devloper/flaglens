@@ -136,3 +136,17 @@ export interface ApiWebhook {
   enabled: boolean;
   secret?: string | null;
 }
+
+export interface ApiIdentity {
+  id: number;
+  identifier: string;
+  environment: number;
+}
+
+/** An identity override. `feature` is the feature id; listing returns `identity` as an object. */
+export interface ApiIdentityFeatureState {
+  id: number;
+  feature: number;
+  enabled: boolean;
+  feature_state_value: FlagValue;
+}

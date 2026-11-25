@@ -17,6 +17,7 @@ import {
 } from './commands/flags';
 import { previewAsCommand, restorePersona, toggleDimmingCommand } from './commands/persona';
 import { publishCodeReferencesCommand } from './commands/codeReferences';
+import { userOverrideCommand } from './commands/overrides';
 import { checkRulesCommand, testPlanCommand } from './commands/rules';
 import { ApiKeyStore, readSettings } from './config';
 import { createLogger } from './log';
@@ -152,6 +153,7 @@ export function activate(context: vscode.ExtensionContext): App {
     register('flaglens.previewAs', (persona?: never) => previewAsCommand(app, persona)),
     register('flaglens.toggleDimming', () => toggleDimmingCommand()),
     register('flaglens.checkRules', (opts?: never) => checkRulesCommand(app, opts)),
+    register('flaglens.setUserOverride', (arg?: never, env?: never, preset?: never) => userOverrideCommand(app, arg, env, preset)),
     register('flaglens.publishCodeReferences', (opts?: never) => publishCodeReferencesCommand(app, opts)),
     register('flaglens.testPlan', (keys?: never, mode?: never, opts?: never) => testPlanCommand(app, keys, mode, opts)),
 
