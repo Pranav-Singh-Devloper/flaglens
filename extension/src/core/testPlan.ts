@@ -53,8 +53,8 @@ export function testPlanMarkdown(flags: readonly PlanFlag[], plan: PairwisePlan,
   } else {
     lines.push(
       plan.optimal
-        ? `**Optimal.** No plan can have fewer than ${plan.lowerBound} runs, and this one has ${n}. Built with IPOG (Lei & Tai, 2007) and simulated annealing (Cohen et al., 2003).`
-        : `Built with IPOG (Lei & Tai, 2007) and shrunk with simulated annealing (Cohen et al., 2003). No plan can have fewer than ${plan.lowerBound} runs (the two flags with most values need every pair of their values, and the on/off flags need a plan of their own).`,
+        ? `**Optimal.** No plan can have fewer than ${plan.lowerBound} runs, and this one has ${n}. Built with IPOG (Lei et al., 2007) and simulated annealing (Cohen et al., 2003).`
+        : `Built with IPOG (Lei et al., 2007) and shrunk with simulated annealing (Cohen et al., 2003). No plan can have fewer than ${plan.lowerBound} runs (the two flags with most values need every pair of their values, and the on/off flags need a plan of their own).`,
       '',
     );
   }

@@ -10,8 +10,8 @@
 //   (0,0) appears in row 0;  (1,0) and (0,1) appear because two different columns of equal weight can't contain each
 //   other;  (1,1) appears because 2·⌈N/2⌉ > N−1 ones can't fit in disjoint positions.
 //
-// Flags with more values (multivariate, remote config): no closed form is known. We build a plan with IPOG (Lei &
-// Tai, 2007), a standard greedy algorithm, then shrink it with simulated annealing (Cohen, Colbourn & Ling, 2003),
+// Flags with more values (multivariate, remote config): no closed form is known. We build a plan with IPOG (Lei, Kacker,
+// Kuhn, Okun & Lawrence, 2007), a standard greedy algorithm, then shrink it with simulated annealing (Cohen, Colbourn & Ling, 2003),
 // and report a lower bound. When the plan's size equals the bound it is optimal.
 
 export function binomial(n: number, k: number): number {
