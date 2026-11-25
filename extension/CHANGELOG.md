@@ -1,10 +1,19 @@
 # Changelog
 
+## 0.5.1
+
+- The hover links *Set for <user>…* and *Segment overrides…* now work. Hover links may only run allow-listed commands,
+  and the two new ones were missing from the list; an end-to-end test now checks every link in the hover.
+- Feature Health alerts show up within one refresh interval while real-time updates are on. Health events don't
+  trigger Flagsmith webhooks, so FlagLens checks them on their own (one request) instead of waiting for the slower
+  fallback poll.
+- Real-time updates are described as taking a few seconds, which is what we measure (about 3 s from a dashboard toggle
+  to the editor), rather than two.
+
 ## 0.5.0
 
 - **Real-time updates.** FlagLens registers a Flagsmith organisation webhook pointing at a small listener in the
-  editor (random port and path; every call must carry a valid HMAC-SHA256 signature) and refreshes within about two
-  seconds of any change, made anywhere. The webhook is removed when the window closes, and webhooks left by crashed
+  editor (random port and path; every call must carry a valid HMAC-SHA256 signature) and refreshes within a few seconds of any change, made anywhere. The webhook is removed when the window closes, and webhooks left by crashed
   windows are cleaned up. Polling continues as a fallback, every 30 s while the webhook works. On by default when
   Flagsmith runs on this machine (`flaglens.realtime.mode`); the dev kit allows `host.docker.internal` in Flagsmith's
   `SSRF_ALLOWED_HOSTS`. The status bar shows a lightning bolt while it is live.
