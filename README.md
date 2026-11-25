@@ -16,10 +16,11 @@
 </p>
 
 <p align="center">
-  <b><a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.3.1/flaglens-demo.mp4">▶ Watch the 2:47 demo</a></b> ·
-  <a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest">⬇ Download the .vsix</a> ·
-  <a href="docs/paper/flaglens.pdf">📄 Research paper (PDF)</a> ·
-  <a href="#quick-start-about-5-minutes">🚀 Quick start</a>
+  <b><a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.3.1/flaglens-demo.mp4">Watch the 2:47 demo</a></b> ·
+  <a href="https://flaglens-one.vercel.app">Website</a> ·
+  <a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest">Download the .vsix</a> ·
+  <a href="docs/paper/flaglens.pdf">Research paper (PDF)</a> ·
+  <a href="#quick-start-about-5-minutes">Quick start</a>
 </p>
 
 <p align="center"><i>Toggle Wars 2026 · Track 03: Build on Open Source Flagsmith</i></p>
@@ -33,12 +34,12 @@ a check against your own Flagsmith server.
 
 ## What makes it different
 
-| | Feature | Why you can trust it |
-|---|---|---|
-| 🌫 | **Greys out code that can't run** in the environment you pick (or for one user), like an inactive `#ifdef`, with the reason at the end of the line | Conditions are evaluated in three-valued logic: anything uncertain stays visible. It **never greys code that might execute**. |
-| 👤 | **Preview as any user**: pick an identity and traits; every CodeLens, hover and greyed line shows what *they* get, and which segment, split bucket or override decided | Flagsmith's own engine, run locally. **14,400 of 14,400** results match the live server across every rule operator (`make verify-engine`). |
-| 🧭 | **Targeting-rule check**: overrides that can never apply (shadowed), change nothing (redundant), segments that match nobody, defaults nobody gets | Each finding is **proven for every possible user**: trait values are split into equivalence classes, and anything that can't be split is over-approximated. |
-| 🧪 | **Smallest test plan** for a set of flags: every pair of values meets in some run | **96 combinations → 7 runs**, provably minimal (Kleitman–Spencer for on/off flags, plus a lower bound we prove for mixed flags). |
+| Feature | Why you can trust it |
+|---|---|
+| **Greys out code that can't run** in the environment you pick (or for one user), like an inactive `#ifdef`, with the reason at the end of the line | Conditions are evaluated in three-valued logic: anything uncertain stays visible. It **never greys code that might execute**. |
+| **Preview as any user**: pick an identity and traits; every CodeLens, hover and greyed line shows what *they* get, and which segment, split bucket or override decided | Flagsmith's own engine, run locally. **14,400 of 14,400** results match the live server across every rule operator (`make verify-engine`). |
+| **Targeting-rule check**: overrides that can never apply (shadowed), change nothing (redundant), segments that match nobody, defaults nobody gets | Each finding is **proven for every possible user**: trait values are split into equivalence classes, and anything that can't be split is over-approximated. |
+| **Smallest test plan** for a set of flags: every pair of values meets in some run | **96 combinations → 7 runs**, provably minimal (Kleitman–Spencer for on/off flags, plus a lower bound we prove for mixed flags). |
 
 And the essentials, done carefully: live state for every environment above each flag, safe toggles with typed
 confirmation for Production and Undo, environment drift and a Markdown diff for PRs, typo detection with quick fixes,
@@ -83,7 +84,7 @@ It is a community project, not an official Flagsmith product.
 |---|---|
 | ![Code that can't run is greyed out](docs/screenshots/grey-out.png) **Greys out code that can't run** in the active environment, with the reason: here the old checkout, because `new_checkout` is on in Development. | ![Preview as a user](docs/screenshots/preview-as.png) **Preview as a user**: Production is off for everyone, but on for this beta tester via the `beta_testers` segment. CodeLens, hover and greying all follow. |
 | ![Targeting rule check](docs/screenshots/rule-check.png) **Targeting rule check**: an override that can never apply (`pro_eu`, shadowed by `pro_plan`) and one that changes nothing (`uk`). Each finding holds for every possible user. | ![Pairwise test plan](docs/screenshots/test-plan.png) **Pairwise test plan**: every pair of values of 6 flags in 7 runs instead of 96, with JSON and a GitHub Actions matrix to paste. |
-| ![CodeLens above every flag reference](docs/screenshots/codelens.png) **Live state inline**: every environment above every flag, with ⚠ drift, 🗑 stale and archived badges. | ![Environment Matrix](docs/screenshots/matrix.png) **Environment Matrix**: every flag × environment, differences highlighted, copy the diff as Markdown. |
+| ![CodeLens above every flag reference](docs/screenshots/codelens.png) **Live state inline**: every environment above every flag, with drift, stale and archived badges. | ![Environment Matrix](docs/screenshots/matrix.png) **Environment Matrix**: every flag × environment, differences highlighted, copy the diff as Markdown. |
 | ![Typo quick fix](docs/screenshots/typo-quick-fix.png) **Typo detection**: unknown keys are underlined, with *Replace with…* and *Create flag…* quick fixes. | ![Typed confirmation for Production](docs/screenshots/protected-confirm.png) **Protected environments**: changing Production means typing the flag's name. |
 | ![Hover card](docs/screenshots/hover.png) **Hover card**: every environment's state and value, variant weights, overrides, last change, one-click toggles. | ![The demo shop](docs/screenshots/demo-shop.png) **The demo shop** (`make demo`): banner, checkout and button colour all come from self-hosted Flagsmith. |
 | ![Problems panel with archived and stale flags](docs/screenshots/archived-and-stale.png) **Archived and stale flags** show up as problems, computed locally on open-source Flagsmith. | ![The self-hosted Flagsmith dashboard](docs/screenshots/dashboard-production.png) **Same data as the dashboard**: every value comes from your self-hosted Flagsmith. |
@@ -104,21 +105,21 @@ It is a community project, not an official Flagsmith product.
 
 ## What it does
 
-| | Feature | Flagsmith API it uses |
-|---|---|---|
-| 🔍 | Live state of every environment above each flag reference (CodeLens) and in a hover card with values, variant weights, overrides and last change | `GET /projects/{id}/features/`, `GET /environments/{key}/featurestates/` |
-| 👤 | **Preview as a user**: pick a test user (identifier + traits) from the status bar, and every CodeLens, hover and greyed-out region shows what *that user* gets, and why: segment and priority, % split bucket, identity override. Evaluated locally from the environment document with Flagsmith's own rules (ported from its open-source engine), and [verified against the server](#development-and-tests) | `GET /environments/{key}/document/` |
-| 🌫 | **Greys out code that can't run** in the active environment (and for the previewed user), like an inactive `#ifdef`: the losing branch of `if`/`else` and ternaries, through simple `const x = flags…` aliases, and the rest of a block after a flag guard that returns. JS/TS and other brace languages, and Python. It uses three-valued logic, so it only greys code when the outcome is **certain**: a flag with a segment override counts as unknown for "everyone" | environment document + feature states |
-| 🧭 | **Targeting rule check**: finds segment overrides that can **never apply** (every user they match is caught first by higher-priority overrides), overrides that **change nothing**, segments that **match nobody**, and defaults **nobody gets**. Each finding is proven for every possible user (see [How the checks work](#how-the-checks-work)). Shown in CodeLens, hovers, the Problems panel and a Markdown report | environment documents |
-| 🧪 | **Pairwise test plan**: the smallest set of runs in which every pair of values of the chosen flags appears together. Provably optimal for on/off flags (Kleitman–Spencer); near-optimal with a stated lower bound for multivariate flags. Exports a table, JSON and a GitHub Actions matrix | feature states, variants, environment documents |
-| 🔁 | **Safe toggles and value edits**: modal confirmation, typed confirmation for protected environments (`prod\|live\|main`), Undo, every change logged | `PATCH /environments/{key}/featurestates/{id}/` |
-| ⚠️ | **Drift badge** when Staging ≠ Production, **Environment Matrix** of every flag × environment, **Copy diff as Markdown** for a PR | feature states × environments |
-| ✍️ | **Typo detection** for unknown keys with *Replace with…* and *Create flag in Flagsmith…* quick fixes (respects the project's naming rules) | `POST /projects/{id}/features/` |
-| 🧹 | **Stale flags on open-source Flagsmith**: identical in every environment for N days, no targeting, not tagged permanent | `updated_at` of feature states, tags (`is_permanent`) |
-| 🗄 | **Archived flags still referenced** in code are flagged for removal | `is_archived` |
-| 🔒 | **Experiment lock**: flags in a running experiment are badged and can't be toggled | `GET /environments/{key}/experiments/` (beta) |
-| ⌨️ | Autocomplete flag keys inside `isFeatureEnabled("…")`, sidebar tree, status-bar environment switcher, flag history, *Find unused flags* in the workspace | all of the above |
-| 🐳 | **Dev kit**: pinned official images, idempotent REST seed, demo shop using the official Node SDK | Docker, REST, SDK API |
+| Feature | Flagsmith API it uses |
+|---|---|
+| Live state of every environment above each flag reference (CodeLens) and in a hover card with values, variant weights, overrides and last change | `GET /projects/{id}/features/`, `GET /environments/{key}/featurestates/` |
+| **Preview as a user**: pick a test user (identifier + traits) from the status bar, and every CodeLens, hover and greyed-out region shows what *that user* gets, and why: segment and priority, % split bucket, identity override. Evaluated locally from the environment document with Flagsmith's own rules (ported from its open-source engine), and [verified against the server](#development-and-tests) | `GET /environments/{key}/document/` |
+| **Greys out code that can't run** in the active environment (and for the previewed user), like an inactive `#ifdef`: the losing branch of `if`/`else` and ternaries, through simple `const x = flags…` aliases, and the rest of a block after a flag guard that returns. JS/TS and other brace languages, and Python. It uses three-valued logic, so it only greys code when the outcome is **certain**: a flag with a segment override counts as unknown for "everyone" | environment document + feature states |
+| **Targeting rule check**: finds segment overrides that can **never apply** (every user they match is caught first by higher-priority overrides), overrides that **change nothing**, segments that **match nobody**, and defaults **nobody gets**. Each finding is proven for every possible user (see [How the checks work](#how-the-checks-work)). Shown in CodeLens, hovers, the Problems panel and a Markdown report | environment documents |
+| **Pairwise test plan**: the smallest set of runs in which every pair of values of the chosen flags appears together. Provably optimal for on/off flags (Kleitman–Spencer); near-optimal with a stated lower bound for multivariate flags. Exports a table, JSON and a GitHub Actions matrix | feature states, variants, environment documents |
+| **Safe toggles and value edits**: modal confirmation, typed confirmation for protected environments (`prod\|live\|main`), Undo, every change logged | `PATCH /environments/{key}/featurestates/{id}/` |
+| **Drift badge** when Staging ≠ Production, **Environment Matrix** of every flag × environment, **Copy diff as Markdown** for a PR | feature states × environments |
+| **Typo detection** for unknown keys with *Replace with…* and *Create flag in Flagsmith…* quick fixes (respects the project's naming rules) | `POST /projects/{id}/features/` |
+| **Stale flags on open-source Flagsmith**: identical in every environment for N days, no targeting, not tagged permanent | `updated_at` of feature states, tags (`is_permanent`) |
+| **Archived flags still referenced** in code are flagged for removal | `is_archived` |
+| **Experiment lock**: flags in a running experiment are badged and can't be toggled | `GET /environments/{key}/experiments/` (beta) |
+| Autocomplete flag keys inside `isFeatureEnabled("…")`, sidebar tree, status-bar environment switcher, flag history, *Find unused flags* in the workspace | all of the above |
+| **Dev kit**: pinned official images, idempotent REST seed, demo shop using the official Node SDK | Docker, REST, SDK API |
 
 It fits the existing Flagsmith toolchain instead of inventing its own:
 
@@ -162,14 +163,14 @@ Finally open the demo workspace: **File → Open Folder… → `flaglens/example
 - `make seed` ends with a box: `✔ Self-hosted Flagsmith is seeded and ready.`
 - VS Code's status bar shows **`⚑ Demo Shop · Development`**.
 - In `server.mjs`, above `isFeatureEnabled('new_checkout')`, you see
-  `⚑ new_checkout   Development ● on · Staging ● on · Production ○ off`, and `rate_limit_per_minute` shows **⚠ drift**.
+  `⚑ new_checkout   Development ● on · Staging ● on · Production ○ off`, and `rate_limit_per_minute` shows a **drift** badge.
 - `typo.ts` has a yellow squiggle under `new_chekout` (try the quick fix) and a blue hint on `dark_mode` (stale).
 - Click the `new_checkout` CodeLens → **Turn off in Development** → confirm. Within 3 seconds the shop at
   http://localhost:3030 switches back to the classic checkout. Try Production: you'll be asked to type the flag name.
 - Code that can't run is greyed, with the reason at the end of the line: in `server.mjs` the old three-step checkout
   shows `⟵ new_checkout is on → never runs (Development)`, and in `typo.ts` the branch behind the typo is greyed
   because `new_chekout` doesn't exist.
-- Click **🌐 Everyone** in the status bar → **Beta tester**, then switch to Production (click the environment in the
+- Click **Everyone** in the status bar → **Beta tester**, then switch to Production (click the environment in the
   status bar). The `new_checkout` CodeLens now reads `Production ● on (beta_testers)`, the old checkout is greyed out
   for this user, and the hover shows which segment decided.
 - The Problems panel lists two **targeting rule** findings in `server.mjs`: the `pro_eu` override for
@@ -203,7 +204,7 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | FlagLens: Copy Environment Diff as Markdown… | Paste-ready table of differences between two environments |
 | FlagLens: Show Flag History… | Audit log (if the server exposes it), last change per environment, changes made with FlagLens |
 | FlagLens: Find Unused Flags in Workspace | Project flags that no file references |
-| FlagLens: Preview Flags as User… | Pick a test user (from `flaglens.personas`, or type an identifier and traits). Also: click the 👤/🌐 item in the status bar |
+| FlagLens: Preview Flags as User… | Pick a test user (from `flaglens.personas`, or type an identifier and traits). Also: click the persona item in the status bar |
 | FlagLens: Toggle Greying Out Code That Won't Run | Turn the greying on or off |
 | FlagLens: Check Targeting Rules | Report of segment overrides that never apply, change nothing or match nobody, per environment |
 | FlagLens: Generate Pairwise Test Plan… | Pick flags (the open file's are preselected): the smallest plan covering every pair of their values |
@@ -219,7 +220,7 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | `flaglens.activeEnvironment` | from `flagsmith.json` | Environment used by the status bar, tree and autocomplete |
 | `flaglens.refreshIntervalSeconds` | `10` | Polling interval (minimum 3) |
 | `flaglens.protectedEnvironments` | `prod\|live\|main` | Case-insensitive regex; matching environments need the flag name typed to confirm a change |
-| `flaglens.driftEnvironments` | `["Staging", "Production"]` | The pair compared for the ⚠ drift badge |
+| `flaglens.driftEnvironments` | `["Staging", "Production"]` | The pair compared for the drift badge |
 | `flaglens.staleAfterDays` | project's `stale_flags_limit_days`, else `30` | Days unchanged before a uniform flag counts as stale |
 | `flaglens.permanentTags` | `["permanent", "kill-switch"]` | Tags that are never stale (tags marked *permanent* in Flagsmith count too) |
 | `flaglens.extraPatterns` | `getValue` and `useFlags` patterns | Extra regexes with a named group `key` |
@@ -264,7 +265,7 @@ The seeded flags are designed so every feature is visible:
 |---|---|---|---|---|
 | `new_checkout` | on | on | off | Toggle it live; the shop's checkout changes |
 | `banner_text` | `🚧 dev build` | `Black Friday: 30% off` | `Black Friday: 30% off` | Values inline; the shop banner |
-| `rate_limit_per_minute` | 1000 | 100 | 50 | **⚠ drift** between Staging and Production |
+| `rate_limit_per_minute` | 1000 | 100 | 50 | **drift** between Staging and Production |
 | `checkout_button_color` | blue / green 50% / orange 50% | same | same | Multivariate variants and weights |
 | `dark_mode` | on | on | on | **Stale** (the demo workspace sets `staleAfterDays: 0`) |
 | `maintenance_mode` | off | off | off | Tagged `kill-switch` (permanent), so never stale |
@@ -309,7 +310,7 @@ flowchart LR
 - **Management API, read.** On each refresh: environments, `GET /projects/{id}/features/`, tags, and one
   `GET /environments/{key}/featurestates/` per environment. This gives enabled, value, `updated_at` and per-environment
   variant weights for every flag in N+1 requests, joined into a feature × environment matrix. Experiments (beta) are
-  read per environment to show the 🔒 lock.
+  read per environment to show the lock badge.
 - **Environment documents.** `GET /environments/{key}/document/` (readable with the same Organisation key) returns
   every flag's default, every segment with its rules and overrides, and identity overrides: the document Flagsmith's
   server-side SDKs use for local evaluation. FlagLens evaluates it with a TypeScript port of Flagsmith's open-source
@@ -464,7 +465,7 @@ Checked against a live 2.295.2 instance (these shaped the design):
 |---|---|
 | `make up` says port 8000 is in use | `FLAGSMITH_PORT=8080 make up`, then put `FLAGSMITH_API_URL=http://localhost:8080` in `.env` before `make seed` |
 | `make seed`: "Could not log in" | You changed `ADMIN_PASSWORD` after the first seed. Start fresh: `make reset && make up && make seed` |
-| Status bar shows ⚠ and "Can't reach Flagsmith" | Flagsmith isn't running: `make up`. FlagLens keeps the last known state and reconnects by itself |
+| Status bar shows a warning and "Can't reach Flagsmith" | Flagsmith isn't running: `make up`. FlagLens keeps the last known state and reconnects by itself |
 | "Flagsmith rejected the API key" | After `make reset` the old key is gone. Run `make seed`, then **FlagLens: Connect to Flagsmith** → *Use the key from .env* |
 | No "Connect with it?" prompt | Open the `examples/demo-shop` folder itself (the prompt reads `.env` at the workspace root), or run **FlagLens: Connect to Flagsmith** |
 | `make demo` exits with "No FLAGSMITH_ENV_KEY_*" | Run `make seed` first |
@@ -472,7 +473,7 @@ Checked against a live 2.295.2 instance (these shaped the design):
 
 ## Demo
 
-▶ **Demo video (2:47, 1080p60):** [flaglens-demo.mp4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.3.1/flaglens-demo.mp4)
+**Demo video (2:47, 1080p60):** [flaglens-demo.mp4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.3.1/flaglens-demo.mp4)
 
 Everything on screen is real: the VS Code footage is the released extension, driven by a script against the
 self-hosted Flagsmith from `make up && make seed`. The video itself is built in code (Playwright-driven capture,
