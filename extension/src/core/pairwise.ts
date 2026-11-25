@@ -58,8 +58,16 @@ export function binaryCoveringArray(k: number): number[][] {
 export function pairwiseLowerBound(levels: readonly number[]): number {
   if (levels.length === 0) return 0;
   if (levels.length === 1) return levels[0]!;
-  const [a, b] = [...levels].sort((x, y) => y - x);
-  return Math.max(a! * b!, optimalBinaryRuns(levels.filter((l) => l === 2).length));
+  const sorted = [...levels].sort((x, y) => y - x);
+  const [a, b] = sorted as [number, number];
+  const onOff = levels.filter((l) => l === 2).length;
+  let bound = Math.max(a * b, optimalBinaryRuns(onOff));
+  // One flag with a > 2 values, all others on/off: a plan with exactly 2a runs has each value of the big flag in
+  // exactly two runs, and every on/off flag must be on in one and off in the other. So an on/off column is one of 2^a
+  // choices, and two columns cover all four on/off pairs only if they are neither equal nor complementary: at most
+  // 2^(a-1) columns. With more on/off flags than that, 2a runs are impossible.
+  if (a > 2 && onOff === levels.length - 1 && bound === 2 * a && onOff > 2 ** (a - 1)) bound = 2 * a + 1;
+  return bound;
 }
 
 /**

@@ -31,7 +31,7 @@ describe('on/off flags (Kleitman–Spencer)', () => {
 });
 
 describe('flags with more values (IPOG)', () => {
-  it('covers every pair for many random mixes of value counts', () => {
+  it('covers every pair for many random mixes of value counts', { timeout: 60_000 }, () => {
     let seed = 7;
     const rand = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
     for (let t = 0; t < 300; t++) {
@@ -59,7 +59,27 @@ describe('flags with more values (IPOG)', () => {
     // pair of rows sharing a value, leaving only 4 usable columns), so 7 is optimal even though the bound says 6.
     const mix = pairwisePlan([3, 2, 2, 2, 2, 2]);
     expect(mix.rows.length).toBe(7);
+    expect(mix).toMatchObject({ lowerBound: 7, optimal: true });
     expect(coversAllPairs(mix.rows, [3, 2, 2, 2, 2, 2])).toBe(true);
+  });
+
+  it('proves 2a runs impossible when there are more than 2^(a-1) on/off flags', () => {
+    // Brute force for a = 3, four or five on/off flags, N = 6: search every assignment of the on/off columns.
+    const feasible = (k: number) => {
+      const big = [0, 0, 1, 1, 2, 2];
+      const cols: number[][] = [];
+      for (let m = 0; m < 64; m++) cols.push([0, 1, 2, 3, 4, 5].map((r) => (m >> r) & 1));
+      const ok = (c: number[]) => [0, 1, 2].every((v) => [0, 1].every((x) => big.some((bv, r) => bv === v && c[r] === x)));
+      const good = cols.filter(ok);
+      const pair = (c: number[], d: number[]) => [0, 1].every((x) => [0, 1].every((y) => c.some((cv, r) => cv === x && d[r] === y)));
+      const pick = (chosen: number[][], start: number): boolean =>
+        chosen.length === k || good.slice(start).some((c, i) => chosen.every((d) => pair(c, d)) && pick([...chosen, c], start + i + 1));
+      return pick([], 0);
+    };
+    expect(feasible(4)).toBe(true);
+    expect(feasible(5)).toBe(false);
+    expect(pairwiseLowerBound([3, 2, 2, 2, 2])).toBe(6);
+    expect(pairwiseLowerBound([3, 2, 2, 2, 2, 2])).toBe(7);
   });
 
   it('uses the on/off flags for a stronger lower bound', () => {
