@@ -255,6 +255,81 @@ export async function run(): Promise<void> {
     assert.deepEqual([...limits].sort(), [100, 1000, 50, 500, 800, 'off'].sort());
   });
 
+  await test('publishes code references to Flagsmith; its counts and lifecycle show in the hover', async () => {
+    const result = await vscode.commands.executeCommand<{ references: number; flags: number }>('flaglens.publishCodeReferences', { yes: true });
+    assert.ok(result && result.references > 0 && result.flags >= 6, JSON.stringify(result));
+    await waitFor('code reference counts', () => (store.row('new_checkout')!.feature.codeReferences > 0 ? true : (void store.refresh(), false)));
+    const doc = await open('server.mjs');
+    const hover = hoverText(await vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', doc.uri, positionOf(doc, "'new_checkout'", 3)));
+    assert.match(hover, /code references? in Flagsmith/);
+    assert.match(hover, /lifecycle in Development: \*\*live\*\*/);
+  });
+
+  await test('Feature Health: an unhealthy flag is badged, explained and flagged in the confirmation', async () => {
+    const client = store.connection!.client;
+    const pid = store.project!.id;
+    const [provider] = await client.request<{ webhook_url: string }[]>('GET', `/projects/${pid}/feature-health/providers/`);
+    assert.ok(provider, 'make seed creates the Webhook provider');
+    const post = async (status: string) => {
+      const res = await fetch(provider!.webhook_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Flagsmith answers 400 unless the reason has both block lists, even when one is empty.
+        body: JSON.stringify({ feature: 'new_checkout', environment: 'Production', status, reason: { text_blocks: [{ title: 'Checkout errors', text: 'Error rate 4.2%' }], url_blocks: [] } }),
+      });
+      assert.ok(res.ok, `Feature Health webhook answered HTTP ${res.status}`);
+    };
+    await post('unhealthy');
+    try {
+      const row = store.row('new_checkout')!;
+      await waitFor('health event', () => (store.unhealthy(row.feature.id).length ? true : (void store.refresh(), false)));
+      const doc = await open('server.mjs');
+      const lens = await waitFor('unhealthy lens', async () => {
+        const l = await vscode.commands.executeCommand<vscode.CodeLens[]>('vscode.executeCodeLensProvider', doc.uri, 100);
+        return l.map((x) => x.command?.title ?? '').find((t) => t.includes('new_checkout') && t.includes('unhealthy'));
+      });
+      assert.ok(lens);
+      const hover = hoverText(await vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', doc.uri, positionOf(doc, "'new_checkout'", 3)));
+      assert.match(hover, /\*\*Unhealthy\*\* in Production .*Checkout errors: Error rate 4\\?\.2%/);
+      let detail = '';
+      app.confirm = async (intent) => {
+        detail = intent.detail ?? '';
+        return false;
+      };
+      await vscode.commands.executeCommand('flaglens.toggleFlag', 'new_checkout', prd.id);
+      assert.match(detail, /UNHEALTHY in Production: Checkout errors/);
+    } finally {
+      app.confirm = async () => true;
+      await post('healthy');
+      await store.refresh();
+    }
+  });
+
+  await test('flag dependencies: blocked where the prerequisite is off, and evaluated per user like the server', async () => {
+    const client = store.connection!.client;
+    const child = store.row('checkout_button_color')!.feature.id;
+    const parent = store.row('new_checkout')!.feature.id;
+    await client.request('POST', `/environments/${prd.apiKey}/features/${child}/dependencies/${parent}/`);
+    try {
+      await waitFor('dependency in the document', async () => {
+        await store.refresh();
+        return store.dependencies('checkout_button_color').some((d) => d.env.id === prd.id && d.blocked);
+      });
+      const doc = await open('server.mjs');
+      const hover = hoverText(await vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', doc.uri, positionOf(doc, "'checkout_button_color'", 3)));
+      assert.match(hover, /Requires `new_checkout` in Production: \*\*served off\*\*/);
+      // new_checkout is on for beta testers in Production, so the dependent flag is served to them.
+      await vscode.commands.executeCommand('flaglens.previewAs', beta);
+      assert.equal(store.evaluation(prd.id)!.get('checkout_button_color')!.enabled, true);
+      await vscode.commands.executeCommand('flaglens.previewAs', { identifier: 'someone', traits: {} });
+      assert.equal(store.evaluation(prd.id)!.get('checkout_button_color')!.enabled, false);
+    } finally {
+      await vscode.commands.executeCommand('flaglens.previewAs', null);
+      await client.request('DELETE', `/environments/${prd.apiKey}/features/${child}/dependencies/${parent}/`);
+      await store.refresh();
+    }
+  });
+
   await test('environment matrix opens', async () => {
     await vscode.commands.executeCommand('flaglens.openMatrix');
     const tab = await waitFor('matrix tab', () =>
