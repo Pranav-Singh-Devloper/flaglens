@@ -175,6 +175,12 @@ export function activate(context: vscode.ExtensionContext): App {
     vscode.workspace.onDidGrantWorkspaceTrust(() => void autoConnect(app)),
   );
 
+  // Feature Health events don't arrive through the webhook: while it is live, check them at the normal pace.
+  const healthTimer = setInterval(() => {
+    if (realtime.live) void store.checkHealth().catch(() => undefined);
+  }, settings.refreshIntervalSeconds * 1000);
+  context.subscriptions.push({ dispose: () => clearInterval(healthTimer) });
+
   onStoreChange();
   void autoConnect(app).catch((e) => log.error(`Auto-connect failed: ${(e as Error).message}`));
   return app;

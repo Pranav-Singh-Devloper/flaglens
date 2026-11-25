@@ -164,7 +164,18 @@ export function commandUri(command: string, ...args: unknown[]): string {
   return `command:${command}?${encodeURIComponent(JSON.stringify(args))}`;
 }
 
-const HOVER_COMMANDS = ['flaglens.previewAs', 'flaglens.toggleFlag', 'flaglens.setValue', 'flaglens.openInDashboard', 'flaglens.showHistory', 'flaglens.createFlag', 'flaglens.openMatrix'];
+/** Commands that links in hovers may run. A link to any other command does nothing when clicked. */
+export const HOVER_COMMANDS = [
+  'flaglens.previewAs',
+  'flaglens.toggleFlag',
+  'flaglens.setValue',
+  'flaglens.setUserOverride',
+  'flaglens.editSegmentOverrides',
+  'flaglens.openInDashboard',
+  'flaglens.showHistory',
+  'flaglens.createFlag',
+  'flaglens.openMatrix',
+];
 
 function escapeMd(text: string): string {
   return text.replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');

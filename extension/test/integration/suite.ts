@@ -5,6 +5,7 @@ import * as assert from 'node:assert/strict';
 import * as vscode from 'vscode';
 import type { App } from '../../src/app';
 import { parseDotenv } from '../../src/config';
+import { HOVER_COMMANDS } from '../../src/present';
 
 const results: string[] = [];
 let failures = 0;
@@ -389,6 +390,8 @@ export async function run(): Promise<void> {
       const doc = await open('server.mjs');
       const hover = hoverText(await vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', doc.uri, positionOf(doc, "'new_checkout'", 3)));
       assert.match(hover, /Set for Override test…/);
+      // Hover links only run allow-listed commands: every link in the hover must be on the list.
+      for (const [, cmd] of hover.matchAll(/command:([\w.]+)/g)) assert.ok(HOVER_COMMANDS.includes(cmd!), `hover links to ${cmd}, which is not allow-listed`);
 
       await vscode.commands.executeCommand('flaglens.setUserOverride', 'new_checkout', prd.id, 'remove');
       assert.match(intent!.action, /^Remove override for Override test$/);

@@ -292,6 +292,17 @@ export class FlagStore implements vscode.Disposable {
     return latest;
   }
 
+  /**
+   * Re-reads only the Feature Health events (one request) and refreshes everything if they changed. Health events
+   * don't trigger Flagsmith webhooks, so while real-time updates slow polling down, this keeps alerts prompt.
+   */
+  async checkHealth(): Promise<void> {
+    const conn = this.connection;
+    if (!conn || this.status !== 'ok' || !this.healthSupported || this.refreshing) return;
+    const latest = await this.loadHealth(conn.client, conn.project.id);
+    if (conn === this.connection && JSON.stringify([...latest]) !== this.healthSignature) await this.refresh();
+  }
+
   /** Environments where Flagsmith Feature Health currently reports this flag UNHEALTHY, with the event. */
   unhealthy(featureId: number): { env: FsEnvironment | undefined; event: ApiFeatureHealthEvent }[] {
     const out: { env: FsEnvironment | undefined; event: ApiFeatureHealthEvent }[] = [];
