@@ -1,0 +1,151 @@
+{
+ "id": "problem",
+ "duration": 14.56,
+ "words": [
+  {
+   "word": "One",
+   "start": 0,
+   "end": 0.24
+  },
+  {
+   "word": "typo...",
+   "start": 0.368,
+   "end": 1.36
+  },
+  {
+   "word": "and",
+   "start": 1.4,
+   "end": 1.52
+  },
+  {
+   "word": "every",
+   "start": 1.56,
+   "end": 1.76
+  },
+  {
+   "word": "Flagsmith",
+   "start": 1.84,
+   "end": 2.48
+  },
+  {
+   "word": "SDK",
+   "start": 2.64,
+   "end": 3.12
+  },
+  {
+   "word": "just",
+   "start": 3.184,
+   "end": 3.44
+  },
+  {
+   "word": "quietly",
+   "start": 3.5,
+   "end": 3.92
+  },
+  {
+   "word": "says:",
+   "start": 4.032,
+   "end": 4.64
+  },
+  {
+   "word": "off.",
+   "start": 4.92,
+   "end": 5.84
+  },
+  {
+   "word": "Because",
+   "start": 7.63,
+   "end": 7.84
+  },
+  {
+   "word": "your",
+   "start": 7.872,
+   "end": 8
+  },
+  {
+   "word": "flags",
+   "start": 8.067,
+   "end": 8.4
+  },
+  {
+   "word": "live",
+   "start": 8.448,
+   "end": 8.64
+  },
+  {
+   "word": "in",
+   "start": 8.667,
+   "end": 8.72
+  },
+  {
+   "word": "a",
+   "start": 8.76,
+   "end": 8.8
+  },
+  {
+   "word": "dashboard,",
+   "start": 8.864,
+   "end": 9.76
+  },
+  {
+   "word": "five",
+   "start": 9.824,
+   "end": 10.08
+  },
+  {
+   "word": "clicks",
+   "start": 10.137,
+   "end": 10.48
+  },
+  {
+   "word": "away",
+   "start": 10.544,
+   "end": 10.8
+  },
+  {
+   "word": "from",
+   "start": 10.832,
+   "end": 10.96
+  },
+  {
+   "word": "your",
+   "start": 10.992,
+   "end": 11.12
+  },
+  {
+   "word": "code.",
+   "start": 11.216,
+   "end": 12.08
+  },
+  {
+   "word": "Super",
+   "start": 12.6,
+   "end": 12.64
+  },
+  {
+   "word": "fun",
+   "start": 12.74,
+   "end": 13.04
+  },
+  {
+   "word": "at",
+   "start": 13.12,
+   "end": 13.28
+  },
+  {
+   "word": "two",
+   "start": 13.32,
+   "end": 13.44
+  },
+  {
+   "word": "A.M.",
+   "start": 13.56,
+   "end": 14.08
+  }
+ ],
+ "heard": "One typo and every Flagsmith SDK just quietly says off. [sighs] Because your flags live in a dashboard five clicks away from your code. Super fun at two AM",
+ "accuracy": 0.9310344827586207,
+ "events": [
+  "[sighs]"
+ ]
+}

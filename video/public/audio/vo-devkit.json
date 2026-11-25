@@ -1,151 +1,106 @@
 {
  "id": "devkit",
- "duration": 12.306576,
+ "duration": 9.68,
  "words": [
   {
-   "word": "One",
+   "word": "Two",
    "start": 0,
-   "end": 0.255
+   "end": 0.16
   },
   {
-   "word": "command",
-   "start": 0.29,
-   "end": 0.592
+   "word": "commands.",
+   "start": 0.213,
+   "end": 0.72
   },
   {
-   "word": "starts",
-   "start": 0.65,
-   "end": 0.894
+   "word": "Make",
+   "start": 0.848,
+   "end": 1.36
   },
   {
-   "word": "the",
-   "start": 0.929,
-   "end": 0.998
+   "word": "up,",
+   "start": 1.467,
+   "end": 1.76
   },
   {
-   "word": "official",
-   "start": 1.045,
-   "end": 1.393
+   "word": "make",
+   "start": 1.888,
+   "end": 2.4
   },
   {
-   "word": "Flagsmith",
-   "start": 1.463,
-   "end": 1.997
-  },
-  {
-   "word": "images",
-   "start": 2.067,
-   "end": 2.403
-  },
-  {
-   "word": "in",
-   "start": 2.473,
-   "end": 2.589
-  },
-  {
-   "word": "Docker.",
-   "start": 2.659,
-   "end": 3.158
-  },
-  {
-   "word": "One",
-   "start": 3.738,
-   "end": 3.959
-  },
-  {
-   "word": "more",
-   "start": 3.994,
-   "end": 4.168
-  },
-  {
-   "word": "seeds",
-   "start": 4.226,
-   "end": 4.551
-  },
-  {
-   "word": "a",
-   "start": 4.609,
-   "end": 4.644
-  },
-  {
-   "word": "demo",
-   "start": 4.702,
-   "end": 4.923
-  },
-  {
-   "word": "project:",
-   "start": 4.981,
-   "end": 5.538
-  },
-  {
-   "word": "three",
-   "start": 5.805,
-   "end": 6.037
-  },
-  {
-   "word": "environments,",
-   "start": 6.072,
-   "end": 6.711
-  },
-  {
-   "word": "seven",
-   "start": 6.827,
-   "end": 7.094
-  },
-  {
-   "word": "flags,",
-   "start": 7.14,
-   "end": 7.57
+   "word": "seed...",
+   "start": 2.496,
+   "end": 3.28
   },
   {
    "word": "and",
-   "start": 7.697,
-   "end": 7.837
+   "start": 3.42,
+   "end": 3.84
   },
   {
-   "word": "an",
-   "start": 7.895,
-   "end": 7.953
+   "word": "real",
+   "start": 3.936,
+   "end": 4.32
   },
   {
-   "word": "API",
-   "start": 8.022,
-   "end": 8.464
+   "word": "Flagsmith",
+   "start": 4.4,
+   "end": 5.12
   },
   {
-   "word": "key,",
-   "start": 8.533,
-   "end": 8.858
+   "word": "is",
+   "start": 5.173,
+   "end": 5.28
   },
   {
-   "word": "all",
-   "start": 9.056,
-   "end": 9.253
+   "word": "running",
+   "start": 5.32,
+   "end": 5.6
   },
   {
-   "word": "through",
-   "start": 9.3,
-   "end": 9.497
+   "word": "in",
+   "start": 5.653,
+   "end": 5.76
   },
   {
-   "word": "Flagsmith's",
-   "start": 9.543,
-   "end": 10.124
+   "word": "Docker,",
+   "start": 5.817,
+   "end": 6.24
   },
   {
-   "word": "own",
-   "start": 10.194,
-   "end": 10.449
+   "word": "with",
+   "start": 6.304,
+   "end": 6.56
   },
   {
-   "word": "REST",
-   "start": 10.612,
-   "end": 10.902
+   "word": "a",
+   "start": 6.6,
+   "end": 6.64
   },
   {
-   "word": "API.",
-   "start": 10.983,
-   "end": 12.307
+   "word": "demo",
+   "start": 6.704,
+   "end": 6.96
+  },
+  {
+   "word": "project.",
+   "start": 7.03,
+   "end": 7.6
+  },
+  {
+   "word": "Zero",
+   "start": 8.4,
+   "end": 9.04
+  },
+  {
+   "word": "clicking.",
+   "start": 9.084,
+   "end": 9.68
   }
+ ],
+ "heard": "Two commands. Make up, make seed, and Real Flag Smith is running in Docker with a demo project. [laughs] Zero clicking",
+ "accuracy": 1,
+ "events": [
+  "[laughs]"
  ]
 }

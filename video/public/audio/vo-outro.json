@@ -1,71 +1,104 @@
 {
  "id": "outro",
- "duration": 4.318912,
+ "duration": 6.64,
  "words": [
   {
    "word": "FlagLens.",
    "start": 0,
-   "end": 0.778
+   "end": 0.8
   },
   {
    "word": "Clone",
-   "start": 1.045,
-   "end": 1.347
+   "start": 0.907,
+   "end": 1.44
   },
   {
    "word": "it,",
-   "start": 1.37,
-   "end": 1.533
+   "start": 1.467,
+   "end": 1.76
   },
   {
    "word": "make",
-   "start": 1.602,
-   "end": 1.811
+   "start": 1.824,
+   "end": 2.08
   },
   {
    "word": "up,",
-   "start": 1.858,
-   "end": 2.02
+   "start": 2.16,
+   "end": 2.48
   },
   {
    "word": "make",
-   "start": 2.055,
-   "end": 2.252
+   "start": 2.528,
+   "end": 2.72
   },
   {
    "word": "seed,",
-   "start": 2.287,
-   "end": 2.624
+   "start": 2.8,
+   "end": 3.2
   },
   {
    "word": "and",
-   "start": 2.659,
-   "end": 2.798
+   "start": 3.24,
+   "end": 3.36
   },
   {
    "word": "you're",
-   "start": 2.844,
-   "end": 3.007
+   "start": 3.38,
+   "end": 3.52
   },
   {
    "word": "live",
-   "start": 3.042,
-   "end": 3.262
+   "start": 3.568,
+   "end": 3.76
   },
   {
    "word": "in",
-   "start": 3.286,
-   "end": 3.344
+   "start": 3.813,
+   "end": 3.92
   },
   {
    "word": "five",
-   "start": 3.402,
-   "end": 3.611
+   "start": 3.984,
+   "end": 4.24
   },
   {
    "word": "minutes.",
-   "start": 3.646,
-   "end": 4.319
+   "start": 4.29,
+   "end": 4.64
+  },
+  {
+   "word": "Your",
+   "start": 5.104,
+   "end": 5.12
+  },
+  {
+   "word": "future",
+   "start": 5.177,
+   "end": 5.52
+  },
+  {
+   "word": "self",
+   "start": 5.584,
+   "end": 5.84
+  },
+  {
+   "word": "will",
+   "start": 5.872,
+   "end": 6
+  },
+  {
+   "word": "thank",
+   "start": 6.053,
+   "end": 6.32
+  },
+  {
+   "word": "you.",
+   "start": 6.36,
+   "end": 6.64
   }
- ]
+ ],
+ "heard": "Flag lens. Clone it, make up, make seed, and you're live in five minutes. Your future self will thank you",
+ "accuracy": 1,
+ "events": []
 }

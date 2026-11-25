@@ -1,91 +1,81 @@
 {
  "id": "protected",
- "duration": 6.315828,
+ "duration": 5.92,
  "words": [
   {
-   "word": "Production",
+   "word": "Production,",
    "start": 0,
-   "end": 0.464
+   "end": 0.48
   },
   {
-   "word": "is",
-   "start": 0.511,
-   "end": 0.58
+   "word": "though?",
+   "start": 0.491,
+   "end": 0.64
   },
   {
-   "word": "protected:",
-   "start": 0.639,
-   "end": 1.242
+   "word": "Nope.",
+   "start": 1.664,
+   "end": 2
   },
   {
-   "word": "you",
-   "start": 1.44,
-   "end": 1.533
+   "word": "You",
+   "start": 2.12,
+   "end": 2.48
   },
   {
    "word": "type",
-   "start": 1.602,
-   "end": 1.811
+   "start": 2.528,
+   "end": 2.72
   },
   {
    "word": "the",
-   "start": 1.846,
-   "end": 1.916
+   "start": 2.74,
+   "end": 2.8
   },
   {
    "word": "flag's",
-   "start": 1.95,
-   "end": 2.299
+   "start": 2.864,
+   "end": 3.2
   },
   {
    "word": "name",
-   "start": 2.345,
-   "end": 2.554
+   "start": 3.248,
+   "end": 3.44
   },
   {
-   "word": "before",
-   "start": 2.589,
-   "end": 2.844
-  },
-  {
-   "word": "anything",
-   "start": 2.902,
-   "end": 3.251
-  },
-  {
-   "word": "changes.",
-   "start": 3.309,
-   "end": 3.924
+   "word": "first.",
+   "start": 3.52,
+   "end": 4.24
   },
   {
    "word": "And",
-   "start": 4.238,
-   "end": 4.377
+   "start": 4.32,
+   "end": 4.56
   },
   {
-   "word": "every",
-   "start": 4.458,
-   "end": 4.702
+   "word": "yes,",
+   "start": 4.66,
+   "end": 5.04
   },
   {
-   "word": "change",
-   "start": 4.76,
-   "end": 5.097
-  },
-  {
-   "word": "has",
-   "start": 5.132,
-   "end": 5.271
+   "word": "there's",
+   "start": 5.053,
+   "end": 5.2
   },
   {
    "word": "an",
-   "start": 5.317,
-   "end": 5.375
+   "start": 5.227,
+   "end": 5.28
   },
   {
    "word": "undo.",
-   "start": 5.468,
-   "end": 6.316
+   "start": 5.376,
+   "end": 5.92
   }
+ ],
+ "heard": "Production though? [laughs] Nope. You type the flag's name first. And yes, there's an undo",
+ "accuracy": 1,
+ "events": [
+  "[laughs]"
  ]
 }

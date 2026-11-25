@@ -1,0 +1,199 @@
+{
+ "id": "preview",
+ "duration": 18.48,
+ "words": [
+  {
+   "word": "But",
+   "start": 0,
+   "end": 0.08
+  },
+  {
+   "word": "users",
+   "start": 0.147,
+   "end": 0.48
+  },
+  {
+   "word": "aren't",
+   "start": 0.512,
+   "end": 0.72
+  },
+  {
+   "word": "all",
+   "start": 0.74,
+   "end": 0.8
+  },
+  {
+   "word": "the",
+   "start": 0.84,
+   "end": 0.96
+  },
+  {
+   "word": "same.",
+   "start": 1.04,
+   "end": 1.44
+  },
+  {
+   "word": "So",
+   "start": 2.107,
+   "end": 2.128
+  },
+  {
+   "word": "what",
+   "start": 2.134,
+   "end": 2.16
+  },
+  {
+   "word": "does",
+   "start": 2.192,
+   "end": 2.32
+  },
+  {
+   "word": "Alice,",
+   "start": 2.413,
+   "end": 3.04
+  },
+  {
+   "word": "our",
+   "start": 3.06,
+   "end": 3.12
+  },
+  {
+   "word": "beta",
+   "start": 3.184,
+   "end": 3.44
+  },
+  {
+   "word": "tester,",
+   "start": 3.497,
+   "end": 4.08
+  },
+  {
+   "word": "actually",
+   "start": 4.124,
+   "end": 4.48
+  },
+  {
+   "word": "get?",
+   "start": 4.56,
+   "end": 4.96
+  },
+  {
+   "word": "FlagLens",
+   "start": 5.184,
+   "end": 6.4
+  },
+  {
+   "word": "runs",
+   "start": 6.464,
+   "end": 6.72
+  },
+  {
+   "word": "Flagsmith's",
+   "start": 6.787,
+   "end": 7.44
+  },
+  {
+   "word": "own",
+   "start": 7.5,
+   "end": 7.68
+  },
+  {
+   "word": "rules,",
+   "start": 7.76,
+   "end": 8.32
+  },
+  {
+   "word": "locally:",
+   "start": 8.38,
+   "end": 9.28
+  },
+  {
+   "word": "her",
+   "start": 9.32,
+   "end": 9.44
+  },
+  {
+   "word": "segment,",
+   "start": 9.5,
+   "end": 10.24
+  },
+  {
+   "word": "her",
+   "start": 10.28,
+   "end": 10.4
+  },
+  {
+   "word": "bucket,",
+   "start": 10.457,
+   "end": 11.12
+  },
+  {
+   "word": "her",
+   "start": 11.16,
+   "end": 11.28
+  },
+  {
+   "word": "values.",
+   "start": 11.371,
+   "end": 12
+  },
+  {
+   "word": "And",
+   "start": 12.16,
+   "end": 12.64
+  },
+  {
+   "word": "it",
+   "start": 12.667,
+   "end": 12.72
+  },
+  {
+   "word": "matches",
+   "start": 12.78,
+   "end": 13.2
+  },
+  {
+   "word": "the",
+   "start": 13.24,
+   "end": 13.36
+  },
+  {
+   "word": "real",
+   "start": 13.44,
+   "end": 13.76
+  },
+  {
+   "word": "server.",
+   "start": 13.829,
+   "end": 14.32
+  },
+  {
+   "word": "Fourteen",
+   "start": 14.48,
+   "end": 15.36
+  },
+  {
+   "word": "thousand",
+   "start": 15.413,
+   "end": 15.84
+  },
+  {
+   "word": "checks...",
+   "start": 15.931,
+   "end": 17.36
+  },
+  {
+   "word": "zero",
+   "start": 17.424,
+   "end": 17.68
+  },
+  {
+   "word": "misses.",
+   "start": 17.771,
+   "end": 18.48
+  }
+ ],
+ "heard": "But users aren't all the same. So what does Alice, our beta tester, actually get? FlagLens runs Flagsmith's own rules locally, her segment, her bucket, her values, and it matches the real server. Fourteen thousand checks, zero misses",
+ "accuracy": 1,
+ "events": []
+}

@@ -1,76 +1,94 @@
 {
  "id": "title",
- "duration": 9.055782,
+ "duration": 9.44,
  "words": [
   {
-   "word": "Meet",
+   "word": "So",
    "start": 0,
-   "end": 0.267
+   "end": 0.08
+  },
+  {
+   "word": "I",
+   "start": 0.16,
+   "end": 0.24
+  },
+  {
+   "word": "built",
+   "start": 0.267,
+   "end": 0.4
   },
   {
    "word": "FlagLens.",
-   "start": 0.325,
-   "end": 1.103
+   "start": 0.48,
+   "end": 1.28
   },
   {
-   "word": "Live",
-   "start": 1.683,
-   "end": 1.985
+   "word": "Your",
+   "start": 1.702,
+   "end": 1.766
   },
   {
    "word": "Flagsmith",
-   "start": 2.02,
-   "end": 2.589
+   "start": 1.859,
+   "end": 2.486
   },
   {
    "word": "flags,",
-   "start": 2.635,
-   "end": 3.17
+   "start": 2.593,
+   "end": 3.486
+  },
+  {
+   "word": "live,",
+   "start": 3.558,
+   "end": 4.046
   },
   {
    "word": "right",
-   "start": 3.402,
-   "end": 3.622
+   "start": 4.079,
+   "end": 4.246
   },
   {
    "word": "inside",
-   "start": 3.657,
-   "end": 4.029
+   "start": 4.303,
+   "end": 4.646
   },
   {
    "word": "VS",
-   "start": 4.075,
-   "end": 4.354
+   "start": 4.779,
+   "end": 5.046
   },
   {
    "word": "Code.",
-   "start": 4.423,
-   "end": 4.818
+   "start": 5.142,
+   "end": 5.606
   },
   {
-   "word": "Built",
-   "start": 5.399,
-   "end": 5.642
+   "word": "Made",
+   "start": 5.734,
+   "end": 6.246
   },
   {
    "word": "for",
-   "start": 5.689,
-   "end": 5.805
+   "start": 6.286,
+   "end": 6.406
   },
   {
    "word": "self-hosted,",
-   "start": 5.875,
-   "end": 6.676
+   "start": 6.486,
+   "end": 7.526
   },
   {
    "word": "open-source",
-   "start": 6.838,
-   "end": 7.535
+   "start": 7.59,
+   "end": 8.326
   },
   {
    "word": "Flagsmith.",
-   "start": 7.628,
-   "end": 9.056
+   "start": 8.446,
+   "end": 9.446
   }
- ]
+ ],
+ "heard": "So I built Flag Lens. Your Flagsmith flags live right inside VS Code. Made for self-hosted open source Flagsmith",
+ "accuracy": 0.9,
+ "events": []
 }

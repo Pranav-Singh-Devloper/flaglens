@@ -1,96 +1,74 @@
 {
  "id": "toggle",
- "duration": 7.616145,
+ "duration": 6.32,
  "words": [
   {
-   "word": "Need",
+   "word": "Flip",
    "start": 0,
-   "end": 0.221
+   "end": 0.24
   },
   {
-   "word": "to",
-   "start": 0.244,
-   "end": 0.29
+   "word": "one.",
+   "start": 0.32,
+   "end": 1.12
   },
   {
-   "word": "flip",
-   "start": 0.337,
-   "end": 0.569
-  },
-  {
-   "word": "one?",
-   "start": 0.65,
-   "end": 0.894
-  },
-  {
-   "word": "Click,",
-   "start": 1.126,
-   "end": 1.614
-  },
-  {
-   "word": "confirm,",
-   "start": 1.776,
-   "end": 2.368
-  },
-  {
-   "word": "done.",
-   "start": 2.438,
-   "end": 2.868
+   "word": "Confirm.",
+   "start": 1.19,
+   "end": 2.12
   },
   {
    "word": "The",
-   "start": 3.646,
-   "end": 3.785
+   "start": 2.23,
+   "end": 2.56
   },
   {
    "word": "shop",
-   "start": 3.843,
-   "end": 4.098
+   "start": 2.624,
+   "end": 2.88
   },
   {
-   "word": "picks",
-   "start": 4.191,
-   "end": 4.412
-  },
-  {
-   "word": "it",
-   "start": 4.458,
-   "end": 4.516
-  },
-  {
-   "word": "up",
-   "start": 4.563,
-   "end": 4.656
+   "word": "changes",
+   "start": 2.94,
+   "end": 3.36
   },
   {
    "word": "on",
-   "start": 4.725,
-   "end": 4.795
+   "start": 3.387,
+   "end": 3.44
   },
   {
    "word": "the",
-   "start": 4.83,
-   "end": 4.899
+   "start": 3.46,
+   "end": 3.52
+  },
+  {
+   "word": "very",
+   "start": 3.584,
+   "end": 3.84
   },
   {
    "word": "next",
-   "start": 4.957,
-   "end": 5.19
+   "start": 3.888,
+   "end": 4.08
   },
   {
    "word": "request.",
-   "start": 5.248,
-   "end": 5.875
+   "start": 4.16,
+   "end": 5.12
   },
   {
    "word": "No",
-   "start": 6.304,
-   "end": 6.478
+   "start": 5.253,
+   "end": 5.52
   },
   {
    "word": "redeploy.",
-   "start": 6.56,
-   "end": 7.616
+   "start": 5.584,
+   "end": 6.32
   }
- ]
+ ],
+ "heard": "Flip one. Confirm. The shop changes on the very next request. No redeploy",
+ "accuracy": 1,
+ "events": []
 }

@@ -39,13 +39,24 @@ async function call(path, body, { json = false } = {}) {
 
 const duration = (file) => Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file]).toString().trim());
 
-/** Groups character timings into words: [{word, start, end}] in seconds. */
+/**
+ * Groups character timings into words: [{word, start, end}] in seconds. v3 audio tags such as [laughs] come back as
+ * characters too; they are performed, not spoken, so they are left out of the captions.
+ */
 function words(alignment) {
   const out = [];
   let cur = null;
+  let inTag = false;
   alignment.characters.forEach((ch, i) => {
     const s = alignment.character_start_times_seconds[i];
     const e = alignment.character_end_times_seconds[i];
+    if (ch === '[') inTag = true;
+    if (inTag) {
+      if (ch === ']') inTag = false;
+      if (cur) out.push(cur);
+      cur = null;
+      return;
+    }
     if (/\s/.test(ch)) {
       if (cur) out.push(cur);
       cur = null;
@@ -67,18 +78,71 @@ async function vo(only) {
     const mp3 = join(OUT, `vo-${scene.id}.mp3`);
     const meta = join(OUT, `vo-${scene.id}.json`);
     if (existsSync(mp3) && existsSync(meta)) continue;
-    console.log(`VO ${scene.id} (${scene.text.length} chars)`);
-    const r = await call(`/v1/text-to-speech/${script.voice.id}/with-timestamps?output_format=mp3_44100_128`, {
-      text: scene.text,
-      model_id: script.voice.model,
-      // Continuity between separately generated scenes.
-      previous_text: scenes[i - 1]?.text,
-      next_text: scenes[i + 1]?.text,
-      voice_settings: { stability: 0.42, similarity_boost: 0.8, style: 0.35, use_speaker_boost: true, speed: 1.04 },
-    }, { json: true });
-    writeFileSync(mp3, Buffer.from(r.audio_base64, 'base64'));
-    writeFileSync(meta, JSON.stringify({ id: scene.id, duration: duration(mp3), words: words(r.alignment) }, null, 1));
+    // Eleven v3 performs audio tags ([laughs], [sighs], [whispers]…) and pauses; "Creative" (stability 0) is the most
+    // expressive setting. It can improvise, so every take is transcribed and checked before it is kept.
+    const v3 = script.voice.model === 'eleven_v3';
+    let best = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      console.log(`VO ${scene.id} (${scene.text.length} chars), take ${attempt}`);
+      const r = await call(`/v1/text-to-speech/${script.voice.id}/with-timestamps?output_format=mp3_44100_128`, {
+        text: scene.text,
+        model_id: script.voice.model,
+        ...(v3
+          ? { voice_settings: { stability: 0, similarity_boost: 0.8 } }
+          : {
+              // Continuity between separately generated scenes.
+              previous_text: scenes[i - 1]?.text,
+              next_text: scenes[i + 1]?.text,
+              voice_settings: { stability: 0.42, similarity_boost: 0.8, style: 0.35, use_speaker_boost: true, speed: 1.04 },
+            }),
+      }, { json: true });
+      const audio = Buffer.from(r.audio_base64, 'base64');
+      writeFileSync(mp3, audio);
+      const check = await verify(mp3, scene.text);
+      console.log(`  heard: "${check.heard}"\n  word accuracy ${(check.accuracy * 100).toFixed(0)}%, events: ${check.events.join(' ') || 'none'}${check.performed ? '' : ' (a tagged laugh/sigh is missing)'}`);
+      const score = check.accuracy + (check.performed ? 1 : 0);
+      if (!best || score > best.score) best = { score, audio, check, alignment: r.alignment };
+      if (check.accuracy >= 0.92 && check.performed) break;
+    }
+    // Keep the best take, not the last one.
+    writeFileSync(mp3, best.audio);
+    const c = best.check;
+    writeFileSync(meta, JSON.stringify({ id: scene.id, duration: duration(mp3), words: words(best.alignment), heard: c.heard, accuracy: c.accuracy, events: c.events }, null, 1));
   }
+}
+
+/**
+ * Transcribes a take (ElevenLabs Scribe, with audio events such as laughter) and compares it with the script, so a
+ * take where the voice improvised or skipped words is caught without anyone listening.
+ */
+async function verify(file, text) {
+  const form = new FormData();
+  form.append('model_id', 'scribe_v1');
+  form.append('tag_audio_events', 'true');
+  form.append('file', new Blob([readFileSync(file)], { type: 'audio/mpeg' }), 'take.mp3');
+  const res = await fetch('https://api.elevenlabs.io/v1/speech-to-text', { method: 'POST', headers: { 'xi-api-key': KEY }, body: form });
+  if (!res.ok) throw new Error(`speech-to-text → HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  appendFileSync(ledger, `${new Date().toISOString()} /v1/speech-to-text cost=${res.headers.get('character-cost') ?? '?'}\n`);
+  const r = await res.json();
+  // Compare words, not spelling: the transcriber writes "Flag Lens", "grays", "2:00 AM" for FlagLens, greys, two A.M.
+  const SAME = [[/flag ?lens/g, 'flaglens'], [/flag ?smith/g, 'flagsmith'], [/\bgr[ae]ys?\b/g, 'grey'], [/favou?rite/g, 'favourite'], [/2:00 ?a\.?m\.?|two a\.? ?m\.?/g, 'two am'], [/\bmath\b/g, 'maths']];
+  const norm = (s) => {
+    let t = s.replace(/\[[^\]]*\]|\([^)]*\)/g, ' ').toLowerCase();
+    for (const [re, to] of SAME) t = t.replace(re, to);
+    return t.replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
+  };
+  const want = norm(text);
+  const got = norm(r.text);
+  // Word-level similarity: longest common subsequence over the longer of the two.
+  const dp = Array.from({ length: want.length + 1 }, () => new Array(got.length + 1).fill(0));
+  for (let a = 1; a <= want.length; a++) for (let b = 1; b <= got.length; b++) dp[a][b] = want[a - 1] === got[b - 1] ? dp[a - 1][b - 1] + 1 : Math.max(dp[a - 1][b], dp[a][b - 1]);
+  const accuracy = dp[want.length][got.length] / Math.max(want.length, got.length);
+  const events = (r.text.match(/\([^)]*\)|\[[^\]]*\]/g) ?? []).map((e) => e.toLowerCase());
+  // Tags that should be audible (a laugh, a sigh) must show up as audio events; whispers and moods don't get tagged.
+  const wanted = (text.match(/\[[^\]]*\]/g) ?? []).map((t) => (/laugh|chuckl|giggl/.test(t) ? 'laugh' : /sigh/.test(t) ? 'sigh' : null)).filter(Boolean);
+  const family = { laugh: /laugh|chuckl|giggl/, sigh: /sigh|exhal/ };
+  const performed = wanted.every((w) => events.some((e) => family[w].test(e)));
+  return { heard: r.text, accuracy, events, performed };
 }
 
 const SFX = {
@@ -90,6 +154,9 @@ const SFX = {
   typing: { text: 'Fast mechanical keyboard typing, close-up, clean, steady', seconds: 2.5 },
   impact: { text: 'Deep cinematic logo reveal hit with shimmer tail, modern tech trailer', seconds: 2.5 },
   riser: { text: 'Short tension riser building up, modern tech trailer, clean', seconds: 2.0 },
+  // Meme beats.
+  boom: { text: 'Deep booming bass hit with short reverb tail, comedic dramatic reveal sound, punchy, internet meme style', seconds: 1.2 },
+  scratch: { text: 'Vinyl record scratch, short, comedic freeze-frame moment', seconds: 0.8 },
 };
 
 async function sfx() {

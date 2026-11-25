@@ -1,0 +1,107 @@
+{
+ "id": "testplan",
+ "duration": 12.64,
+ "words": [
+  {
+   "word": "Testing",
+   "start": 0,
+   "end": 0.4
+  },
+  {
+   "word": "six",
+   "start": 0.46,
+   "end": 0.64
+  },
+  {
+   "word": "flags",
+   "start": 0.707,
+   "end": 1.04
+  },
+  {
+   "word": "together?",
+   "start": 1.084,
+   "end": 1.84
+  },
+  {
+   "word": "That's",
+   "start": 1.92,
+   "end": 2.32
+  },
+  {
+   "word": "ninety-six",
+   "start": 2.389,
+   "end": 3.04
+  },
+  {
+   "word": "combinations.",
+   "start": 3.102,
+   "end": 4.56
+  },
+  {
+   "word": "Or...",
+   "start": 5.68,
+   "end": 6.08
+  },
+  {
+   "word": "seven",
+   "start": 6.28,
+   "end": 7.28
+  },
+  {
+   "word": "runs",
+   "start": 7.344,
+   "end": 7.6
+  },
+  {
+   "word": "that",
+   "start": 7.632,
+   "end": 7.76
+  },
+  {
+   "word": "cover",
+   "start": 7.827,
+   "end": 8.16
+  },
+  {
+   "word": "every",
+   "start": 8.213,
+   "end": 8.48
+  },
+  {
+   "word": "pair.",
+   "start": 8.56,
+   "end": 8.96
+  },
+  {
+   "word": "Provably",
+   "start": 9.168,
+   "end": 10.16
+  },
+  {
+   "word": "the",
+   "start": 10.18,
+   "end": 10.24
+  },
+  {
+   "word": "minimum.",
+   "start": 10.29,
+   "end": 10.72
+  },
+  {
+   "word": "Thanks,",
+   "start": 11.691,
+   "end": 12.08
+  },
+  {
+   "word": "maths.",
+   "start": 12.147,
+   "end": 12.64
+  }
+ ],
+ "heard": "Testing six flags together? That's ninety-six combinations [sighs] or seven runs that cover every pair. Provably the minimum. [chuckles] Thanks, maths",
+ "accuracy": 1,
+ "events": [
+  "[sighs]",
+  "[chuckles]"
+ ]
+}

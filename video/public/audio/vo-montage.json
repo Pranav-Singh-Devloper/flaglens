@@ -1,0 +1,89 @@
+{
+ "id": "montage",
+ "duration": 8.48,
+ "words": [
+  {
+   "word": "Plus",
+   "start": 0,
+   "end": 0.24
+  },
+  {
+   "word": "drift",
+   "start": 0.36,
+   "end": 0.96
+  },
+  {
+   "word": "between",
+   "start": 1.01,
+   "end": 1.36
+  },
+  {
+   "word": "staging",
+   "start": 1.42,
+   "end": 1.84
+  },
+  {
+   "word": "and",
+   "start": 1.86,
+   "end": 1.92
+  },
+  {
+   "word": "production,",
+   "start": 1.964,
+   "end": 2.8
+  },
+  {
+   "word": "one-click",
+   "start": 2.86,
+   "end": 3.28
+  },
+  {
+   "word": "typo",
+   "start": 3.36,
+   "end": 3.68
+  },
+  {
+   "word": "fixes,",
+   "start": 3.787,
+   "end": 4.64
+  },
+  {
+   "word": "stale",
+   "start": 4.693,
+   "end": 4.96
+  },
+  {
+   "word": "flags...",
+   "start": 5.053,
+   "end": 5.92
+  },
+  {
+   "word": "all",
+   "start": 6.055,
+   "end": 6.085
+  },
+  {
+   "word": "free,",
+   "start": 6.165,
+   "end": 6.645
+  },
+  {
+   "word": "on",
+   "start": 6.778,
+   "end": 7.045
+  },
+  {
+   "word": "open",
+   "start": 7.093,
+   "end": 7.285
+  },
+  {
+   "word": "source.",
+   "start": 7.354,
+   "end": 8.485
+  }
+ ],
+ "heard": "Plus drift between staging and production, one-click typo fixes, stale flags, all free on open source",
+ "accuracy": 1,
+ "events": []
+}
