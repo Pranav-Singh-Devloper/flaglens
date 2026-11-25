@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+- **Targeting rule check.** Finds segment overrides that can never apply (every user they match is caught first by a
+  higher-priority override), overrides that change nothing, segments that match nobody, and environment defaults
+  nobody gets: the firewall rule anomalies of Al-Shaer & Hamed, applied to Flagsmith. Findings are proven for every
+  possible user by checking one representative per equivalence class of trait values. Shown as a CodeLens badge, in
+  hovers and the Problems panel, and as a report (*FlagLens: Check Targeting Rules*).
+- **Pairwise test plan** (*FlagLens: Generate Pairwise Test Plan…*): the smallest set of runs in which every pair of
+  values of the chosen flags appears together. Provably optimal for on/off flags (Kleitman–Spencer construction);
+  IPOG plus simulated annealing, with a stated lower bound, for multivariate flags. Exports a Markdown table, JSON and
+  a GitHub Actions matrix.
+- The dev kit seeds two deliberate rule mistakes in Production (`pro_eu`, `uk`) so the check has something to show.
+
 ## 0.2.0
 
 - **Preview as a user.** Pick a test user (from the new `flaglens.personas` setting, or type an identifier and
