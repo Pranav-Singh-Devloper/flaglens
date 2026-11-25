@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0
+
+- **Flag dependencies.** A flag that requires another shows *Requires `parent`* in the hover, and a *blocked* badge in
+  environments where the parent is off (so it can't serve on, however it is set). Flagsmith stores a dependency as a
+  system segment with a `$.flags[...]` condition; the local engine now evaluates these in two passes, exactly as the
+  server does, so *Preview as* and greying out account for them. `make verify-engine` covers a dependency and the
+  no-identity case: 15,050 checks, 100% match.
+- **Publish Code References to Flagsmith** (command, view toolbar, or `make code-refs` / `npm run code-refs` for CI):
+  uploads every flag reference in the repository in the format of Flagsmith's own scanner, after a confirmation.
+  Flagsmith then shows each flag's files and lines with links to GitHub and moves the flag from *new* to *live*.
+- **Feature Health.** When Flagsmith's Feature Health reports a flag unhealthy (for example from a monitoring webhook),
+  FlagLens badges it at every reference, shows the reason and links in the hover, and repeats the warning in the
+  confirmation for toggles and value changes. The dev kit adds a Webhook provider and `make alert` / `make recover`.
+- Hovers show Flagsmith's lifecycle stage, the flag's code-reference count and owners; flags Flagsmith marks *to
+  remove* get a badge.
+- The features list is now requested for the active environment, which is what makes Flagsmith return lifecycle data.
+
 ## 0.3.1
 
 - Pairwise test plans prove a stronger lower bound when one flag has several values and the rest are on/off (2a+1
