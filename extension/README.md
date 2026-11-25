@@ -21,6 +21,11 @@ typos and stale flags before they bite.
   Undo; every change logged.
 - **Typo detection**: `isFeatureEnabled('new_chekout')` is underlined, with *Replace with `new_checkout`* and
   *Create flag in Flagsmith* quick fixes.
+- **Targeting rule check**: segment overrides that can never apply (shadowed by higher-priority ones), overrides that
+  change nothing, segments that match nobody. Each finding is proven for every possible user; shown in CodeLens,
+  hovers, the Problems panel and a Markdown report (*FlagLens: Check Targeting Rules*).
+- **Pairwise test plan**: the smallest set of runs covering every pair of values of chosen flags, provably optimal for
+  on/off flags (Kleitman–Spencer), with JSON and a GitHub Actions matrix (*FlagLens: Generate Pairwise Test Plan…*).
 - **Drift**: a ⚠ badge when Staging and Production disagree; Environment Matrix; *Copy diff as Markdown*.
 - **Stale flags** on open-source Flagsmith: flags identical in every environment for N days.
 - **Archived flags still in use**, autocomplete of flag keys, sidebar tree, history, *Find unused flags*.

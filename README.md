@@ -13,7 +13,9 @@ FlagLens is two things that work together:
    on/off and value, a ⚠ when Staging and Production disagree, squiggles under misspelled flag keys, and safe,
    confirmed toggles without leaving the editor. It also **greys out code that can't run** in the environment you
    pick, and lets you **preview every flag as a specific user**, evaluated locally with Flagsmith's own segment,
-   % split and override rules (checked against the server: 16,700 checks, 100% match).
+   % split and override rules (checked against the server: 14,400 checks, 100% match). It **checks your targeting
+   rules** for overrides that can never apply or change nothing, and builds the **smallest test plan** that tries every
+   pair of flag values together.
 2. **A one-command self-hosted dev kit**: `make up && make seed` starts the official open-source Flagsmith 2.295.2
    in Docker and fills it with a realistic demo project, so anyone can try the extension in about five minutes.
 
@@ -41,6 +43,7 @@ ${newCheckout ? 'new' : 'old'}                    ⟵ new_checkout is on → nev
 | | |
 |---|---|
 | ![Code that can't run is greyed out](docs/screenshots/grey-out.png) **Greys out code that can't run** in the active environment, with the reason: here the old checkout, because `new_checkout` is on in Development. | ![Preview as a user](docs/screenshots/preview-as.png) **Preview as a user**: Production is off for everyone, but on for this beta tester via the `beta_testers` segment. CodeLens, hover and greying all follow. |
+| ![Targeting rule check](docs/screenshots/rule-check.png) **Targeting rule check**: an override that can never apply (`pro_eu`, shadowed by `pro_plan`) and one that changes nothing (`uk`). Each finding holds for every possible user. | ![Pairwise test plan](docs/screenshots/test-plan.png) **Pairwise test plan**: every pair of values of 6 flags in 7 runs instead of 96, with JSON and a GitHub Actions matrix to paste. |
 | ![CodeLens above every flag reference](docs/screenshots/codelens.png) **Live state inline**: every environment above every flag, with ⚠ drift, 🗑 stale and archived badges. | ![Environment Matrix](docs/screenshots/matrix.png) **Environment Matrix**: every flag × environment, differences highlighted, copy the diff as Markdown. |
 | ![Typo quick fix](docs/screenshots/typo-quick-fix.png) **Typo detection**: unknown keys are underlined, with *Replace with…* and *Create flag…* quick fixes. | ![Typed confirmation for Production](docs/screenshots/protected-confirm.png) **Protected environments**: changing Production means typing the flag's name. |
 | ![Hover card](docs/screenshots/hover.png) **Hover card**: every environment's state and value, variant weights, overrides, last change, one-click toggles. | ![The demo shop](docs/screenshots/demo-shop.png) **The demo shop** (`make demo`): banner, checkout and button colour all come from self-hosted Flagsmith. |
@@ -67,6 +70,8 @@ ${newCheckout ? 'new' : 'old'}                    ⟵ new_checkout is on → nev
 | 🔍 | Live state of every environment above each flag reference (CodeLens) and in a hover card with values, variant weights, overrides and last change | `GET /projects/{id}/features/`, `GET /environments/{key}/featurestates/` |
 | 👤 | **Preview as a user**: pick a test user (identifier + traits) from the status bar, and every CodeLens, hover and greyed-out region shows what *that user* gets, and why: segment and priority, % split bucket, identity override. Evaluated locally from the environment document with Flagsmith's own rules (ported from its open-source engine), and [verified against the server](#development-and-tests) | `GET /environments/{key}/document/` |
 | 🌫 | **Greys out code that can't run** in the active environment (and for the previewed user), like an inactive `#ifdef`: the losing branch of `if`/`else` and ternaries, through simple `const x = flags…` aliases, and the rest of a block after a flag guard that returns. JS/TS and other brace languages, and Python. It uses three-valued logic, so it only greys code when the outcome is **certain**: a flag with a segment override counts as unknown for "everyone" | environment document + feature states |
+| 🧭 | **Targeting rule check**: finds segment overrides that can **never apply** (every user they match is caught first by higher-priority overrides), overrides that **change nothing**, segments that **match nobody**, and defaults **nobody gets**. Each finding is proven for every possible user (see [How the checks work](#how-the-checks-work)). Shown in CodeLens, hovers, the Problems panel and a Markdown report | environment documents |
+| 🧪 | **Pairwise test plan**: the smallest set of runs in which every pair of values of the chosen flags appears together. Provably optimal for on/off flags (Kleitman–Spencer); near-optimal with a stated lower bound for multivariate flags. Exports a table, JSON and a GitHub Actions matrix | feature states, variants, environment documents |
 | 🔁 | **Safe toggles and value edits**: modal confirmation, typed confirmation for protected environments (`prod\|live\|main`), Undo, every change logged | `PATCH /environments/{key}/featurestates/{id}/` |
 | ⚠️ | **Drift badge** when Staging ≠ Production, **Environment Matrix** of every flag × environment, **Copy diff as Markdown** for a PR | feature states × environments |
 | ✍️ | **Typo detection** for unknown keys with *Replace with…* and *Create flag in Flagsmith…* quick fixes (respects the project's naming rules) | `POST /projects/{id}/features/` |
@@ -104,7 +109,7 @@ is healthy.
 
 Then install the extension, in either of two ways:
 
-- **Download** `flaglens-0.2.0.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
+- **Download** `flaglens-0.3.0.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
   then in VS Code: Command Palette → **Extensions: Install from VSIX…** → pick the file.
 - **Or build it**: `make package` (npm: `npm install && npm run package`) creates `extension/flaglens.vsix`. If the
   `code` command is on your PATH, `make install-ext` builds and installs it in one step.
@@ -128,6 +133,11 @@ Finally open the demo workspace: **File → Open Folder… → `flaglens/example
 - Click **🌐 Everyone** in the status bar → **Beta tester**, then switch to Production (click the environment in the
   status bar). The `new_checkout` CodeLens now reads `Production ● on (beta_testers)`, the old checkout is greyed out
   for this user, and the hover shows which segment decided.
+- The Problems panel lists two **targeting rule** findings in `server.mjs`: the `pro_eu` override for
+  `rate_limit_per_minute` never applies (shadowed by `pro_plan`), and the `uk` override for `banner_text` changes
+  nothing. **FlagLens: Check Targeting Rules** shows them as a report.
+- **FlagLens: Generate Pairwise Test Plan…** with `server.mjs` open preselects its flags. *On/off only* gives
+  **7 runs instead of 96**.
 - The Flagsmith dashboard at http://localhost:8000 shows the same change. Log in with
   `admin@flaglens.local` / `FlagLens-demo-2026`.
 
@@ -156,6 +166,8 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | FlagLens: Find Unused Flags in Workspace | Project flags that no file references |
 | FlagLens: Preview Flags as User… | Pick a test user (from `flaglens.personas`, or type an identifier and traits). Also: click the 👤/🌐 item in the status bar |
 | FlagLens: Toggle Greying Out Code That Won't Run | Turn the greying on or off |
+| FlagLens: Check Targeting Rules | Report of segment overrides that never apply, change nothing or match nobody, per environment |
+| FlagLens: Generate Pairwise Test Plan… | Pick flags (the open file's are preselected): the smallest plan covering every pair of their values |
 | FlagLens: Switch Active Environment… / Switch Project… / Refresh Flags / Show Log | |
 
 ## Configuration
@@ -228,6 +240,8 @@ Production also has four segments with overrides, so *Preview as* has something 
 | `pro_plan` | `plan` = `pro` | `rate_limit_per_minute` = 500 |
 | `india` | `country` = `IN` | `banner_text` = "Diwali sale: 40% off" |
 | `canary_10pct` | 10% split on the identity | `checkout_button_color` = purple |
+| `pro_eu` | `plan` = `pro` and `country` in DE, FR, GB | `rate_limit_per_minute` = 800. **Deliberate mistake:** `pro_plan` catches these users first |
+| `uk` | `country` = `GB` | `banner_text` = "Black Friday: 30% off". **Deliberate mistake:** the same as the default |
 
 ## How it uses Flagsmith
 
@@ -271,6 +285,27 @@ flowchart LR
 - **Dev kit.** The seed uses only the public REST API (signup → organisation → project → environments → tags → flags →
   Organisation API key), so it doubles as a worked example of bootstrapping Flagsmith without clicking.
 
+## How the checks work
+
+**Targeting rules.** Segment overrides are a priority-ordered list of rules over user traits, which is exactly the
+shape of a firewall policy, so FlagLens borrows its anomaly taxonomy (Al-Shaer & Hamed, *Firewall Policy Advisor*,
+2004): an override is **shadowed** when higher-priority ones catch every user it matches, and **redundant** when
+removing it changes no user's result. Checking "every user" exactly is possible because each comparison operator
+(`=`, `≠`, `IN`, `<`, `≤`, `>`, `≥`, `IS_SET`, % split) gives the same answer for all values between two consecutive
+constants that appear in the rules. Trait values therefore split into a few equivalence classes (unset, each constant,
+each gap, other strings, numbers and booleans, since the engine casts the condition to the trait's type), and
+checking one representative per class combination is a proof for all users. Operators that can't be split this way
+(regex, contains, modulo, SemVer) become free true/false variables, which only adds impossible users: a finding can be
+missed, but never invented. A randomised test checks this against the evaluation engine on 150 random rule sets, and
+`make verify-engine` confirms on the live server that users inside a shadowed segment never get its value.
+
+**Pairwise plans.** Most flag bugs involve one flag or the interaction of two, so a plan that puts every pair of
+values together in some run catches them without trying every combination. For on/off flags the minimum is known
+exactly: the smallest N with C(N−1, ⌈N/2⌉) ≥ k (Katona; Kleitman & Spencer, 1973), reached by giving each flag a
+distinct length-N column that starts with 0 and has ⌈N/2⌉ ones. That is 6 runs for 10 flags, 10 for 100 and 14 for
+1,000. With multivariate flags FlagLens builds a plan with IPOG (Lei & Tai, 2007), shrinks it with simulated annealing
+(Cohen, Colbourn & Ling, 2003), and states a lower bound so you know how close it is.
+
 ## Architecture
 
 ```
@@ -279,17 +314,19 @@ extension/src/
   api/             typed Management API client: fetch, Api-Key auth, pagination, timeouts, typed errors
   core/            PURE logic, unit-tested: scanner (Code References pattern), model (matrix), analysis (drift,
                    stale, typo suggestions, name rules), report (Markdown diff), engine (Flagsmith's evaluation
-                   rules, ported), deadcode (lexer + if/else/ternary/alias analysis with three-valued logic)
+                   rules, ported), deadcode (lexer + if/else/ternary/alias analysis with three-valued logic),
+                   rules (override anomalies over trait equivalence classes), pairwise + testPlan (covering arrays)
   store/           FlagStore: polling, change detection, offline handling with backoff
   providers/       CodeLens, hover, diagnostics + quick fixes, autocomplete, greyed-out code decorations
   views/           sidebar tree, status bar, Environment Matrix webview
-  commands/        connect, toggle, set value, create, history, diff, find unused, preview as user
+  commands/        connect, toggle, set value, create, history, diff, find unused, preview as user, rule check,
+                   test plan
   safety.ts        confirmations, protected environments, write journal
 examples/demo-shop the shop (Node SDK), plus Python / React / TypeScript files used in the demo
 ```
 
 - **Zero runtime dependencies.** The extension uses only the VS Code API and Node's global `fetch`. The packaged
-  `.vsix` is about 44 KB.
+  `.vsix` is about 51 KB.
 - Activation is cheap (`workspaceContains:**/flagsmith.json` or after startup). The matrix webview loads only when opened.
 - Only open documents are scanned (debounced, cached by document version). *Find unused flags* scans the workspace on
   demand.
@@ -320,19 +357,23 @@ npm run test:integration -w extension   # end-to-end: real VS Code + real self-h
 make verify-engine                      # local evaluation vs the live server (npm run verify:engine -w extension)
 ```
 
-- **Unit tests** (Vitest, ~140 tests) cover the scanner (call styles in 9 languages, multi-line calls, false
+- **Unit tests** (Vitest, ~170 tests) cover the scanner (call styles in 9 languages, multi-line calls, false
   positives), drift and staleness rules, typo suggestions, the API client (pagination, internal hostnames in `next`,
   timeouts, retry rules, error mapping), the Markdown diff, the evaluation engine (hashes checked against values
   computed independently with Python's `hashlib`, a chi-square test that splits are uniform, priorities, every
-  operator) and the dead-code analysis (if/else, guards, ternaries, aliases, Python, unknown operands).
+  operator), the dead-code analysis (if/else, guards, ternaries, aliases, Python, unknown operands), the rule checker
+  (each anomaly, type casting, plus the randomised soundness test above) and the pairwise plans (exact optimal size
+  for every k from 1 to 200, full pair coverage for 300 random mixes).
 - **Engine verification** (`make verify-engine`) asks the running Flagsmith what hundreds of random identities get,
   using *transient* identities so nothing is stored, and compares every flag with FlagLens's local answer. A second
   pass creates one temporary segment per rule operator (`EQUAL` … `REGEX`, `IN`, `MODULO`, SemVer, `IS_SET`, % split,
-  JSONPath properties), runs the comparison, and deletes them again. Last run: 6,300 + 10,400 checks, **100% match**.
+  JSONPath properties), runs the comparison, and deletes them again. Last run: 6,300 + 8,100 checks, **100% match**.
+  It also checks the rule checker's "never applies" findings against the server.
 - **End-to-end tests** launch VS Code with the demo workspace against the seeded Flagsmith and check CodeLens, hover,
   diagnostics, quick fixes, autocomplete, a real toggle and toggle-back, pick-up of a change made outside the editor,
   that a declined confirmation changes nothing, the Markdown diff, *Preview as* (including a comparison with the
-  server's answer for the same user) and greying out, including that nothing is greyed when users can differ.
+  server's answer for the same user), greying out (including that nothing is greyed when users can differ), the rule
+  check and the test plan.
 - **CI** runs both on every push, including `make up && make seed` (twice, to prove the seed is idempotent) on a
   fresh Ubuntu runner.
 
@@ -375,6 +416,8 @@ Checked against a live 2.295.2 instance (these shaped the design):
 - A segment override of a multivariate flag copies the flag's variant split unless you send
   `multivariate_feature_state_values` with 0%, so the override's own value would never be served. The seed does that.
 - The `REGEX` operator is anchored at the start (Python's `re.match`): `demo-shop` doesn't match `a@demo-shop.dev`.
+- Rule values are cast to the trait's type before comparing, so a boolean trait `true` EQUALs *any* value except
+  `"false"`: a segment `plan = pro AND plan = free` does match someone (`plan: true`). The rule checker accounts for it.
 
 ## Troubleshooting
 
