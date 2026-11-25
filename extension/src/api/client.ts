@@ -13,6 +13,7 @@ import type {
   ApiOrganisation,
   ApiProject,
   ApiTag,
+  ApiWebhook,
   ApiFeatureHealthEvent,
   CodeReferencesScan,
   CreateFeatureBody,
@@ -138,6 +139,20 @@ export class FlagsmithClient {
   /** Feature Health events for the project (open-source Flagsmith: Webhook and Grafana providers). */
   listFeatureHealthEvents(projectId: number): Promise<ApiFeatureHealthEvent[]> {
     return this.listAll<ApiFeatureHealthEvent>(`/projects/${projectId}/feature-health/events/`);
+  }
+
+  // --- webhooks (real-time updates) -------------------------------------------------------------------------------
+
+  listOrganisationWebhooks(organisationId: number): Promise<ApiWebhook[]> {
+    return this.listAll<ApiWebhook>(`/organisations/${organisationId}/webhooks/`);
+  }
+
+  createOrganisationWebhook(organisationId: number, webhook: { url: string; secret: string; enabled: boolean }): Promise<ApiWebhook> {
+    return this.request<ApiWebhook>('POST', `/organisations/${organisationId}/webhooks/`, webhook);
+  }
+
+  deleteOrganisationWebhook(organisationId: number, id: number): Promise<unknown> {
+    return this.request('DELETE', `/organisations/${organisationId}/webhooks/${id}/`);
   }
 
   /** Uploads code references in the format of Flagsmith's own CI scanner; the dashboard shows them per flag. */

@@ -452,6 +452,22 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Grey out code that cannot run in the active environment (and for the previewed user), like an inactive `#ifdef`: the losing branch of `if`/`else` and ternaries that test a flag, and the rest of a block after a flag guard that returns. FlagLens only greys code when the outcome is certain: a flag with segment or identity overrides counts as unknown unless you preview as a user."
+        },
+        "flaglens.realtime.mode": {
+          "type": "string",
+          "enum": ["auto", "on", "off"],
+          "enumDescriptions": [
+            "Real-time updates when Flagsmith runs on this machine (the dev kit, or any local Docker setup)",
+            "Always try: for a Flagsmith that can reach this machine at `flaglens.realtime.callbackHost`",
+            "Polling only"
+          ],
+          "default": "auto",
+          "markdownDescription": "Show changes made anywhere (dashboard, API, teammates) within about two seconds. FlagLens registers a Flagsmith organisation webhook pointing at a small signed listener in the editor, removes it when the window closes, and keeps polling as a fallback. Flagsmith must allow the callback host in its `SSRF_ALLOWED_HOSTS` setting (the dev kit does)."
+        },
+        "flaglens.realtime.callbackHost": {
+          "type": "string",
+          "default": "host.docker.internal",
+          "markdownDescription": "Host name Flagsmith uses to reach this machine for real-time updates. `host.docker.internal` works when Flagsmith runs in Docker on this machine."
         }
       }
     }

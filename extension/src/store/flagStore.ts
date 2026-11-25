@@ -147,6 +147,14 @@ export class FlagStore implements vscode.Disposable {
     if (fire) this.changeEmitter.fire();
   }
 
+  /**
+   * Refreshes because Flagsmith reported a change (real-time webhook). A refresh already in flight may have read the
+   * old state, so this one waits for it and then reads again.
+   */
+  refreshAfterChange(): Promise<void> {
+    return this.refreshing ? this.refreshing.then(() => this.refresh()) : this.refresh();
+  }
+
   /** Refreshes now. Concurrent calls share one request round. */
   refresh(): Promise<void> {
     if (!this.refreshing) {

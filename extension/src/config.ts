@@ -42,6 +42,9 @@ export interface Settings {
   personas: Persona[];
   /** Grey out code that can't run in the active environment. */
   dimInactiveCode: boolean;
+  /** Real-time updates through a Flagsmith webhook (see realtime.ts). */
+  realtimeMode: 'auto' | 'on' | 'off';
+  realtimeCallbackHost: string;
 }
 
 /** Keeps only well-formed persona entries from settings.json. */
@@ -76,6 +79,8 @@ export function readSettings(): Settings {
     staleDiagnostics: cfg.get<boolean>('diagnostics.staleFlags', true),
     personas: readPersonas(cfg.get<unknown>('personas', [])),
     dimInactiveCode: cfg.get<boolean>('dimInactiveCode', true),
+    realtimeMode: cfg.get<Settings['realtimeMode']>('realtime.mode', 'auto'),
+    realtimeCallbackHost: cfg.get<string>('realtime.callbackHost', 'host.docker.internal').trim() || 'host.docker.internal',
   };
 }
 

@@ -25,6 +25,7 @@ import { FlagCompletionProvider } from './providers/completion';
 import { DeadCodeDecorator } from './providers/deadCode';
 import { FlagCodeActions, FlagDiagnostics } from './providers/diagnostics';
 import { FlagHoverProvider } from './providers/hover';
+import { RealtimeSync } from './realtime';
 import { ReferenceIndex } from './references';
 import { confirmWrite, WriteJournal } from './safety';
 import { FlagStore } from './store/flagStore';
@@ -37,11 +38,14 @@ const SELECTOR: vscode.DocumentSelector = [{ scheme: 'file' }, { scheme: 'untitl
 export function activate(context: vscode.ExtensionContext): App {
   const log = createLogger();
   let settings = readSettings();
-  const store = new FlagStore(
+  // While the webhook delivers changes, polling is only a safety net, so it slows down to at least every 30 s.
+  const store: FlagStore = new FlagStore(
     log,
-    () => settings.refreshIntervalSeconds * 1000,
+    (): number => (realtime.live ? Math.max(30, settings.refreshIntervalSeconds) : settings.refreshIntervalSeconds) * 1000,
     () => settings.protectedEnvironments,
   );
+  const realtime: RealtimeSync = new RealtimeSync(log, store);
+  current = realtime;
   const refs = new ReferenceIndex(log, settings.extraPatterns);
   const app: App = {
     context,
@@ -53,9 +57,10 @@ export function activate(context: vscode.ExtensionContext): App {
     journal: new WriteJournal(context.globalState),
     autoConnectRetries: 0,
     confirm: confirmWrite,
+    realtime,
   };
 
-  const statusBar = new StatusBar(store);
+  const statusBar = new StatusBar(store, realtime);
   const codeLens = new FlagCodeLensProvider(app, refs);
   const diagnostics = new FlagDiagnostics(app, refs);
   const deadCode = new DeadCodeDecorator(app, refs);
@@ -64,7 +69,19 @@ export function activate(context: vscode.ExtensionContext): App {
   const tree = new FlagsTreeProvider(app);
   const treeView = vscode.window.createTreeView('flaglens.flags', { treeDataProvider: tree, showCollapseAll: true });
 
+  // Restart the webhook whenever the connection (server, project or key) changes.
+  let realtimeKey = '';
+  const restartRealtime = (force = false) => {
+    const conn = store.connection;
+    const key = conn ? `${conn.client.baseUrl}|${conn.project.id}|${settings.realtimeMode}|${settings.realtimeCallbackHost}` : '';
+    if (key === realtimeKey && !force) return;
+    realtimeKey = key;
+    if (conn) void realtime.start({ mode: settings.realtimeMode, callbackHost: settings.realtimeCallbackHost });
+    else void realtime.stop();
+  };
+
   const onStoreChange = () => {
+    restartRealtime();
     void vscode.commands.executeCommand('setContext', 'flaglens.connected', store.connected);
     statusBar.update();
     codeLens.refresh();
@@ -89,6 +106,8 @@ export function activate(context: vscode.ExtensionContext): App {
     store,
     refs,
     statusBar,
+    realtime,
+    realtime.onDidChange(() => statusBar.update()),
     diagnostics,
     deadCode,
     treeView,
@@ -142,6 +161,7 @@ export function activate(context: vscode.ExtensionContext): App {
       settings = readSettings();
       refs.setExtraPatterns(settings.extraPatterns);
       if (before.protectedEnvironments !== settings.protectedEnvironments) store.reapplyProtection();
+      if (e.affectsConfiguration('flaglens.realtime')) restartRealtime(true);
       if (e.affectsConfiguration('flaglens.apiUrl') || e.affectsConfiguration('flaglens.projectId')) {
         store.disconnect();
         void autoConnect(app);
@@ -156,6 +176,9 @@ export function activate(context: vscode.ExtensionContext): App {
   return app;
 }
 
-export function deactivate(): void {
-  // Everything is disposed through context.subscriptions.
+let current: RealtimeSync | undefined;
+
+/** Removes the real-time webhook before the window closes; everything else is disposed through context.subscriptions. */
+export function deactivate(): Promise<void> | undefined {
+  return current?.stop();
 }

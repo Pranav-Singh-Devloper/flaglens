@@ -128,3 +128,11 @@ export interface CreateFeatureBody {
   default_enabled?: boolean;
   initial_value?: FlagValue;
 }
+
+/** An organisation or environment webhook. Flagsmith signs each call with `secret` (X-Flagsmith-Signature). */
+export interface ApiWebhook {
+  id: number;
+  url: string;
+  enabled: boolean;
+  secret?: string | null;
+}

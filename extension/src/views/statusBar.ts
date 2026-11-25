@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { personaName, traitsText } from '../present';
+import type { RealtimeSync } from '../realtime';
 import type { FlagStore } from '../store/flagStore';
 
 /** "⚑ Demo Shop · Development" in the status bar. Click to switch environment (or connect). */
@@ -8,7 +9,10 @@ export class StatusBar implements vscode.Disposable {
   /** "$(person) Beta tester": who flags are being previewed as. Next to the environment. */
   private readonly persona = vscode.window.createStatusBarItem('flaglens.persona', vscode.StatusBarAlignment.Left, 49);
 
-  constructor(private readonly store: FlagStore) {
+  constructor(
+    private readonly store: FlagStore,
+    private readonly realtime?: RealtimeSync,
+  ) {
     this.item.name = 'FlagLens';
     this.update();
     this.item.show();
@@ -39,9 +43,13 @@ export class StatusBar implements vscode.Disposable {
         item.command = 'flaglens.refresh';
         return;
       case 'ok': {
-        item.text = `$(flag) ${project} · ${env?.name ?? '—'}${env?.protected ? ' $(shield)' : ''}`;
+        const live = this.realtime?.live;
+        item.text = `$(flag) ${project} · ${env?.name ?? '—'}${env?.protected ? ' $(shield)' : ''}${live ? ' $(zap)' : ''}`;
+        const updates = live
+          ? 'Updates: **real time** (Flagsmith webhook)'
+          : `Updates: polling${this.realtime?.reason ? ` (real time unavailable: ${this.realtime.reason})` : ''}`;
         const md = new vscode.MarkdownString(
-          `**FlagLens** · ${store.connection?.client.baseUrl}\n\nProject **${project}**, ${store.rows.size} flags, ${store.environments.length} environments.\n\nActive environment: **${env?.name}**${env?.protected ? ' (protected)' : ''}\n\nClick to switch environment.`,
+          `**FlagLens** · ${store.connection?.client.baseUrl}\n\nProject **${project}**, ${store.rows.size} flags, ${store.environments.length} environments.\n\nActive environment: **${env?.name}**${env?.protected ? ' (protected)' : ''}\n\n${updates}\n\nClick to switch environment.`,
         );
         item.tooltip = md;
         item.command = 'flaglens.selectEnvironment';

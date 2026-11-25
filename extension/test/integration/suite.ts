@@ -152,6 +152,38 @@ export async function run(): Promise<void> {
     }
   });
 
+  await test('real time: a change made in Flagsmith arrives through the webhook, signed, and the webhook is removed on stop', async () => {
+    const realtime = app.realtime!;
+    await waitFor('real-time webhook', () => realtime.live, 15_000);
+    const client = store.connection!.client;
+    const org = store.project!.organisation;
+    const ours = async () => (await client.listOrganisationWebhooks(org)).filter((h) => /\/flaglens\/[0-9a-f]+$/.test(h.url));
+    const [hook] = await ours();
+    assert.ok(hook, 'FlagLens registered an organisation webhook');
+    const { port, pathname } = new URL(hook!.url);
+
+    // Only signed calls are accepted, and only on the secret path.
+    const unsigned = await fetch(`http://127.0.0.1:${port}${pathname}`, { method: 'POST', body: '{"event_type":"FLAG_UPDATED"}' });
+    assert.equal(unsigned.status, 401);
+    assert.equal((await fetch(`http://127.0.0.1:${port}/flaglens/0000000000000000`, { method: 'POST', body: '{}' })).status, 404);
+
+    const before = realtime.events;
+    const fs = store.row('maintenance_mode')!.states.get(stg.id)!;
+    await client.updateFeatureState(stg.apiKey, fs.featureStateId, { enabled: true });
+    try {
+      await waitFor('webhook event', () => realtime.events > before && realtime.lastEvent?.feature === 'maintenance_mode', 15_000);
+      await waitFor('refresh after the event', () => store.row('maintenance_mode')!.states.get(stg.id)!.enabled, 5_000);
+    } finally {
+      await client.updateFeatureState(stg.apiKey, fs.featureStateId, { enabled: false });
+    }
+
+    await realtime.stop();
+    assert.equal((await ours()).length, 0, 'the webhook is removed when FlagLens stops');
+    await realtime.start({ mode: 'auto', callbackHost: 'host.docker.internal' });
+    assert.ok(realtime.live);
+    assert.equal((await ours()).length, 1);
+  });
+
   await test('declined confirmation changes nothing', async () => {
     app.confirm = async () => false;
     const client = store.connection!.client;

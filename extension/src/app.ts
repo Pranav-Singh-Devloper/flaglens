@@ -3,6 +3,7 @@ import type { ApiKeyStore } from './config';
 import type { Logger } from './log';
 import type { DeadCodeDecorator } from './providers/deadCode';
 import type { Ctx } from './present';
+import type { RealtimeSync } from './realtime';
 import type { ReferenceIndex } from './references';
 import type { WriteIntent, WriteJournal } from './safety';
 
@@ -18,4 +19,6 @@ export interface App extends Ctx {
   confirm: (intent: WriteIntent) => Promise<boolean>;
   /** Set in activate(); integration tests read its last ranges. */
   deadCode?: DeadCodeDecorator;
+  /** Real-time updates through a Flagsmith webhook. Set in activate(). */
+  realtime?: RealtimeSync;
 }
