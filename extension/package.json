@@ -175,6 +175,12 @@
         "title": "Set Flag for Previewed User…",
         "category": "FlagLens",
         "icon": "$(person-add)"
+      },
+      {
+        "command": "flaglens.editSegmentOverrides",
+        "title": "Edit Segment Overrides…",
+        "category": "FlagLens",
+        "icon": "$(organization)"
       }
     ],
     "viewsContainers": {

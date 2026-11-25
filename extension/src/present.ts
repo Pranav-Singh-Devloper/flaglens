@@ -261,6 +261,7 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
   const links = [
     ...(persona ? [`[$(person-add) Set for ${escapeMd(personaName(persona))}…](${commandUri('flaglens.setUserOverride', key)} "Identity override in Flagsmith")`] : []),
     `[$(edit) Set value…](${commandUri('flaglens.setValue', key)})`,
+    `[$(organization) Segment overrides…](${commandUri('flaglens.editSegmentOverrides', key)})`,
     `[$(history) History](${commandUri('flaglens.showHistory', key)})`,
     `[$(link-external) Open in Flagsmith](${commandUri('flaglens.openInDashboard', key)})`,
   ];

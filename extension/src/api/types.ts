@@ -150,3 +150,32 @@ export interface ApiIdentityFeatureState {
   enabled: boolean;
   feature_state_value: FlagValue;
 }
+
+export interface ApiSegment {
+  id: number;
+  name: string;
+  description?: string | null;
+  /** Feature-specific segments are created for one flag in the dashboard. */
+  feature?: number | null;
+  is_system_segment?: boolean;
+}
+
+/** The link between a segment and a flag in one environment, with its priority (0 applies first). */
+export interface ApiFeatureSegment {
+  id: number;
+  segment: number;
+  segment_name: string;
+  priority: number;
+  environment: number;
+  is_system_segment?: boolean;
+}
+
+/** A feature state from /features/featurestates/, which returns values in the typed form. */
+export interface ApiTypedFeatureState {
+  id: number;
+  feature: number;
+  environment: number;
+  enabled: boolean;
+  feature_segment: number | { id: number } | null;
+  feature_state_value: { type: string; string_value?: string | null; integer_value?: number | null; boolean_value?: boolean | null } | null;
+}

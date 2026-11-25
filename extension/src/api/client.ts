@@ -14,6 +14,9 @@ import type {
   ApiIdentityFeatureState,
   ApiOrganisation,
   ApiProject,
+  ApiFeatureSegment,
+  ApiSegment,
+  ApiTypedFeatureState,
   ApiTag,
   ApiWebhook,
   ApiFeatureHealthEvent,
@@ -179,6 +182,57 @@ export class FlagsmithClient {
     return this.request('DELETE', `/environments/${encodeURIComponent(environmentKey)}/identities/${identityId}/featurestates/${featureStateId}/`);
   }
 
+  // --- segment overrides -----------------------------------------------------------------------------------------
+  // Verified on 2.295.2. Values go in the typed form here ({type, string_value | integer_value | boolean_value}), and an
+  // override is changed with PUT and the full body: PATCH /features/featurestates/{id}/ fails with HTTP 500
+  // (KeyError 'environment'). Priority 0 is the highest; update-priorities renumbers a feature's overrides.
+
+  listSegments(projectId: number): Promise<ApiSegment[]> {
+    return this.listAll<ApiSegment>(`/projects/${projectId}/segments/?page_size=100`);
+  }
+
+  listFeatureSegments(featureId: number, environmentId: number): Promise<ApiFeatureSegment[]> {
+    return this.listAll<ApiFeatureSegment>(`/features/feature-segments/?feature=${featureId}&environment=${environmentId}`);
+  }
+
+  /** Every state of a feature in an environment: the default (feature_segment null) and each segment override. */
+  listFeatureStatesTyped(featureId: number, environmentId: number): Promise<ApiTypedFeatureState[]> {
+    return this.listAll<ApiTypedFeatureState>(`/features/featurestates/?feature=${featureId}&environment=${environmentId}`);
+  }
+
+  createSegmentOverride(
+    environmentKey: string,
+    featureId: number,
+    body: { segment: number; priority: number; enabled: boolean; value: FlagValue; zeroVariants?: number[] },
+  ): Promise<ApiTypedFeatureState> {
+    return this.request<ApiTypedFeatureState>('POST', `/environments/${encodeURIComponent(environmentKey)}/features/${featureId}/create-segment-override/`, {
+      enabled: body.enabled,
+      feature_state_value: typedValue(body.value),
+      feature_segment: { segment: body.segment, priority: body.priority },
+      // An override of a multivariate flag copies the flag's split unless every variant is set to 0%.
+      ...(body.zeroVariants?.length && { multivariate_feature_state_values: body.zeroVariants.map((id) => ({ multivariate_feature_option: id, percentage_allocation: 0 })) }),
+    });
+  }
+
+  updateSegmentOverride(state: { id: number; feature: number; environment: number; feature_segment: number }, next: { enabled: boolean; value: FlagValue }): Promise<ApiTypedFeatureState> {
+    return this.request<ApiTypedFeatureState>('PUT', `/features/featurestates/${state.id}/`, {
+      feature: state.feature,
+      environment: state.environment,
+      feature_segment: state.feature_segment,
+      enabled: next.enabled,
+      feature_state_value: typedValue(next.value),
+    });
+  }
+
+  deleteSegmentOverride(featureSegmentId: number): Promise<unknown> {
+    return this.request('DELETE', `/features/feature-segments/${featureSegmentId}/`);
+  }
+
+  /** Sets the order of a feature's overrides in one environment: ids[0] gets priority 0 (applies first). */
+  reorderSegmentOverrides(featureSegmentIds: number[]): Promise<unknown> {
+    return this.request('POST', '/features/feature-segments/update-priorities/', featureSegmentIds.map((id, priority) => ({ id, priority })));
+  }
+
   // --- webhooks (real-time updates) -------------------------------------------------------------------------------
 
   listOrganisationWebhooks(organisationId: number): Promise<ApiWebhook[]> {
@@ -335,4 +389,19 @@ export class FlagsmithClient {
     if (res.status === 404) throw new NotFoundError(`Not found: ${method} ${path}${detail ? ` (${detail})` : ''}`);
     throw new ApiError(res.status, detail, `Flagsmith returned HTTP ${res.status} for ${method} ${path}${detail ? `: ${detail}` : ''}`);
   }
+}
+
+/** The typed value form the segment-override endpoints expect. */
+export function typedValue(value: FlagValue): { type: 'unicode' | 'int' | 'bool'; string_value?: string | null; integer_value?: number; boolean_value?: boolean } {
+  if (typeof value === 'number') return { type: 'int', integer_value: value };
+  if (typeof value === 'boolean') return { type: 'bool', boolean_value: value };
+  return { type: 'unicode', string_value: value };
+}
+
+/** The value of a typed feature state value, as FlagLens uses it elsewhere. */
+export function untypedValue(v: ApiTypedFeatureState['feature_state_value']): FlagValue {
+  if (!v || typeof v !== 'object') return (v ?? null) as FlagValue;
+  if (v.type === 'int') return v.integer_value ?? null;
+  if (v.type === 'bool') return v.boolean_value ?? null;
+  return v.string_value ?? null;
 }

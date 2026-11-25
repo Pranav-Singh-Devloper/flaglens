@@ -401,6 +401,52 @@ export async function run(): Promise<void> {
     }
   });
 
+  await test('segment overrides: add, change, reorder (fixing a shadowed rule) and remove, written to Flagsmith', async () => {
+    const client = store.connection!.client;
+    const feature = store.row('rate_limit_per_minute')!.feature.id;
+    const order = async () => (await client.listFeatureSegments(feature, prd.id)).sort((a, b) => a.priority - b.priority).map((l) => l.segment_name);
+    const value = async (segment: string) => {
+      const link = (await client.listFeatureSegments(feature, prd.id)).find((l) => l.segment_name === segment)!;
+      const state = (await client.listFeatureStatesTyped(feature, prd.id)).find((s) => (typeof s.feature_segment === 'object' ? s.feature_segment?.id : s.feature_segment) === link.id)!;
+      return { enabled: state.enabled, value: state.feature_state_value?.integer_value };
+    };
+    const shadowed = () => store.findingsFor('rate_limit_per_minute').some((f) => f.kind === 'shadowed' && f.segment === 'pro_eu' && f.environment === 'Production');
+    const run = (step: object) => vscode.commands.executeCommand('flaglens.editSegmentOverrides', 'rate_limit_per_minute', prd.id, step);
+    let detail = '';
+    app.confirm = async (i) => {
+      detail = i.detail ?? '';
+      return true;
+    };
+    assert.deepEqual(await order(), ['pro_plan', 'pro_eu']);
+    assert.ok(shadowed(), 'the seeded mistake: pro_eu is shadowed by pro_plan');
+    try {
+      await run({ op: 'add', segment: 'india', enabled: true, value: 777 });
+      assert.match(detail, /1\. pro_plan: on 500\n2\. pro_eu: on 800/);
+      assert.deepEqual(await order(), ['pro_plan', 'pro_eu', 'india'], 'added last');
+      assert.deepEqual(await value('india'), { enabled: true, value: 777 });
+
+      await run({ op: 'set', segment: 'india', enabled: false });
+      assert.deepEqual(await value('india'), { enabled: false, value: 777 });
+
+      // Moving pro_eu above pro_plan fixes the seeded mistake: the rule check no longer reports it.
+      await run({ op: 'move', segment: 'pro_eu', to: 0 });
+      assert.deepEqual(await order(), ['pro_eu', 'pro_plan', 'india']);
+      await waitFor('rule check without the shadowed finding', () => !shadowed());
+      await run({ op: 'move', segment: 'pro_eu', to: 1 });
+      await waitFor('rule check with the shadowed finding again', () => shadowed());
+
+      await run({ op: 'remove', segment: 'india' });
+      assert.deepEqual(await order(), ['pro_plan', 'pro_eu']);
+    } finally {
+      app.confirm = async () => true;
+      const leftover = (await client.listFeatureSegments(feature, prd.id)).find((l) => l.segment_name === 'india');
+      if (leftover) await client.deleteSegmentOverride(leftover.id);
+      const links = (await client.listFeatureSegments(feature, prd.id)).sort((a, b) => (a.segment_name === 'pro_plan' ? -1 : b.segment_name === 'pro_plan' ? 1 : 0));
+      await client.reorderSegmentOverrides(links.map((l) => l.id));
+      await store.refresh();
+    }
+  });
+
   await test('environment matrix opens', async () => {
     await vscode.commands.executeCommand('flaglens.openMatrix');
     const tab = await waitFor('matrix tab', () =>
