@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0
+
+- **Preview as a user.** Pick a test user (from the new `flaglens.personas` setting, or type an identifier and
+  traits) from the status bar. CodeLens, hovers and greyed-out code then show what that user gets in each
+  environment, and why: segment and priority, % split bucket or identity override. Flags are evaluated locally from
+  the environment document with a TypeScript port of Flagsmith's open-source engine; `npm run verify:engine` checks it
+  against a live server (100% match over every rule operator).
+- **Greys out code that can't run** in the active environment, like an inactive `#ifdef`: the losing branch of
+  `if`/`else` and ternaries, through simple `const` aliases, and the rest of a block after a flag guard that returns,
+  in JS/TS (and other brace languages) and Python. Three-valued logic means it only greys code when the outcome is
+  certain. Toggle it with `flaglens.dimInactiveCode`.
+- Hover cards list segment overrides per environment, read from the environment documents. The features list only
+  counts them per environment, so the previous count was always 0.
+
 ## 0.1.1
 
 - CodeLens sections no longer run together: environments are separated by ` · ` and badges by a wide gap,

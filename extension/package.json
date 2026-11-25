@@ -2,7 +2,7 @@
   "name": "flaglens",
   "displayName": "FlagLens for Flagsmith",
   "description": "A community VS Code extension for self-hosted Flagsmith: live flag states inline, safe toggles, environment drift, typo and stale-flag detection.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publisher": "pranav-singh-devloper",
   "license": "MIT",
   "author": {
