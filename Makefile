@@ -5,7 +5,7 @@ COMPOSE := docker compose -f devkit/compose.yaml
 VSIX    := extension/flaglens.vsix
 
 .DEFAULT_GOAL := help
-.PHONY: help up seed down reset logs mcp demo install ext package install-ext test lint typecheck check
+.PHONY: help up seed down reset logs mcp demo install ext package install-ext test lint typecheck check verify-engine
 
 help: ## Show this help
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -56,3 +56,6 @@ typecheck: node_modules
 	npm run typecheck
 
 check: lint typecheck test ## Lint, type-check and test
+
+verify-engine: node_modules ## Compare FlagLens's local evaluation with the running Flagsmith (after make seed)
+	npm run verify:engine -w extension

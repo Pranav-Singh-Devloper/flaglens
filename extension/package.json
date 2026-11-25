@@ -371,7 +371,8 @@
     "test": "vitest run",
     "lint": "eslint src test",
     "typecheck": "tsc --noEmit",
-    "test:integration": "node esbuild.mjs && node test/integration/run.mjs"
+    "test:integration": "node esbuild.mjs && node test/integration/run.mjs",
+    "verify:engine": "node scripts/verify-engine.mjs 300 && node scripts/verify-engine.mjs 300 --operators"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

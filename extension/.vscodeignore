@@ -11,3 +11,4 @@ vitest.config.*
 *.vsix
 dist-test/**
 .vscode-test/**
+scripts/**

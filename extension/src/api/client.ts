@@ -17,6 +17,7 @@ import type {
   FlagValue,
   Paginated,
 } from './types';
+import type { EnvironmentDocument } from '../core/engine';
 
 export class FlagsmithError extends Error {
   constructor(message: string) {
@@ -164,6 +165,15 @@ export class FlagsmithClient {
 
   createFeature(projectId: number, body: CreateFeatureBody): Promise<ApiFeature> {
     return this.request<ApiFeature>('POST', `/projects/${projectId}/features/`, body);
+  }
+
+  /**
+   * The environment document: every flag's default, every segment with its rules and overrides, and identity
+   * overrides. The same document server-side SDKs use for local evaluation. Readable with an Organisation API key
+   * (verified on 2.295.2), so no server-side environment key is needed.
+   */
+  getEnvironmentDocument(environmentKey: string): Promise<EnvironmentDocument> {
+    return this.request<EnvironmentDocument>('GET', `/environments/${encodeURIComponent(environmentKey)}/document/`);
   }
 
   // --- experiments (beta) ----------------------------------------------------------------------------------------
