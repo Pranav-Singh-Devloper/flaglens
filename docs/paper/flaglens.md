@@ -17,8 +17,8 @@ abstract: |
   analysis sound in the presence of operators it cannot partition; and (4) generates pairwise test plans for sets of
   flags that are provably minimal for on/off flags (the Katona--Kleitman--Spencer construction) and near-minimal with
   a stated lower bound otherwise, including a simple new bound that certifies optimality for a common mixed case. All
-  analyses run in milliseconds on real projects, ship in a 54 KB extension with no runtime dependencies, and are
-  covered by 177 unit tests and 18 end-to-end tests against a self-hosted Flagsmith instance.
+  analyses run in milliseconds on real projects, ship in a 62 KB extension with no runtime dependencies, and are
+  covered by 190 unit tests and 22 end-to-end tests against a self-hosted Flagsmith instance.
 geometry: margin=2.3cm
 fontsize: 10pt
 numbersections: true
@@ -311,13 +311,13 @@ short annealing budget do not find. FlagLens states the bound alongside the plan
 
 # Implementation and evaluation
 
-FlagLens is written in strict TypeScript with no runtime dependencies (the packaged extension is 54 KB). The analyses
+FlagLens is written in strict TypeScript with no runtime dependencies (the packaged extension is 62 KB). The analyses
 are pure modules with no editor dependencies: the engine (about 400 lines), dead-code analysis (about 900, including
 the lexer and parser), rule analysis (about 330) and covering arrays (about 250). The editor layer adds CodeLens, hovers,
 decorations, diagnostics, a status-bar persona switch and Markdown reports.
 
-**Tests.** 177 unit tests (including the randomised soundness test of Section 5 and the exhaustive size checks of
-Section 6); 18 end-to-end tests that launch VS Code against a self-hosted Flagsmith 2.295.2 started by the project's
+**Tests.** 190 unit tests (including the randomised soundness test of Section 5 and the exhaustive size checks of
+Section 6); 22 end-to-end tests that launch VS Code against a self-hosted Flagsmith 2.295.2 started by the project's
 one-command dev kit, including a comparison of *Preview as* with the server's answer for the same identity, a check that
 nothing is greyed where users can differ, the rule check, the test plan, and a flag dependency evaluated per identity; and the differential verifier of
 Section 3.
@@ -329,6 +329,12 @@ publishes every flag reference in the repository through the Code References API
 scanner, after which Flagsmith links each flag to its files and moves it from the *new* to the *live* lifecycle stage.
 It reads lifecycle stages, owners and the latest Feature Health event per flag and environment, so a flag that
 monitoring has reported unhealthy is marked at every reference and in the confirmation before it is changed.
+
+**Closing the loop.** Segment overrides and identity overrides can be edited from the editor, and every edit is
+followed by the rule analysis of Section 5 on the new document. A developer who sees that an override is shadowed can
+move it above the override that shadows it and watch the finding disappear; one who creates a redundant override is
+told so immediately. A signed Flagsmith webhook delivers changes made elsewhere within about two seconds, so the
+analyses always run on current rules.
 
 **Performance.** On the demo project every analysis completes within a few milliseconds per document; the rule
 analysis of the Production document takes 3 ms; pairwise plans with annealing finish in under 100 ms for the cases
@@ -372,9 +378,9 @@ Everything in this paper can be reproduced from the repository
 
 ```bash
 make up && make seed          # self-hosted Flagsmith 2.295.2 with the demo project
-npm run check                 # lint, type-check, 177 unit tests
+npm run check                 # lint, type-check, 190 unit tests
 make verify-engine            # differential test against the live server
-npm run test:integration -w extension   # 18 end-to-end tests in VS Code
+npm run test:integration -w extension   # 22 end-to-end tests in VS Code
 ```
 
 # References

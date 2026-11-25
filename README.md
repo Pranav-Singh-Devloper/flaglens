@@ -65,8 +65,8 @@ verification method and 27 references.
   [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses).
 - **Fits the Flagsmith toolchain.** It reads the Flagsmith CLI's `flagsmith.json` and finds flags with the same pattern
   as Flagsmith's Code References scanner, in JS/TS, Python, Go, Java, Kotlin, C#, Dart and Ruby.
-- **Tested against the real thing.** 177 unit tests, 18 end-to-end tests in a real VS Code against self-hosted
-  Flagsmith, and a differential verifier for the local engine. Zero runtime dependencies; the extension is 54 KB.
+- **Tested against the real thing.** 190 unit tests, 22 end-to-end tests in a real VS Code against self-hosted
+  Flagsmith, and a differential verifier for the local engine. Zero runtime dependencies; the extension is 62 KB.
 
 ```
 ⚑ new_checkout   Development ● on · Staging ● on · Production ○ off   ⚠ drift
@@ -116,7 +116,10 @@ It is a community project, not an official Flagsmith product.
 | **Greys out code that can't run** in the active environment (and for the previewed user), like an inactive `#ifdef`: the losing branch of `if`/`else` and ternaries, through simple `const x = flags…` aliases, and the rest of a block after a flag guard that returns. JS/TS and other brace languages, and Python. It uses three-valued logic, so it only greys code when the outcome is **certain**: a flag with a segment override counts as unknown for "everyone" | environment document + feature states |
 | **Targeting rule check**: finds segment overrides that can **never apply** (every user they match is caught first by higher-priority overrides), overrides that **change nothing**, segments that **match nobody**, and defaults **nobody gets**. Each finding is proven for every possible user (see [How the checks work](#how-the-checks-work)). Shown in CodeLens, hovers, the Problems panel and a Markdown report | environment documents |
 | **Pairwise test plan**: the smallest set of runs in which every pair of values of the chosen flags appears together. Provably optimal for on/off flags (Kleitman–Spencer); near-optimal with a stated lower bound for multivariate flags. Exports a table, JSON and a GitHub Actions matrix | feature states, variants, environment documents |
-| **Safe toggles and value edits**: modal confirmation, typed confirmation for protected environments (`prod\|live\|main`), Undo, every change logged | `PATCH /environments/{key}/featurestates/{id}/` |
+| **Safe toggles and value edits**: modal confirmation, typed confirmation for protected environments (`prod\|live\|main`), Undo, every change logged. In environments with **feature versioning (v2)** a change is published as a new version | `PATCH /environments/{key}/featurestates/{id}/`; v2: `POST /environments/{id}/features/{id}/versions/` |
+| **Real-time updates**: a change made anywhere (dashboard, API, a teammate) shows up within about two seconds. FlagLens registers a Flagsmith organisation webhook pointing at a small listener in the editor (random port and path, every call checked against its HMAC-SHA256 signature) and removes it when the window closes; polling stays as the fallback | `POST /organisations/{id}/webhooks/` |
+| **Set a flag for one user**: while previewing as a user, turn a flag on or off or set its value for that identity only, or remove the override. The confirmation says exactly who is affected | `/environments/{key}/identities/{id}/featurestates/` |
+| **Edit segment overrides**: add one for a segment, turn it on or off, change its value, move it up or down, remove it. The rule check runs again straight away, so moving a shadowed override up makes the finding disappear | `create-segment-override`, `feature-segments`, `update-priorities` |
 | **Drift badge** when Staging ≠ Production, **Environment Matrix** of every flag × environment, **Copy diff as Markdown** for a PR | feature states × environments |
 | **Typo detection** for unknown keys with *Replace with…* and *Create flag in Flagsmith…* quick fixes (respects the project's naming rules) | `POST /projects/{id}/features/` |
 | **Stale flags on open-source Flagsmith**: identical in every environment for N days, no targeting, not tagged permanent | `updated_at` of feature states, tags (`is_permanent`) |
@@ -212,6 +215,8 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | FlagLens: Copy Environment Diff as Markdown… | Paste-ready table of differences between two environments |
 | FlagLens: Show Flag History… | Audit log (if the server exposes it), last change per environment, changes made with FlagLens |
 | FlagLens: Find Unused Flags in Workspace | Project flags that no file references |
+| FlagLens: Set Flag for Previewed User… | Identity override for the user you are previewing as (also a link in the hover) |
+| FlagLens: Edit Segment Overrides… | A flag's overrides in one environment, in priority order: add, change, reorder, remove (also a link in the hover) |
 | FlagLens: Publish Code References to Flagsmith… | Upload every flag reference in this repository (git HEAD, GitHub remote) to Flagsmith's Code References, after a confirmation |
 | FlagLens: Preview Flags as User… | Pick a test user (from `flaglens.personas`, or type an identifier and traits). Also: click the persona item in the status bar |
 | FlagLens: Toggle Greying Out Code That Won't Run | Turn the greying on or off |
@@ -238,6 +243,8 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | `flaglens.diagnostics.staleFlags` | `true` | Show stale-flag hints |
 | `flaglens.personas` | `[]` | Test users for *Preview as*: `[{ "name": "Beta tester", "identifier": "alice@demo-shop.dev", "traits": { "plan": "pro" } }]`. The demo workspace defines three |
 | `flaglens.dimInactiveCode` | `true` | Grey out code that can't run in the active environment (and for the previewed user) |
+| `flaglens.realtime.mode` | `auto` | Real-time updates through a Flagsmith webhook: `auto` when Flagsmith runs on this machine, `on` to always try, `off` to poll only |
+| `flaglens.realtime.callbackHost` | `host.docker.internal` | Host name Flagsmith uses to reach this machine. Flagsmith must allow it in `SSRF_ALLOWED_HOSTS` (the dev kit does) |
 
 ## Environment variables (dev kit)
 
@@ -319,6 +326,7 @@ flowchart LR
   CLI["flagsmith.json<br/>(Flagsmith CLI v2)"] -.-> ST
   CI["make code-refs<br/>(or the command)"] -- "Code References" --> API
   Mon["Monitoring<br/>(make alert)"] -- "Feature Health webhook" --> API
+  API -. "signed organisation webhook<br/>(real-time updates)" .-> ST
 ```
 
 - **Management API, read.** On each refresh: environments, `GET /projects/{id}/features/`, tags, and one
@@ -360,12 +368,14 @@ the open-source edition offers, then built on as much of it as an editor tool ca
 | | Transient identities (SDK API) | Differential test of the local engine against the server |
 | | Experiments (beta) | Lock badge; experiment flags can't be toggled |
 | | Audit log | *Show history*, when the server exposes it |
+| | Organisation webhooks (signed) | Real-time updates, with polling as the fallback |
+| | Identity overrides | *Set flag for previewed user* |
+| | Segment overrides and their priorities | *Edit segment overrides*, re-checked by the rule check |
+| | v2 feature versioning (versions, publish) | Toggles and value changes publish a version |
+| | Trait keys | Suggestions when previewing as a custom identity |
 | | Flagsmith CLI (`flagsmith.json`), Code References scanner pattern, Node SDK, MCP server | Config, flag detection, demo shop, `make mcp` |
-| **Not yet** (open source, on the roadmap) | Environment webhooks | FlagLens polls every 10 s; push through a local listener is next |
-| | Editing identity and segment overrides | Shown, previewed and checked, but edited in the dashboard |
-| | v2 feature versioning (versions, publish) | v2 environments are read-only in FlagLens |
-| | Trait keys, metadata fields, usage analytics | Trait-key autocomplete in *Preview as* would be next; analytics needs server-side setup |
-| **Not in open source** | Change requests (4-eyes approval), scheduled changes, real-time flag updates, full audit-log visibility, SSO and role-based access | FlagLens's typed confirmation for protected environments and its change journal cover part of the first and fourth |
+| **Not yet** (open source) | Metadata fields, usage analytics, segment and flag-dependency editing, Edge identities | Analytics needs server-side setup; the others are dashboard work that doesn't need the code next to it |
+| **Not in open source** | Change requests (4-eyes approval), scheduled changes, real-time flag updates (SSE), full audit-log visibility, SSO and role-based access | Webhooks give FlagLens real-time updates anyway; its typed confirmation for protected environments and its change journal cover part of change requests and the audit log |
 
 ## How the checks work
 
@@ -439,7 +449,7 @@ npm run test:integration -w extension   # end-to-end: real VS Code + real self-h
 make verify-engine                      # local evaluation vs the live server (npm run verify:engine -w extension)
 ```
 
-- **Unit tests** (Vitest, ~180 tests) cover the scanner (call styles in 9 languages, multi-line calls, false
+- **Unit tests** (Vitest, ~190 tests) cover the scanner (call styles in 9 languages, multi-line calls, false
   positives), drift and staleness rules, typo suggestions, the API client (pagination, internal hostnames in `next`,
   timeouts, retry rules, error mapping), the Markdown diff, the evaluation engine (hashes checked against values
   computed independently with Python's `hashlib`, a chi-square test that splits are uniform, priorities, every
@@ -457,17 +467,21 @@ make verify-engine                      # local evaluation vs the live server (n
   that a declined confirmation changes nothing, the Markdown diff, *Preview as* (including a comparison with the
   server's answer for the same user), greying out (including that nothing is greyed when users can differ), the rule
   check, the test plan, publishing Code References, a Feature Health alert (badge, hover and the warning in the
-  confirmation) and a flag dependency evaluated per user.
+  confirmation), a flag dependency evaluated per user, real-time updates through a signed webhook (and its removal),
+  an identity override, segment overrides (including fixing the shadowed rule by moving it up) and a change in a
+  temporary v2-versioned environment.
 - **CI** runs both on every push, including `make up && make seed` (twice, to prove the seed is idempotent) on a
   fresh Ubuntu runner.
 
 ## Limitations and roadmap
 
-- **v2-versioned environments are read-only.** FlagLens shows them and links to the dashboard. The versions flow
-  (create version → edit → publish) is on the roadmap.
-- **Polling, not push.** Changes appear within `refreshIntervalSeconds` (default 10). Real-time updates are an
-  Enterprise feature; environment webhooks to a local listener are on the roadmap.
-- **Segment and identity overrides are previewed, counted and checked, not edited.**
+- **In v2-versioned environments only the default is edited** (published as a new version); segment overrides there
+  are edited in the dashboard.
+- **Real-time updates need Flagsmith to reach the editor.** That works out of the box when Flagsmith runs on the same
+  machine (the dev kit). For a shared server, set `flaglens.realtime.mode` to `on` with a reachable
+  `flaglens.realtime.callbackHost`, or keep polling (`refreshIntervalSeconds`, default 10).
+- **Identity overrides are for core identities** (self-hosted Flagsmith). Edge identities (Flagsmith Cloud) use other
+  endpoints and are not edited yet.
 - **Flag dependencies are read, not created.** Add them in the dashboard; FlagLens shows and evaluates them.
 - **Code References need a GitHub `origin` remote**, as Flagsmith's links point into GitHub.
 - **Greying out is an analysis of common shapes, not a full parser.** It understands `if`/`else`, guards that return,
@@ -508,6 +522,14 @@ Checked against a live 2.295.2 instance (these shaped the design):
   exact answer.
 - Publishing **Code References** moves a flag's lifecycle stage from *new* to *live*, and the stage is only returned
   by the features list when `?environment=` is passed.
+- An **organisation webhook** receives `FLAG_UPDATED` for every environment and `AUDIT_LOG_CREATED` for every change
+  (segments included), signed with `X-Flagsmith-Signature` (hex HMAC-SHA256 of the body). Flagsmith refuses webhook
+  URLs on private addresses unless the host is in `SSRF_ALLOWED_HOSTS`, so the dev kit allows `host.docker.internal`.
+  Calls go through the task processor and arrive in under two seconds.
+- `PATCH /features/featurestates/{id}/` on a segment override returns HTTP 500 (`KeyError: 'environment'`); `PUT` with
+  the full body works, and values there must use the typed form (`{"type": "int", "integer_value": 7}`).
+- In a v2-versioned environment, one `POST …/versions/` with `feature_states_to_update` and `publish_immediately`
+  changes a flag; variant weights are kept. The v1 `PATCH` answers HTTP 400.
 - The **Feature Health** webhook answers HTTP 400 unless `reason` has both `text_blocks` and `url_blocks`, even if one
   is empty.
 - The `REGEX` operator is anchored at the start (Python's `re.match`): `demo-shop` doesn't match `a@demo-shop.dev`.

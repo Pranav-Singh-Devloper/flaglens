@@ -219,8 +219,8 @@ export default function App() {
             {[
               { n: <><CountUp to={15050} separator="," duration={1.6} /> / 15,050</>, l: 'local evaluations match the live server' },
               { n: <><CountUp from={7} to={96} direction="down" duration={1.8} /> runs</>, l: 'instead of 96: a provably minimal test plan' },
-              { n: <><CountUp to={177} duration={1.4} /> + <CountUp to={18} duration={1.4} /></>, l: 'unit and end-to-end tests, run in CI' },
-              { n: <><CountUp to={54} duration={1.2} /> KB</>, l: 'zero runtime dependencies' },
+              { n: <><CountUp to={190} duration={1.4} /> + <CountUp to={22} duration={1.4} /></>, l: 'unit and end-to-end tests, run in CI' },
+              { n: <><CountUp to={62} duration={1.2} /> KB</>, l: 'zero runtime dependencies' },
             ].map((s, i) => (
               <div key={i} className={`p-5 ${i % 2 ? '' : 'border-r'} border-line md:border-r md:last:border-r-0 ${i < 2 ? 'border-b md:border-b-0' : ''}`}>
                 <div className="text-[26px] font-extrabold tracking-tight tabular-nums">{s.n}</div>
@@ -353,6 +353,7 @@ export default function App() {
               ['Fits the toolchain.', "Reads the Flagsmith CLI's flagsmith.json and finds flags like Flagsmith's Code References scanner."],
               ['Code References, published.', 'One command uploads every flag reference, so the Flagsmith dashboard links each flag to its files and lines.'],
               ['Feature Health in the editor.', 'When monitoring marks a flag unhealthy in Flagsmith, every reference shows it, and so does the confirmation.'],
+              ['Real time, and editable.', 'Changes arrive through a signed Flagsmith webhook in about two seconds; segment and identity overrides are edited right next to the code.'],
               ['Dependencies and lifecycle.', "A flag that requires another is marked blocked where it can't serve; lifecycle stage and owners are in the hover."],
               ['Safe by default.', "API keys live in VS Code's SecretStorage; every write is confirmed and logged in Flagsmith's audit log."],
             ].map(([b, t], i) => (
