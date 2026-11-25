@@ -286,6 +286,38 @@ async function seedSegments(project, envs) {
   }
 }
 
+/**
+ * Feature Health: a Webhook provider gives a URL that monitoring tools post alerts to, and Flagsmith marks the flag
+ * healthy or unhealthy (FlagLens shows it). Re-seeding marks any flag left unhealthy (e.g. by `make alert`) healthy.
+ */
+async function seedFeatureHealth(project, envs) {
+  step('Feature health');
+  const providers = await api('GET', `/projects/${project.id}/feature-health/providers/`);
+  const provider = providers.find((p) => p.name === 'Webhook') ?? (await api('POST', `/projects/${project.id}/feature-health/providers/`, { name: 'Webhook' }));
+  const features = await listAll(`/projects/${project.id}/features/?page_size=100`);
+  const latest = new Map();
+  for (const e of await api('GET', `/projects/${project.id}/feature-health/events/`)) {
+    const k = `${e.feature}:${e.environment}`;
+    if (!latest.has(k) || e.created_at > latest.get(k).created_at) latest.set(k, e);
+  }
+  let recovered = 0;
+  for (const e of latest.values()) {
+    if (e.type !== 'UNHEALTHY') continue;
+    const feature = features.find((f) => f.id === e.feature);
+    const env = envs.find((x) => x.id === e.environment);
+    if (!feature) continue;
+    await postHealth(provider.webhook_url, { feature: feature.name, ...(env && { environment: env.name }), status: 'healthy' });
+    recovered++;
+  }
+  log(`Webhook provider ready (URL in .env as FLAGSMITH_HEALTH_WEBHOOK_URL)${recovered ? `; ${recovered} flag(s) marked healthy again` : ''}`);
+  return provider.webhook_url;
+}
+
+async function postHealth(url, event) {
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(event), signal: AbortSignal.timeout(15_000) });
+  if (!res.ok) throw new Error(`feature health event → HTTP ${res.status}`);
+}
+
 async function getOrCreateOrgApiKey(org, project) {
   step('Organisation API key (for the FlagLens extension)');
   // Re-use the key in .env if it still works, so re-seeding doesn't pile up keys.
@@ -303,7 +335,7 @@ async function getOrCreateOrgApiKey(org, project) {
   return created.key;
 }
 
-function writeEnvFiles({ apiKey, org, project, envs }) {
+function writeEnvFiles({ apiKey, org, project, envs, healthWebhook }) {
   step('Writing .env files (git-ignored)');
   const envEntries = envs.map((e) => [`FLAGSMITH_ENV_KEY_${envVarSuffix(e.name)}`, e.api_key]);
   const header = [
@@ -320,6 +352,7 @@ function writeEnvFiles({ apiKey, org, project, envs }) {
       ['FLAGSMITH_ORGANISATION_ID', String(org.id)],
       ['FLAGSMITH_PROJECT_ID', String(project.id)],
       ...envEntries,
+      ['FLAGSMITH_HEALTH_WEBHOOK_URL', healthWebhook],
       ['ADMIN_EMAIL', ADMIN_EMAIL],
       ['ADMIN_PASSWORD', ADMIN_PASSWORD],
       ['DEMO_PORT', DEMO_PORT],
@@ -373,8 +406,9 @@ async function main() {
   const tagIds = await getOrCreateTags(project);
   await seedFlags(project, envs, tagIds);
   await seedSegments(project, envs);
+  const healthWebhook = await seedFeatureHealth(project, envs);
   const apiKey = await getOrCreateOrgApiKey(org, project);
-  writeEnvFiles({ apiKey, org, project, envs });
+  writeEnvFiles({ apiKey, org, project, envs, healthWebhook });
   printSuccess({ project, envs });
 }
 

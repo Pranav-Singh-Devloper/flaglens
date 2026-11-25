@@ -5,7 +5,7 @@ COMPOSE := docker compose -f devkit/compose.yaml
 VSIX    := extension/flaglens.vsix
 
 .DEFAULT_GOAL := help
-.PHONY: help up seed down reset logs mcp demo install ext package install-ext test lint typecheck check verify-engine
+.PHONY: help up seed down reset logs mcp demo install ext package install-ext test lint typecheck check verify-engine code-refs alert recover
 
 help: ## Show this help
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -59,3 +59,12 @@ check: lint typecheck test ## Lint, type-check and test
 
 verify-engine: node_modules ## Compare FlagLens's local evaluation with the running Flagsmith (after make seed)
 	npm run verify:engine -w extension
+
+code-refs: node_modules ## Publish this repository's flag references to Flagsmith (Code References)
+	npm run code-refs -w extension
+
+alert: ## Simulate a monitoring alert: new_checkout UNHEALTHY in Production (Feature Health)
+	node devkit/health.mjs alert
+
+recover: ## Mark new_checkout healthy again
+	node devkit/health.mjs recover
