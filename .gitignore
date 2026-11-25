@@ -12,3 +12,8 @@ coverage/
 *.log
 .DS_Store
 .vscode-test/
+
+# Landing page: build output, copied assets, Vercel link
+site/dist/
+site/public/assets/
+.vercel/
