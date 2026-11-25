@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.0
+
+- **Real-time updates.** FlagLens registers a Flagsmith organisation webhook pointing at a small listener in the
+  editor (random port and path; every call must carry a valid HMAC-SHA256 signature) and refreshes within about two
+  seconds of any change, made anywhere. The webhook is removed when the window closes, and webhooks left by crashed
+  windows are cleaned up. Polling continues as a fallback, every 30 s while the webhook works. On by default when
+  Flagsmith runs on this machine (`flaglens.realtime.mode`); the dev kit allows `host.docker.internal` in Flagsmith's
+  `SSRF_ALLOWED_HOSTS`. The status bar shows a lightning bolt while it is live.
+- **Set Flag for Previewed User**: an identity override for the user you are previewing as (on, off, a value, or
+  remove), with a confirmation that says who is affected and Undo.
+- **Edit Segment Overrides**: add, turn on or off, change, reorder or remove a flag's segment overrides in one
+  environment. The targeting-rule check runs again afterwards and reports any override the change left shadowed or
+  redundant.
+- **v2 feature versioning**: toggles and value changes in versioned environments are published as a new version
+  (Undo publishes another). Segment overrides there stay dashboard-only.
+- *Preview as → Custom identity* suggests traits and values from the project's segment rules and from trait keys
+  stored in Flagsmith.
+
 ## 0.4.0
 
 - **Flag dependencies.** A flag that requires another shows *Requires `parent`* in the hover, and a *blocked* badge in
