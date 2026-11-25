@@ -7,6 +7,8 @@
 import * as vscode from 'vscode';
 import { ApiError, AuthError, FlagsmithClient, NotFoundError } from '../api/client';
 import type { ApiExperiment, ApiFeatureState, ApiProject } from '../api/types';
+import type { FlagFacts } from '../core/deadcode';
+import { evaluateFlags, uniformity, type EnvironmentDocument, type Evaluated, type Persona } from '../core/engine';
 import { buildRows, compileProtectedPattern, rowSignature, toEnvironment, type FlagRow, type FsEnvironment, type FsState } from '../core/model';
 import type { Logger } from '../log';
 
@@ -31,7 +33,16 @@ export class FlagStore implements vscode.Disposable {
   lastRefresh: number | undefined;
   activeEnvironmentId: number | undefined;
 
+  /** Environment documents by environment id: segments, overrides, splits. Used for previews and exact greying. */
+  documents = new Map<number, EnvironmentDocument>();
+  /** The user flags are being previewed as, or undefined for "no identity" (environment defaults). */
+  persona: Persona | undefined;
+
   private signatures = new Map<string, string>();
+  private documentSignatures = new Map<number, string>();
+  private evaluations = new Map<number, Map<string, Evaluated>>();
+  /** Older or restricted servers may not serve the document; then previews are off and greying is conservative. */
+  private documentsSupported = true;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private failures = 0;
   private refreshing: Promise<void> | undefined;
@@ -75,6 +86,7 @@ export class FlagStore implements vscode.Disposable {
     this.preferredEnvironment = preferredEnvironment;
     this.status = 'loading';
     this.experimentsSupported = true;
+    this.documentsSupported = true;
     this.changeEmitter.fire();
     this.log.info(`Connecting to ${conn.client.baseUrl}, project "${conn.project.name}" (id ${conn.project.id})`);
     await this.refresh();
@@ -113,6 +125,9 @@ export class FlagStore implements vscode.Disposable {
     this.environments = [];
     this.rows = new Map();
     this.signatures = new Map();
+    this.documents = new Map();
+    this.documentSignatures = new Map();
+    this.evaluations = new Map();
     this.status = 'disconnected';
     this.lastError = undefined;
     this.lastRefresh = undefined;
@@ -153,7 +168,7 @@ export class FlagStore implements vscode.Disposable {
         client.listTags(project.id),
         ...this.environments.map((e) => client.listFeatureStates(e.apiKey)),
       ]);
-      const experiments = await this.loadExperiments(client);
+      const [experiments, documents] = await Promise.all([this.loadExperiments(client), this.loadDocuments(client)]);
       if (generation !== this.generation) return;
 
       const statesByEnv = new Map<number, ApiFeatureState[]>();
@@ -161,9 +176,18 @@ export class FlagStore implements vscode.Disposable {
       const rows = buildRows(features, tags, statesByEnv, experiments);
 
       const signatures = new Map([...rows].map(([k, r]) => [k, rowSignature(r)]));
+      const documentSignatures = new Map([...documents].map(([id, d]) => [id, JSON.stringify(d)]));
+      const documentsChanged =
+        documentSignatures.size !== this.documentSignatures.size || [...documentSignatures].some(([id, sig]) => this.documentSignatures.get(id) !== sig);
+      if (documentsChanged) {
+        this.documents = documents;
+        this.documentSignatures = documentSignatures;
+        this.evaluations.clear();
+      }
       const changed =
         this.status !== 'ok' ||
         envsChanged ||
+        documentsChanged ||
         signatures.size !== this.signatures.size ||
         [...signatures].some(([k, s]) => this.signatures.get(k) !== s);
 
@@ -203,6 +227,79 @@ export class FlagStore implements vscode.Disposable {
       }
     }
     return result;
+  }
+
+  private async loadDocuments(client: FlagsmithClient): Promise<Map<number, EnvironmentDocument>> {
+    const result = new Map<number, EnvironmentDocument>();
+    if (!this.documentsSupported) return result;
+    try {
+      const docs = await Promise.all(this.environments.map((e) => client.getEnvironmentDocument(e.apiKey)));
+      this.environments.forEach((e, i) => docs[i] && result.set(e.id, docs[i]!));
+    } catch (e) {
+      if (e instanceof NotFoundError || e instanceof AuthError || (e instanceof ApiError && e.status < 500)) {
+        this.documentsSupported = false;
+        this.log.info(`Environment documents not available (${(e as Error).message}); "Preview as" is off and greying out is conservative.`);
+      } else {
+        // A network blip: keep the documents we had.
+        return this.documents;
+      }
+    }
+    return result;
+  }
+
+  get previewSupported(): boolean {
+    return this.documentsSupported && this.documents.size > 0;
+  }
+
+  /** Previews every flag as `persona` (undefined = no identity). */
+  setPersona(persona: Persona | undefined): void {
+    this.persona = persona;
+    this.evaluations.clear();
+    this.changeEmitter.fire();
+  }
+
+  /** Every flag evaluated for the current persona in one environment, or undefined without a persona or document. */
+  evaluation(envId: number): Map<string, Evaluated> | undefined {
+    if (!this.persona) return undefined;
+    const doc = this.documents.get(envId);
+    if (!doc) return undefined;
+    let hit = this.evaluations.get(envId);
+    if (!hit) {
+      hit = evaluateFlags(doc, this.persona);
+      this.evaluations.set(envId, hit);
+    }
+    return hit;
+  }
+
+  /**
+   * What is certain about a flag in an environment, for greying out code. With a persona: exactly what that user
+   * gets. Without one: the environment default, but only the parts no segment, identity override or split can change.
+   * Keys that don't exist in Flagsmith get the SDKs' default flag (disabled).
+   */
+  flagFacts(key: string, envId: number): FlagFacts | undefined {
+    const row = this.rows.get(key);
+    if (!row) return this.rows.size ? { enabled: false, valueKnown: false } : undefined;
+    const evaluated = this.evaluation(envId)?.get(key);
+    if (evaluated) return { enabled: evaluated.enabled, value: evaluated.value, valueKnown: true };
+    const state = row.states.get(envId);
+    if (!state) return undefined;
+    // Without the document we can't see segment overrides (the features list only counts them per environment),
+    // so nothing is certain and nothing gets greyed out.
+    const doc = this.documents.get(envId);
+    if (!doc) return { valueKnown: false };
+    const uniform = uniformity(doc, key);
+    return { enabled: uniform.enabled ? state.enabled : undefined, value: state.value, valueKnown: uniform.value };
+  }
+
+  /** Segment overrides of a flag, per environment name, read from the environment documents (exact). */
+  segmentOverrides(key: string): Map<string, string[]> {
+    const out = new Map<string, string[]>();
+    for (const env of this.environments) {
+      const doc = this.documents.get(env.id);
+      const names = doc?.project.segments.filter((s) => s.feature_states.some((fs) => fs.feature.name === key)).map((s) => s.name) ?? [];
+      if (names.length) out.set(env.name, names);
+    }
+    return out;
   }
 
   /** Polls at the configured interval; after failures backs off exponentially up to 2 minutes. */

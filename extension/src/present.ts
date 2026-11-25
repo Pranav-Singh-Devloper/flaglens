@@ -2,6 +2,7 @@
 
 import * as vscode from 'vscode';
 import { describeState, driftFor, relativeTime, staleness, type DriftResult, type StaleResult } from './core/analysis';
+import { describeReason, type Evaluated, type Persona } from './core/engine';
 import { formatValue, type FlagRow, type FsEnvironment, type FsState } from './core/model';
 import type { Settings } from './config';
 import type { FlagStore } from './store/flagStore';
@@ -11,13 +12,15 @@ export interface Ctx {
   settings(): Settings;
 }
 
-export function stateGlyph(s: FsState | undefined): string {
+type Shown = Pick<FsState, 'enabled' | 'value'>;
+
+export function stateGlyph(s: Shown | undefined): string {
   if (!s) return '—';
   return s.enabled ? '●' : '○';
 }
 
 /** "● on", "○ off", "● on 100", "● on "Black Friday"" */
-export function stateShort(s: FsState | undefined, maxValue = 24): string {
+export function stateShort(s: Shown | undefined, maxValue = 24): string {
   if (!s) return '— no state';
   const v = formatValue(s.value, maxValue);
   return `${stateGlyph(s)} ${s.enabled ? 'on' : 'off'}${v ? ` ${v}` : ''}`;
@@ -77,9 +80,44 @@ export function staleSentence(name: string, stale: StaleResult): string {
   return `${name} has been ${stale.state?.toUpperCase()} in every environment, unchanged ${age}. Consider removing the flag and its dead code path.`;
 }
 
-/** One-line summary for CodeLens: "Development ● on · Staging ● on · Production ○ off" */
+/** "Beta tester" or the identifier. */
+export function personaName(p: Persona): string {
+  return p.name || p.identifier;
+}
+
+/** "email=alice@demo-shop.dev, plan=pro" */
+export function traitsText(p: Persona): string {
+  return Object.entries(p.traits ?? {})
+    .map(([k, v]) => `${k}=${v}`)
+    .join(', ');
+}
+
+/** The state a flag has for the previewed persona in an environment (undefined without a persona). */
+export function personaState(ctx: Ctx, row: FlagRow, envId: number): Evaluated | undefined {
+  return ctx.store.evaluation(envId)?.get(row.feature.name);
+}
+
+/** Short "why" for CodeLens: "beta_testers", "override", "split 37%" */
+function reasonShort(e: Evaluated): string {
+  if (e.reason.kind === 'segment') return e.reason.segment;
+  if (e.reason.kind === 'identity') return 'identity override';
+  if (e.split) return `bucket ${e.split.bucket.toFixed(0)}`;
+  return '';
+}
+
+/**
+ * One-line summary for CodeLens: "Development ● on · Staging ● on · Production ○ off".
+ * While previewing as a persona: that user's state in each environment, with the segment that decided it.
+ */
 export function lensSummary(ctx: Ctx, row: FlagRow): string {
-  return ctx.store.environments.map((e) => `${e.name} ${stateShort(row.states.get(e.id), 18)}`).join(' · ');
+  return ctx.store.environments
+    .map((e) => {
+      const p = personaState(ctx, row, e.id);
+      if (!p) return `${e.name} ${stateShort(row.states.get(e.id), 18)}`;
+      const why = reasonShort(p);
+      return `${e.name} ${stateShort(p, 18)}${why ? ` (${why})` : ''}`;
+    })
+    .join(' · ');
 }
 
 export function dashboardUrl(ctx: Ctx, row?: FlagRow, env?: FsEnvironment): string | undefined {
@@ -94,7 +132,7 @@ export function commandUri(command: string, ...args: unknown[]): string {
   return `command:${command}?${encodeURIComponent(JSON.stringify(args))}`;
 }
 
-const HOVER_COMMANDS = ['flaglens.toggleFlag', 'flaglens.setValue', 'flaglens.openInDashboard', 'flaglens.showHistory', 'flaglens.createFlag', 'flaglens.openMatrix'];
+const HOVER_COMMANDS = ['flaglens.previewAs', 'flaglens.toggleFlag', 'flaglens.setValue', 'flaglens.openInDashboard', 'flaglens.showHistory', 'flaglens.createFlag', 'flaglens.openMatrix'];
 
 function escapeMd(text: string): string {
   return text.replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');
@@ -124,7 +162,19 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
   if (f.description) md.appendMarkdown(`${escapeMd(f.description)}\n\n`);
   else md.appendMarkdown('\n');
 
-  md.appendMarkdown('| Environment | State | Value | |\n|---|---|---|---|\n');
+  // While previewing as a user, their result is an extra column, so the two can be compared at a glance.
+  const persona = ctx.store.persona && ctx.store.previewSupported ? ctx.store.persona : undefined;
+  if (persona) {
+    const traits = traitsText(persona);
+    md.appendMarkdown(
+      `$(person) Previewing as **${escapeMd(personaName(persona))}** · ${code(persona.identifier)}${traits ? ` · ${escapeMd(traits)}` : ''} · [change](${commandUri('flaglens.previewAs')} "Preview as another user")\n\n`,
+    );
+  }
+  md.appendMarkdown(
+    persona
+      ? `| Environment | State | Value | ${escapeMd(personaName(persona))} gets | |\n|---|---|---|---|---|\n`
+      : '| Environment | State | Value | |\n|---|---|---|---|\n',
+  );
   const active = ctx.store.activeEnvironment;
   for (const env of ctx.store.environments) {
     const s = row.states.get(env.id);
@@ -135,9 +185,15 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
       s && !env.v2Versioning && !f.isArchived && !runningExperiments(row).some((x) => x.envId === env.id)
         ? `[$(debug-start) ${s.enabled ? 'Turn off' : 'Turn on'}](${commandUri('flaglens.toggleFlag', key, env.id)} "Toggle ${key} in ${env.name}")`
         : '';
-    md.appendMarkdown(`| ${name}${marks} | ${state} | ${s ? valueCell(s.value) : ''} | ${action} |\n`);
+    const p = persona ? personaState(ctx, row, env.id) : undefined;
+    const why = p && (p.reason.kind !== 'default' || p.split) ? ` · ${whyMarkdown(p)}` : '';
+    const personaCell = persona ? ` ${p ? `${stateGlyph(p)} ${p.enabled ? 'on' : 'off'} ${valueCell(p.value)}${why}` : '—'} |` : '';
+    md.appendMarkdown(`| ${name}${marks} | ${state} | ${s ? valueCell(s.value) : ''} |${personaCell} ${action} |\n`);
   }
   md.appendMarkdown('\n');
+  if (!persona && ctx.store.previewSupported && (ctx.store.segmentOverrides(key).size || f.identityOverrides || f.variants.length)) {
+    md.appendMarkdown(`$(person) Users can get different values: [preview as a user…](${commandUri('flaglens.previewAs')} "See exactly what one user gets")  \n`);
+  }
 
   for (const b of badgesFor(ctx, row)) md.appendMarkdown(`${b.icon} ${escapeMd(b.detail)}  \n`);
 
@@ -147,7 +203,14 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
     const parts = f.variants.map((v) => `${code(String(v.key ?? v.value))} ${weights?.get(v.id) ?? v.weight}%`);
     md.appendMarkdown(`$(symbol-enum) Variants in ${escapeMd(active?.name ?? '')}: control ${valueCell(control ?? null) || '—'} · ${parts.join(' · ')}  \n`);
   }
-  const overrides = [`${f.segmentOverrides} segment override${f.segmentOverrides === 1 ? '' : 's'}`];
+  // Exact per-environment overrides from the environment documents; the features list alone can't count them.
+  const byEnv = ctx.store.segmentOverrides(key);
+  const segmentText = ctx.store.previewSupported
+    ? byEnv.size
+      ? `segment overrides: ${[...byEnv].map(([env, segs]) => `${escapeMd(env)} (${segs.map(code).join(', ')})`).join(' · ')}`
+      : 'no segment overrides'
+    : `${f.segmentOverrides} segment override${f.segmentOverrides === 1 ? '' : 's'}`;
+  const overrides = [segmentText];
   if (f.identityOverrides) overrides.push(`${f.identityOverrides} identity override${f.identityOverrides === 1 ? '' : 's'}`);
   const stale = staleFor(ctx, row, now);
   md.appendMarkdown(`$(person) ${overrides.join(' · ')} · $(clock) last changed ${relativeTime(stale.lastChanged, now)}\n\n`);
@@ -159,6 +222,24 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
   ];
   md.appendMarkdown(links.join(' · '));
   return md;
+}
+
+/** "segment beta_testers (priority 0)", "bucket 37.21 → green (0–50%)", "environment default" */
+export function whyText(e: Evaluated): string {
+  const parts = [describeReason(e.reason) + (e.reason.kind === 'segment' && e.reason.priority !== null ? ` (priority ${e.reason.priority})` : '')];
+  if (e.split) parts.push(`bucket ${e.split.bucket.toFixed(2)} → ${e.split.variant} (${round(e.split.from)}–${round(e.split.to)}%)`);
+  return parts.join(' · ');
+}
+
+const round = (n: number) => String(Math.round(n * 100) / 100);
+
+/** whyText as Markdown, with the segment name as code so underscores survive. */
+export function whyMarkdown(e: Evaluated): string {
+  if (e.reason.kind === 'segment') {
+    const head = `segment ${code(e.reason.segment)}${e.reason.priority !== null ? ` (priority ${e.reason.priority})` : ''}`;
+    return e.split ? `${head} · ${escapeMd(whyText(e).split(' · ').slice(1).join(' · '))}` : head;
+  }
+  return escapeMd(whyText(e));
 }
 
 /** Hover for a key that doesn't exist in the project. */

@@ -168,6 +168,69 @@ export async function run(): Promise<void> {
     assert.equal(await vscode.env.clipboard.readText(), md);
   });
 
+  const beta = { name: 'Beta tester', identifier: 'alice@demo-shop.dev', traits: { email: 'alice@demo-shop.dev', plan: 'pro', country: 'GB' } };
+
+  await test('preview as a user: CodeLens and hover show what that user gets, and why', async () => {
+    await waitFor('environment documents', () => store.previewSupported);
+    await vscode.commands.executeCommand('flaglens.previewAs', beta);
+    try {
+      const doc = await open('server.mjs');
+      const lens = async (key: string) =>
+        waitFor(`${key} lens`, async () => {
+          const l = await vscode.commands.executeCommand<vscode.CodeLens[]>('vscode.executeCodeLensProvider', doc.uri, 100);
+          return l.map((x) => x.command?.title ?? '').find((t) => t.includes(key) && t.includes('Beta tester'));
+        });
+      assert.match(await lens('new_checkout'), /Production ● on \(beta_testers\)/);
+      assert.match(await lens('rate_limit_per_minute'), /Production ● on 500 \(pro_plan\)/);
+      const hover = hoverText(await vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', doc.uri, positionOf(doc, "'new_checkout'", 3)));
+      assert.match(hover, /Previewing as \*\*Beta tester\*\*/);
+      assert.match(hover, /segment `beta_testers` \(priority 0\)/);
+
+      // The local answer must equal the server's, for every flag (transient identity: nothing is stored).
+      const res = await fetch(`${dotenv.FLAGSMITH_API_URL}/api/v1/identities/`, {
+        method: 'POST',
+        headers: { 'X-Environment-Key': prd.apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: beta.identifier, transient: true, traits: Object.entries(beta.traits).map(([trait_key, trait_value]) => ({ trait_key, trait_value })) }),
+      });
+      const server = (await res.json()) as { flags: { feature: { name: string }; enabled: boolean; feature_state_value: unknown }[] };
+      const local = store.evaluation(prd.id)!;
+      for (const f of server.flags) {
+        assert.deepEqual([local.get(f.feature.name)?.enabled, local.get(f.feature.name)?.value], [f.enabled, f.feature_state_value], f.feature.name);
+      }
+    } finally {
+      await vscode.commands.executeCommand('flaglens.previewAs', null);
+    }
+    const doc = await open('server.mjs');
+    const plain = await waitFor('lens without persona', async () => {
+      const l = await vscode.commands.executeCommand<vscode.CodeLens[]>('vscode.executeCodeLensProvider', doc.uri, 100);
+      return l.map((x) => x.command?.title ?? '').find((t) => t.includes('new_checkout') && !t.includes('Beta tester'));
+    });
+    assert.match(plain, /Production ○ off/);
+  });
+
+  await test('greys out code that cannot run, and only when it is certain', async () => {
+    const doc = await open('server.mjs');
+    const deadText = () => (app.deadCode!.lastRanges.get(doc.uri.toString()) ?? []).map((r) => doc.getText().slice(r.start, r.end));
+    store.setActiveEnvironment(dev.id);
+    const inDev = await waitFor('dead ranges in Development', () => (deadText().length ? deadText() : undefined));
+    assert.ok(inDev.some((t) => t.includes('return maintenancePage')), 'maintenance guard should be greyed (off)');
+    assert.ok(inDev.some((t) => t.includes('step 1 of 3')), 'old checkout should be greyed (new_checkout on)');
+
+    // In Production new_checkout has a segment override, so for "everyone" the old checkout may still run.
+    store.setActiveEnvironment(prd.id);
+    assert.ok(!deadText().some((t) => t.includes('step 1 of 3')), 'must not grey a branch some users still get');
+    assert.ok(!deadText().some((t) => t.includes('One-page checkout')));
+
+    // For the beta tester it is certain: they get the new checkout.
+    try {
+      await vscode.commands.executeCommand('flaglens.previewAs', beta);
+      assert.ok(deadText().some((t) => t.includes('step 1 of 3')), 'beta tester never sees the old checkout');
+    } finally {
+      await vscode.commands.executeCommand('flaglens.previewAs', null);
+      store.setActiveEnvironment(dev.id);
+    }
+  });
+
   await test('environment matrix opens', async () => {
     await vscode.commands.executeCommand('flaglens.openMatrix');
     const tab = await waitFor('matrix tab', () =>

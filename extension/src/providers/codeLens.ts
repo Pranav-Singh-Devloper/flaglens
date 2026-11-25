@@ -2,7 +2,7 @@
 
 import * as vscode from 'vscode';
 import { suggestKey } from '../core/analysis';
-import { badgesFor, LENS_GAP, lensSummary, type Ctx } from '../present';
+import { badgesFor, LENS_GAP, lensSummary, personaName, type Ctx } from '../present';
 import type { ReferenceIndex } from '../references';
 
 export class FlagCodeLensProvider implements vscode.CodeLensProvider {
@@ -46,9 +46,10 @@ export class FlagCodeLensProvider implements vscode.CodeLensProvider {
         .map((b) => `${b.icon} ${b.label}`)
         .join(LENS_GAP);
       const offline = store.status === 'offline' ? `${LENS_GAP}$(debug-disconnect) offline` : '';
+      const persona = store.persona && store.previewSupported ? `$(person) ${personaName(store.persona)}:${LENS_GAP}` : '';
       lenses.push(
         new vscode.CodeLens(range, {
-          title: `$(flag) ${ref.key}${LENS_GAP}${lensSummary(this.ctx, row)}${badges ? `${LENS_GAP}${badges}` : ''}${offline}`,
+          title: `$(flag) ${ref.key}${LENS_GAP}${persona}${lensSummary(this.ctx, row)}${badges ? `${LENS_GAP}${badges}` : ''}${offline}`,
           tooltip: 'Live state from Flagsmith. Click for actions (toggle, set value, history, dashboard).',
           command: 'flaglens.flagActions',
           arguments: [ref.key],

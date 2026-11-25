@@ -7,6 +7,7 @@
 
 import * as vscode from 'vscode';
 import { normaliseApiUrl } from './api/client';
+import type { Persona } from './core/engine';
 
 export const DEFAULT_API_URL = 'http://localhost:8000';
 
@@ -37,6 +38,18 @@ export interface Settings {
   codeLensEnabled: boolean;
   unknownFlagSeverity: 'error' | 'warning' | 'information' | 'off';
   staleDiagnostics: boolean;
+  /** Test users for "Preview as". */
+  personas: Persona[];
+  /** Grey out code that can't run in the active environment. */
+  dimInactiveCode: boolean;
+}
+
+/** Keeps only well-formed persona entries from settings.json. */
+function readPersonas(raw: unknown): Persona[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((p): p is Persona => !!p && typeof p === 'object' && typeof (p as Persona).identifier === 'string' && (p as Persona).identifier.trim() !== '')
+    .map((p) => ({ name: typeof p.name === 'string' ? p.name : undefined, identifier: p.identifier.trim(), traits: p.traits && typeof p.traits === 'object' ? p.traits : {} }));
 }
 
 function isExplicit<T>(cfg: vscode.WorkspaceConfiguration, key: string): boolean {
@@ -61,6 +74,8 @@ export function readSettings(): Settings {
     codeLensEnabled: cfg.get<boolean>('codeLens.enabled', true),
     unknownFlagSeverity: cfg.get<Settings['unknownFlagSeverity']>('diagnostics.unknownFlagSeverity', 'warning'),
     staleDiagnostics: cfg.get<boolean>('diagnostics.staleFlags', true),
+    personas: readPersonas(cfg.get<unknown>('personas', [])),
+    dimInactiveCode: cfg.get<boolean>('dimInactiveCode', true),
   };
 }
 

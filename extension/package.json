@@ -140,6 +140,17 @@
         "title": "Copy Flag Key",
         "category": "FlagLens",
         "icon": "$(copy)"
+      },
+      {
+        "command": "flaglens.previewAs",
+        "title": "Preview Flags as User…",
+        "category": "FlagLens",
+        "icon": "$(person)"
+      },
+      {
+        "command": "flaglens.toggleDimming",
+        "title": "Toggle Greying Out Code That Won't Run",
+        "category": "FlagLens"
       }
     ],
     "viewsContainers": {
@@ -186,6 +197,11 @@
           "group": "navigation@3"
         },
         {
+          "command": "flaglens.previewAs",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "navigation@4"
+        },
+        {
           "command": "flaglens.createFlag",
           "when": "view == flaglens.flags && flaglens.connected",
           "group": "1_flags@1"
@@ -214,6 +230,11 @@
           "command": "flaglens.showOutput",
           "when": "view == flaglens.flags",
           "group": "2_connection@3"
+        },
+        {
+          "command": "flaglens.toggleDimming",
+          "when": "view == flaglens.flags",
+          "group": "3_view@1"
         }
       ],
       "view/item/context": [
@@ -360,6 +381,44 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Show an information hint on references to stale flags."
+        },
+        "flaglens.personas": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "Test users for **FlagLens: Preview Flags as User…**. FlagLens evaluates every flag for them locally, with Flagsmith's own segment, split and override rules, from the environment document. Example: `[{ \"name\": \"Beta tester\", \"identifier\": \"alice@demo-shop.dev\", \"traits\": { \"email\": \"alice@demo-shop.dev\", \"plan\": \"pro\" } }]`",
+          "items": {
+            "type": "object",
+            "required": [
+              "identifier"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Display name, e.g. \"Beta tester\"."
+              },
+              "identifier": {
+                "type": "string",
+                "description": "The identity identifier your app passes to Flagsmith."
+              },
+              "traits": {
+                "type": "object",
+                "description": "Trait values, e.g. { \"plan\": \"pro\", \"age\": 31 }.",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "flaglens.dimInactiveCode": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Grey out code that cannot run in the active environment (and for the previewed user), like an inactive `#ifdef`: the losing branch of `if`/`else` and ternaries that test a flag, and the rest of a block after a flag guard that returns. FlagLens only greys code when the outcome is certain: a flag with segment or identity overrides counts as unknown unless you preview as a user."
         }
       }
     }

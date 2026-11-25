@@ -15,10 +15,12 @@ import {
   showHistoryCommand,
   toggleCommand,
 } from './commands/flags';
+import { previewAsCommand, restorePersona, toggleDimmingCommand } from './commands/persona';
 import { ApiKeyStore, readSettings } from './config';
 import { createLogger } from './log';
 import { FlagCodeLensProvider } from './providers/codeLens';
 import { FlagCompletionProvider } from './providers/completion';
+import { DeadCodeDecorator } from './providers/deadCode';
 import { FlagCodeActions, FlagDiagnostics } from './providers/diagnostics';
 import { FlagHoverProvider } from './providers/hover';
 import { ReferenceIndex } from './references';
@@ -54,6 +56,9 @@ export function activate(context: vscode.ExtensionContext): App {
   const statusBar = new StatusBar(store);
   const codeLens = new FlagCodeLensProvider(app, refs);
   const diagnostics = new FlagDiagnostics(app, refs);
+  const deadCode = new DeadCodeDecorator(app, refs);
+  app.deadCode = deadCode;
+  restorePersona(app);
   const tree = new FlagsTreeProvider(app);
   const treeView = vscode.window.createTreeView('flaglens.flags', { treeDataProvider: tree, showCollapseAll: true });
 
@@ -63,6 +68,7 @@ export function activate(context: vscode.ExtensionContext): App {
     codeLens.refresh();
     tree.refresh();
     diagnostics.update();
+    deadCode.update();
     treeView.message = store.status === 'ok' && store.project ? `${store.project.name} · active: ${store.activeEnvironment?.name ?? '—'}` : undefined;
   };
 
@@ -82,13 +88,16 @@ export function activate(context: vscode.ExtensionContext): App {
     refs,
     statusBar,
     diagnostics,
+    deadCode,
     treeView,
+    vscode.window.onDidChangeVisibleTextEditors(() => deadCode.update()),
     store.onDidChange(onStoreChange),
     refs.onDidChange((uri) => {
       codeLens.refresh();
       const doc = uri && vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
       if (uri && doc) diagnostics.update(doc);
       else if (!uri) diagnostics.update();
+      deadCode.update(uri);
     }),
     vscode.languages.registerCodeLensProvider(SELECTOR, codeLens),
     vscode.languages.registerHoverProvider(SELECTOR, new FlagHoverProvider(app, refs)),
@@ -119,6 +128,8 @@ export function activate(context: vscode.ExtensionContext): App {
       MatrixPanel.show(app, focus);
     }),
     register('flaglens.showOutput', () => log.show()),
+    register('flaglens.previewAs', (persona?: never) => previewAsCommand(app, persona)),
+    register('flaglens.toggleDimming', () => toggleDimmingCommand()),
 
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (!e.affectsConfiguration('flaglens')) return;

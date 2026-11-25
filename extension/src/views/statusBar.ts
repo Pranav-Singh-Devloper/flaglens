@@ -1,9 +1,12 @@
 import * as vscode from 'vscode';
+import { personaName, traitsText } from '../present';
 import type { FlagStore } from '../store/flagStore';
 
 /** "⚑ Demo Shop · Development" in the status bar. Click to switch environment (or connect). */
 export class StatusBar implements vscode.Disposable {
   private readonly item = vscode.window.createStatusBarItem('flaglens.status', vscode.StatusBarAlignment.Left, 50);
+  /** "$(person) Beta tester": who flags are being previewed as. Next to the environment. */
+  private readonly persona = vscode.window.createStatusBarItem('flaglens.persona', vscode.StatusBarAlignment.Left, 49);
 
   constructor(private readonly store: FlagStore) {
     this.item.name = 'FlagLens';
@@ -12,6 +15,7 @@ export class StatusBar implements vscode.Disposable {
   }
 
   update(): void {
+    this.updatePersona();
     const { store, item } = this;
     const project = store.project?.name ?? '';
     const env = store.activeEnvironment;
@@ -47,7 +51,25 @@ export class StatusBar implements vscode.Disposable {
     }
   }
 
+  private updatePersona(): void {
+    const { store, persona } = this;
+    if (!store.previewSupported || (store.status !== 'ok' && store.status !== 'offline')) {
+      persona.hide();
+      return;
+    }
+    const p = store.persona;
+    persona.name = 'FlagLens preview';
+    persona.text = p ? `$(person) ${personaName(p)}` : '$(globe) Everyone';
+    persona.tooltip = p
+      ? new vscode.MarkdownString(`**Previewing flags as ${personaName(p)}**\n\nIdentifier \`${p.identifier}\`${traitsText(p) ? `\n\nTraits: ${traitsText(p)}` : ''}\n\nEvaluated locally with Flagsmith's rules. Click to change.`)
+      : 'Showing environment defaults. Click to preview flags as a specific user.';
+    persona.command = 'flaglens.previewAs';
+    persona.backgroundColor = p ? new vscode.ThemeColor('statusBarItem.prominentBackground') : undefined;
+    persona.show();
+  }
+
   dispose(): void {
+    this.persona.dispose();
     this.item.dispose();
   }
 }

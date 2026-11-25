@@ -2,5 +2,25 @@
   // The demo flags were all created a few minutes ago, so nothing is 30 days old yet.
   // 0 makes any flag that is identical in every environment show as stale, so you can see the feature.
   "flaglens.staleAfterDays": 0,
-  "flaglens.refreshIntervalSeconds": 5
+  "flaglens.refreshIntervalSeconds": 5,
+
+  // Test users for "FlagLens: Preview Flags as User…" (click the person in the status bar).
+  // They match the segments `make seed` creates in Production: beta_testers, pro_plan, india and canary_10pct.
+  "flaglens.personas": [
+    {
+      "name": "Beta tester",
+      "identifier": "alice@demo-shop.dev",
+      "traits": { "email": "alice@demo-shop.dev", "plan": "pro", "country": "GB" }
+    },
+    {
+      "name": "Free user in India",
+      "identifier": "ravi-42",
+      "traits": { "plan": "free", "country": "IN" }
+    },
+    {
+      "name": "Anonymous visitor",
+      "identifier": "visitor-7f3a",
+      "traits": {}
+    }
+  ]
 }
