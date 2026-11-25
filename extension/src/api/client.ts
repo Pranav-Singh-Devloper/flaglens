@@ -13,6 +13,8 @@ import type {
   ApiOrganisation,
   ApiProject,
   ApiTag,
+  ApiFeatureHealthEvent,
+  CodeReferencesScan,
   CreateFeatureBody,
   FlagValue,
   Paginated,
@@ -125,8 +127,22 @@ export class FlagsmithClient {
 
   // --- flags -----------------------------------------------------------------------------------------------------
 
-  listFeatures(projectId: number): Promise<ApiFeature[]> {
-    return this.listAll<ApiFeature>(`/projects/${projectId}/features/?page_size=100`);
+  /**
+   * With an environment id the list also carries that environment's lifecycle stage and override counts
+   * (verified on 2.295.2: without it, num_segment_overrides is always 0 and lifecycle_stage is missing).
+   */
+  listFeatures(projectId: number, environmentId?: number): Promise<ApiFeature[]> {
+    return this.listAll<ApiFeature>(`/projects/${projectId}/features/?page_size=100${environmentId ? `&environment=${environmentId}` : ''}`);
+  }
+
+  /** Feature Health events for the project (open-source Flagsmith: Webhook and Grafana providers). */
+  listFeatureHealthEvents(projectId: number): Promise<ApiFeatureHealthEvent[]> {
+    return this.listAll<ApiFeatureHealthEvent>(`/projects/${projectId}/feature-health/events/`);
+  }
+
+  /** Uploads code references in the format of Flagsmith's own CI scanner; the dashboard shows them per flag. */
+  publishCodeReferences(projectId: number, scan: CodeReferencesScan): Promise<unknown> {
+    return this.request('POST', `/projects/${projectId}/code-references/`, scan);
   }
 
   listTags(projectId: number): Promise<ApiTag[]> {

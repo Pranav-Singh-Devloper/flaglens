@@ -58,6 +58,32 @@ export interface ApiFeature {
   num_identity_overrides: number | null;
   /** Populated only by v2 feature versioning; always null on v1 environments. */
   last_modified_in_any_environment: string | null;
+  /** Flagsmith's own lifecycle stage, present when the list is requested for an environment. */
+  lifecycle_stage?: LifecycleStage | null;
+  /** Code references Flagsmith knows about, per repository (from its CI action or FlagLens). */
+  code_references_counts?: { repository_url: string; count: number; last_successful_repository_scanned_at?: string }[];
+  owners?: { id: number; email?: string; first_name?: string; last_name?: string }[];
+}
+
+export type LifecycleStage = 'new' | 'live' | 'stale' | 'permanent' | 'needs_monitoring' | 'to_remove';
+
+/** A Feature Health event (GET /projects/{id}/feature-health/events/): the latest one per flag and environment counts. */
+export interface ApiFeatureHealthEvent {
+  id: number;
+  created_at: string;
+  environment: number | null;
+  feature: number;
+  provider_name: string;
+  type: 'HEALTHY' | 'UNHEALTHY';
+  reason?: { text_blocks?: { title?: string; text: string }[]; url_blocks?: { title?: string; url: string }[] } | null;
+}
+
+/** POST /projects/{id}/code-references/ (the format Flagsmith's own CI scanner uploads). */
+export interface CodeReferencesScan {
+  repository_url: string;
+  vcs_provider: 'github';
+  revision: string;
+  code_references: { file_path: string; line_number: number; feature_name: string }[];
 }
 
 export type FlagValue = string | number | boolean | null;

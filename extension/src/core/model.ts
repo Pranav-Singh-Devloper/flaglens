@@ -1,7 +1,7 @@
 // Domain model: the feature × environment matrix that every FlagLens view reads.
 // Pure (no VS Code imports) so it can be unit-tested.
 
-import type { ApiEnvironment, ApiExperiment, ApiFeature, ApiFeatureState, ApiTag, FeatureType, FlagValue } from '../api/types';
+import type { ApiEnvironment, ApiExperiment, ApiFeature, ApiFeatureState, ApiTag, FeatureType, FlagValue, LifecycleStage } from '../api/types';
 
 export interface FsEnvironment {
   id: number;
@@ -39,6 +39,11 @@ export interface FsFeature {
   createdAt: string;
   segmentOverrides: number;
   identityOverrides: number | null;
+  /** Flagsmith's lifecycle stage in the active environment (Flagsmith derives it from code references and changes). */
+  lifecycle: LifecycleStage | null;
+  /** Code references Flagsmith has for this flag, summed over repositories. */
+  codeReferences: number;
+  owners: string[];
 }
 
 export interface FsState {
@@ -123,6 +128,9 @@ export function buildRows(
         createdAt: f.created_date,
         segmentOverrides: f.num_segment_overrides ?? 0,
         identityOverrides: f.num_identity_overrides,
+        lifecycle: f.lifecycle_stage ?? null,
+        codeReferences: (f.code_references_counts ?? []).reduce((n, r) => n + r.count, 0),
+        owners: (f.owners ?? []).map((o) => [o.first_name, o.last_name].filter(Boolean).join(' ') || o.email || `user ${o.id}`),
       },
       states: new Map(),
       experiments: [],

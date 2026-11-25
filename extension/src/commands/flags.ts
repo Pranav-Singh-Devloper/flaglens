@@ -8,7 +8,7 @@ import { diffEnvironments, diffMarkdown } from '../core/report';
 import { findFlagReferences } from '../core/scanner';
 import type { App } from '../app';
 import type { ApiFeatureState, FlagValue } from '../api/types';
-import { dashboardUrl, stateShort } from '../present';
+import { dashboardUrl, stateShort, writeNotes } from '../present';
 import type { FlagNode } from '../views/flagsTree';
 
 /** Commands are invoked from CodeLens/hover (key, envId), the tree (node) or the palette (nothing). */
@@ -135,7 +135,7 @@ export async function toggleCommand(app: App, arg?: Target, envArg?: unknown): P
   const { row, env } = target;
   const current = row.states.get(env.id)!;
   const action = current.enabled ? 'Turn OFF' : 'Turn ON';
-  const ok = await app.confirm({ flag: row.feature.name, env, action, detail: `Currently ${current.enabled ? 'ON' : 'OFF'} in ${env.name}.` });
+  const ok = await app.confirm({ flag: row.feature.name, env, action, detail: `Currently ${current.enabled ? 'ON' : 'OFF'} in ${env.name}.${writeNotes(app, row, env)}` });
   if (!ok) return;
   await writeState(app, row, env, { enabled: !current.enabled }, action, {
     patch: { enabled: current.enabled },
@@ -181,7 +181,7 @@ export async function setValueCommand(app: App, arg?: Target, envArg?: unknown):
   const value = parseValue(input, kind) as FlagValue;
   if (JSON.stringify(value) === JSON.stringify(current.value)) return;
   const action = `Set value to ${JSON.stringify(value)}`;
-  const ok = await app.confirm({ flag: row.feature.name, env, action, detail: `Current value: ${JSON.stringify(current.value)}` });
+  const ok = await app.confirm({ flag: row.feature.name, env, action, detail: `Current value: ${JSON.stringify(current.value)}${writeNotes(app, row, env)}` });
   if (!ok) return;
   await writeState(app, row, env, { value }, action, { patch: { value: current.value }, label: `Set value to ${JSON.stringify(current.value)}` });
 }
@@ -345,31 +345,41 @@ export async function copyDiffMarkdownCommand(app: App, envA?: unknown, envB?: u
 }
 
 /** Scans the workspace for references and lists project flags that no file mentions. */
+/** A flag reference found by scanning the workspace: the file, the 0-based line and the key. */
+export interface WorkspaceReference {
+  uri: vscode.Uri;
+  line: number;
+  key: string;
+}
+
+/** Scans every text file in the workspace (outside build and dependency folders) for flag references. */
+export async function scanWorkspace(app: App, title: string): Promise<{ refs: WorkspaceReference[]; files: number }> {
+  const exclude = '{**/node_modules/**,**/.git/**,**/dist/**,**/out/**,**/build/**,**/.next/**,**/vendor/**,**/*.min.js,**/*.map,**/*.lock,**/package-lock.json}';
+  return vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title, cancellable: true }, async (_p, token) => {
+    const files = await vscode.workspace.findFiles('**/*', exclude, 20_000, token);
+    const refs: WorkspaceReference[] = [];
+    let count = 0;
+    for (const file of files) {
+      if (token.isCancellationRequested) break;
+      try {
+        const stat = await vscode.workspace.fs.stat(file);
+        if (stat.size > 1_000_000) continue;
+        const bytes = await vscode.workspace.fs.readFile(file);
+        if (bytes.subarray(0, 8000).includes(0)) continue; // binary
+        for (const ref of findFlagReferences(new TextDecoder().decode(bytes), app.refs.compiled)) refs.push({ uri: file, line: ref.line, key: ref.key });
+        count++;
+      } catch {
+        // unreadable file: skip
+      }
+    }
+    return { refs, files: count };
+  });
+}
+
 export async function findUnusedFlagsCommand(app: App): Promise<void> {
   if (!requireConnected(app)) return;
-  const used = new Set<string>();
-  const exclude = '{**/node_modules/**,**/.git/**,**/dist/**,**/out/**,**/build/**,**/.next/**,**/vendor/**,**/*.min.js,**/*.map,**/*.lock,**/package-lock.json}';
-  const scanned = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: 'FlagLens: scanning workspace for flag references…', cancellable: true },
-    async (_p, token) => {
-      const files = await vscode.workspace.findFiles('**/*', exclude, 20_000, token);
-      let count = 0;
-      for (const file of files) {
-        if (token.isCancellationRequested) break;
-        try {
-          const stat = await vscode.workspace.fs.stat(file);
-          if (stat.size > 1_000_000) continue;
-          const bytes = await vscode.workspace.fs.readFile(file);
-          if (bytes.subarray(0, 8000).includes(0)) continue; // binary
-          for (const ref of findFlagReferences(new TextDecoder().decode(bytes), app.refs.compiled)) used.add(ref.key);
-          count++;
-        } catch {
-          // unreadable file: skip
-        }
-      }
-      return count;
-    },
-  );
+  const { refs, files: scanned } = await scanWorkspace(app, 'FlagLens: scanning workspace for flag references…');
+  const used = new Set(refs.map((r) => r.key));
   const unused = [...app.store.rows.values()].filter((r) => !r.feature.isArchived && !used.has(r.feature.name));
   app.log.info(`Find unused flags: scanned ${scanned} files; ${unused.length} unused: ${unused.map((r) => r.feature.name).join(', ') || 'none'}`);
   if (unused.length === 0) {

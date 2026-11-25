@@ -6,9 +6,9 @@
 
 import * as vscode from 'vscode';
 import { ApiError, AuthError, FlagsmithClient, NotFoundError } from '../api/client';
-import type { ApiExperiment, ApiFeatureState, ApiProject } from '../api/types';
+import type { ApiExperiment, ApiFeatureHealthEvent, ApiFeatureState, ApiProject } from '../api/types';
 import type { FlagFacts } from '../core/deadcode';
-import { evaluateFlags, uniformity, type EnvironmentDocument, type Evaluated, type Persona } from '../core/engine';
+import { dependenciesOf, evaluateFlags, uniformity, type EnvironmentDocument, type Evaluated, type Persona } from '../core/engine';
 import { analyseRules, type RuleFinding } from '../core/rules';
 import { buildRows, compileProtectedPattern, rowSignature, toEnvironment, type FlagRow, type FsEnvironment, type FsState } from '../core/model';
 import type { Logger } from '../log';
@@ -45,6 +45,10 @@ export class FlagStore implements vscode.Disposable {
   private findings: RuleFinding[] | undefined;
   /** Older or restricted servers may not serve the document; then previews are off and greying is conservative. */
   private documentsSupported = true;
+  /** Latest Feature Health event per "featureId:envId" (envId 0 = all environments). */
+  private health = new Map<string, ApiFeatureHealthEvent>();
+  private healthSupported = true;
+  private healthSignature = '';
   private timer: ReturnType<typeof setTimeout> | undefined;
   private failures = 0;
   private refreshing: Promise<void> | undefined;
@@ -89,6 +93,7 @@ export class FlagStore implements vscode.Disposable {
     this.status = 'loading';
     this.experimentsSupported = true;
     this.documentsSupported = true;
+    this.healthSupported = true;
     this.changeEmitter.fire();
     this.log.info(`Connecting to ${conn.client.baseUrl}, project "${conn.project.name}" (id ${conn.project.id})`);
     await this.refresh();
@@ -110,6 +115,8 @@ export class FlagStore implements vscode.Disposable {
     if (this.activeEnvironmentId === id) return;
     this.activeEnvironmentId = id;
     this.changeEmitter.fire();
+    // Lifecycle stages and override counts are per environment: reload them for the new one.
+    if (this.connected) void this.refresh();
   }
 
   /** Re-applies the protected-environment setting without reconnecting. */
@@ -131,6 +138,8 @@ export class FlagStore implements vscode.Disposable {
     this.documentSignatures = new Map();
     this.evaluations = new Map();
     this.findings = undefined;
+    this.health = new Map();
+    this.healthSignature = '';
     this.status = 'disconnected';
     this.lastError = undefined;
     this.lastRefresh = undefined;
@@ -167,11 +176,11 @@ export class FlagStore implements vscode.Disposable {
       }
 
       const [features, tags, ...perEnv] = await Promise.all([
-        client.listFeatures(project.id),
+        client.listFeatures(project.id, this.activeEnvironment?.id),
         client.listTags(project.id),
         ...this.environments.map((e) => client.listFeatureStates(e.apiKey)),
       ]);
-      const [experiments, documents] = await Promise.all([this.loadExperiments(client), this.loadDocuments(client)]);
+      const [experiments, documents, health] = await Promise.all([this.loadExperiments(client), this.loadDocuments(client), this.loadHealth(client, project.id)]);
       if (generation !== this.generation) return;
 
       const statesByEnv = new Map<number, ApiFeatureState[]>();
@@ -188,10 +197,15 @@ export class FlagStore implements vscode.Disposable {
         this.evaluations.clear();
         this.findings = undefined;
       }
+      const healthSignature = JSON.stringify([...health]);
+      const healthChanged = healthSignature !== this.healthSignature;
+      this.health = health;
+      this.healthSignature = healthSignature;
       const changed =
         this.status !== 'ok' ||
         envsChanged ||
         documentsChanged ||
+        healthChanged ||
         signatures.size !== this.signatures.size ||
         [...signatures].some(([k, s]) => this.signatures.get(k) !== s);
 
@@ -249,6 +263,54 @@ export class FlagStore implements vscode.Disposable {
       }
     }
     return result;
+  }
+
+  private async loadHealth(client: FlagsmithClient, projectId: number): Promise<Map<string, ApiFeatureHealthEvent>> {
+    const latest = new Map<string, ApiFeatureHealthEvent>();
+    if (!this.healthSupported) return latest;
+    try {
+      const events = await client.listFeatureHealthEvents(projectId);
+      for (const e of events) {
+        const k = `${e.feature}:${e.environment ?? 0}`;
+        const cur = latest.get(k);
+        if (!cur || e.created_at > cur.created_at) latest.set(k, e);
+      }
+    } catch (e) {
+      if (e instanceof NotFoundError || (e instanceof ApiError && e.status < 500)) {
+        this.healthSupported = false;
+        this.log.info('Feature Health API not available on this Flagsmith; health badges disabled.');
+      } else return this.health;
+    }
+    return latest;
+  }
+
+  /** Environments where Flagsmith Feature Health currently reports this flag UNHEALTHY, with the event. */
+  unhealthy(featureId: number): { env: FsEnvironment | undefined; event: ApiFeatureHealthEvent }[] {
+    const out: { env: FsEnvironment | undefined; event: ApiFeatureHealthEvent }[] = [];
+    for (const [k, e] of this.health) {
+      const [fid, envId] = k.split(':').map(Number);
+      if (fid !== featureId || e.type !== 'UNHEALTHY') continue;
+      out.push({ env: envId ? this.environment(envId!) : undefined, event: e });
+    }
+    return out;
+  }
+
+  /**
+   * Flag dependencies of `key` per environment, from the environment documents: which flags it requires, and whether
+   * that leaves it served OFF to everyone (evaluated with no identity, as Flagsmith's environment flags are).
+   */
+  dependencies(key: string): { env: FsEnvironment; requires: string[]; blocked: boolean }[] {
+    const out: { env: FsEnvironment; requires: string[]; blocked: boolean }[] = [];
+    for (const env of this.environments) {
+      const doc = this.documents.get(env.id);
+      if (!doc) continue;
+      const requires = dependenciesOf(doc).filter((d) => d.flag === key).map((d) => d.requires);
+      if (!requires.length) continue;
+      const own = doc.feature_states.find((f) => f.feature.name === key)?.enabled ?? false;
+      const served = evaluateFlags(doc).get(key)?.enabled ?? false;
+      out.push({ env, requires, blocked: own && !served });
+    }
+    return out;
   }
 
   get previewSupported(): boolean {

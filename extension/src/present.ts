@@ -60,8 +60,34 @@ export interface Badge {
   detail: string;
 }
 
+/** "Checkout errors: Error rate 4.2% …" from a Feature Health event's reason. */
+export function healthReason(e: { reason?: { text_blocks?: { title?: string; text: string }[] } | null }): string {
+  return (e.reason?.text_blocks ?? []).map((b) => (b.title ? `${b.title}: ${b.text}` : b.text)).join('; ');
+}
+
+/** Extra lines for a write confirmation: Flagsmith says the flag is unhealthy there, or a prerequisite blocks it. */
+export function writeNotes(ctx: Ctx, row: FlagRow, env: FsEnvironment): string {
+  const notes: string[] = [];
+  const sick = ctx.store.unhealthy(row.feature.id).filter((u) => !u.env || u.env.id === env.id);
+  for (const u of sick) notes.push(`Flagsmith Feature Health reports this flag UNHEALTHY${u.env ? ` in ${u.env.name}` : ''}${healthReason(u.event) ? `: ${healthReason(u.event)}` : ''}.`);
+  for (const d of ctx.store.dependencies(row.feature.name)) {
+    if (d.env.id === env.id) notes.push(`Requires ${d.requires.join(', ')}${d.blocked ? `, which is off in ${env.name}: this flag is served OFF there until it is on` : ''}.`);
+  }
+  return notes.length ? `\n\n${notes.join('\n')}` : '';
+}
+
 export function badgesFor(ctx: Ctx, row: FlagRow): Badge[] {
   const out: Badge[] = [];
+  const sick = ctx.store.unhealthy(row.feature.id);
+  if (sick.length) {
+    const where = sick.map((u) => u.env?.name ?? 'all environments').join(', ');
+    out.push({ icon: '$(pulse)', label: 'unhealthy', detail: `Flagsmith Feature Health: UNHEALTHY in ${where}${healthReason(sick[0]!.event) ? ` (${healthReason(sick[0]!.event)})` : ''}` });
+  }
+  const blocked = ctx.store.dependencies(row.feature.name).filter((d) => d.blocked);
+  if (blocked.length) {
+    out.push({ icon: '$(link)', label: 'blocked', detail: `Requires ${blocked[0]!.requires.join(', ')}: served OFF in ${blocked.map((d) => d.env.name).join(', ')} although its own state is on` });
+  }
+  if (row.feature.lifecycle === 'to_remove') out.push({ icon: '$(trash)', label: 'to remove', detail: 'Flagsmith lifecycle: to remove' });
   if (row.feature.isArchived) out.push({ icon: '$(archive)', label: 'archived', detail: 'Archived in Flagsmith' });
   const drift = driftOf(ctx, row);
   if (drift.drifted) out.push({ icon: '$(warning)', label: 'drift', detail: `Drift: ${drift.detail}` });
@@ -216,6 +242,18 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
       : 'no segment overrides'
     : `${f.segmentOverrides} segment override${f.segmentOverrides === 1 ? '' : 's'}`;
   const overrides = [segmentText];
+  for (const d of ctx.store.dependencies(key)) {
+    md.appendMarkdown(`$(link) Requires ${d.requires.map(code).join(', ')} in ${escapeMd(d.env.name)}${d.blocked ? ': **served off** there until it is on' : ''}  \n`);
+  }
+  for (const u of ctx.store.unhealthy(f.id)) {
+    const links = (u.event.reason?.url_blocks ?? []).map((b) => `[${escapeMd(b.title ?? 'details')}](${b.url})`).join(' · ');
+    md.appendMarkdown(`$(pulse) **Unhealthy** in ${escapeMd(u.env?.name ?? 'all environments')} (Flagsmith Feature Health, ${escapeMd(u.event.provider_name)})${healthReason(u.event) ? `: ${escapeMd(healthReason(u.event))}` : ''}${links ? ` · ${links}` : ''}  \n`);
+  }
+  const facts: string[] = [];
+  if (f.lifecycle) facts.push(`lifecycle in ${escapeMd(ctx.store.activeEnvironment?.name ?? '')}: **${f.lifecycle.replace('_', ' ')}**`);
+  if (f.codeReferences) facts.push(`${f.codeReferences} code reference${f.codeReferences === 1 ? '' : 's'} in Flagsmith`);
+  if (f.owners.length) facts.push(`owners: ${escapeMd(f.owners.join(', '))}`);
+  if (facts.length) md.appendMarkdown(`$(info) Flagsmith ${facts.join(' · ')}  \n`);
   if (f.identityOverrides) overrides.push(`${f.identityOverrides} identity override${f.identityOverrides === 1 ? '' : 's'}`);
   const stale = staleFor(ctx, row, now);
   md.appendMarkdown(`$(person) ${overrides.join(' · ')} · $(clock) last changed ${relativeTime(stale.lastChanged, now)}\n\n`);

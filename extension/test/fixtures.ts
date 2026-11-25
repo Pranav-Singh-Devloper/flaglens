@@ -64,6 +64,9 @@ export function row(
       createdAt: '2026-01-01T00:00:00Z',
       segmentOverrides: 0,
       identityOverrides: null,
+      lifecycle: null,
+      codeReferences: 0,
+      owners: [],
       ...extra,
     },
     states: new Map(
