@@ -134,6 +134,8 @@ export function identityKey(doc: Pick<EnvironmentDocument, 'api_key'>, identifie
 interface EvalContext {
   environment: { key: string; name: string };
   identity: { identifier: string; key: string; traits: Traits };
+  /** Other flags' evaluated states, for flag dependencies (conditions on `$.flags["name"].enabled`). */
+  flags?: Record<string, { enabled: boolean; value: FlagValue }>;
 }
 
 function contextFor(doc: EnvironmentDocument, persona: Persona): EvalContext {
@@ -145,6 +147,12 @@ function contextFor(doc: EnvironmentDocument, persona: Persona): EvalContext {
 
 /** Resolves the JSONPath subset the engines document: $.identity.identifier, $.identity.traits.x, $.environment.name… */
 function contextValue(path: string, ctx: EvalContext): unknown {
+  // Flag dependencies: Flagsmith stores "B requires A" as a system segment whose condition reads A's evaluated state.
+  const flag = /^\$\.flags\[["'](.+)["']\]\.(enabled|value)$/.exec(path) ?? /^\$\.flags\.([^.[\]]+)\.(enabled|value)$/.exec(path);
+  if (flag) {
+    const f = ctx.flags?.[flag[1]!];
+    return f ? f[flag[2] as 'enabled' | 'value'] : undefined;
+  }
   const bracket = /^\$\.identity\.traits\['(.+)'\]$/.exec(path);
   if (bracket) return ctx.identity.traits[bracket[1]!];
   const dotted = /^\$\.identity\.traits\.(.+)$/.exec(path);
@@ -315,9 +323,60 @@ function ruleMatches(rule: DocRule, segmentId: number | string, ctx: EvalContext
 }
 
 /** The segments this persona belongs to in this environment. A segment without rules matches nobody. */
+function conditionsOfRules(rules: DocRule[]): DocCondition[] {
+  return rules.flatMap((r) => [...(r.conditions ?? []), ...conditionsOfRules(r.rules ?? [])]);
+}
+
+/**
+ * A flag-dependency segment: Flagsmith implements "B requires A" as a system segment (named "B-depends-on-A") whose
+ * condition is `$.flags["A"].enabled NOT_EQUAL true` and whose override turns B off. Verified on 2.295.2: it is an
+ * ordinary override in the priority order, it applies with or without an identity, and prerequisites can't have
+ * prerequisites of their own (the API rejects chains), so two passes evaluate it exactly.
+ */
+export function isDependencySegment(s: DocSegment): boolean {
+  return conditionsOfRules(s.rules).some((c) => (c.property_ ?? c.property ?? '').startsWith('$.flags'));
+}
+
+/** "B requires A" pairs found in an environment document. */
+export function dependenciesOf(doc: EnvironmentDocument): { flag: string; requires: string }[] {
+  const out: { flag: string; requires: string }[] = [];
+  for (const s of doc.project.segments) {
+    if (!isDependencySegment(s)) continue;
+    for (const c of conditionsOfRules(s.rules)) {
+      const m = /^\$\.flags\[["'](.+)["']\]\.enabled$/.exec(c.property_ ?? c.property ?? '') ?? /^\$\.flags\.([^.[\]]+)\.enabled$/.exec(c.property_ ?? c.property ?? '');
+      if (!m) continue;
+      for (const fs of s.feature_states) out.push({ flag: fs.feature.name, requires: m[1]! });
+    }
+  }
+  return out;
+}
+
+const NO_IDENTITY = { identifier: '', traits: {} } as const;
+
+function matches(s: DocSegment, ctx: EvalContext): boolean {
+  return s.rules.length > 0 && s.rules.every((r) => ruleMatches(r, s.id, ctx));
+}
+
+/**
+ * The segments that apply, in document order. Regular segments need an identity; dependency segments are then
+ * evaluated against the flags as resolved without them (pass one), with or without an identity.
+ */
+function applicableSegments(doc: EnvironmentDocument, persona: Persona | undefined): DocSegment[] {
+  const ctx = contextFor(doc, persona ?? NO_IDENTITY);
+  const regular = persona ? doc.project.segments.filter((s) => !isDependencySegment(s) && matches(s, ctx)) : [];
+  const deps = doc.project.segments.filter(isDependencySegment);
+  if (!deps.length) return regular;
+  const pass1 = resolve(doc, regular, persona);
+  const flags = Object.fromEntries([...pass1].map(([name, e]) => [name, { enabled: e.enabled, value: e.value }]));
+  const withFlags = { ...ctx, flags };
+  const dep = new Set(deps.filter((s) => matches(s, withFlags)));
+  const reg = new Set(regular);
+  return doc.project.segments.filter((s) => reg.has(s) || dep.has(s));
+}
+
+/** The segments this persona belongs to in this environment (including flag-dependency segments that apply). */
 export function matchingSegments(doc: EnvironmentDocument, persona: Persona): DocSegment[] {
-  const ctx = contextFor(doc, persona);
-  return doc.project.segments.filter((s) => s.rules.length > 0 && s.rules.every((r) => ruleMatches(r, s.id, ctx)));
+  return applicableSegments(doc, persona);
 }
 
 // --- flags -------------------------------------------------------------------------------------------------------
@@ -350,26 +409,29 @@ function valueFor(fs: DocFeatureState, key: string | undefined): Pick<Evaluated,
  * environment-flag calls return: defaults only, multivariate flags give their control value).
  */
 export function evaluateFlags(doc: EnvironmentDocument, persona?: Persona): Map<string, Evaluated> {
+  return resolve(doc, applicableSegments(doc, persona), persona);
+}
+
+/** Resolves every flag from the applicable segments: lowest priority number wins, identity overrides beat all. */
+function resolve(doc: EnvironmentDocument, segments: DocSegment[], persona: Persona | undefined): Map<string, Evaluated> {
   const out = new Map<string, Evaluated>();
   const key = persona ? identityKey(doc, persona.identifier) : undefined;
 
   const chosen = new Map<string, { fs: DocFeatureState; reason: Reason; priority: number }>();
   for (const fs of doc.feature_states) chosen.set(fs.feature.name, { fs, reason: { kind: 'default' }, priority: Infinity });
 
-  if (persona) {
-    for (const segment of matchingSegments(doc, persona)) {
-      for (const fs of segment.feature_states) {
-        const priority = fs.feature_segment?.priority ?? Infinity;
-        const current = chosen.get(fs.feature.name);
-        // Lower number = higher priority; on a tie the first segment wins (like the engines).
-        if (!current || current.reason.kind === 'default' || priority < current.priority) {
-          chosen.set(fs.feature.name, { fs, reason: { kind: 'segment', segment: segment.name, priority: fs.feature_segment?.priority ?? null }, priority });
-        }
+  for (const segment of segments) {
+    for (const fs of segment.feature_states) {
+      const priority = fs.feature_segment?.priority ?? Infinity;
+      const current = chosen.get(fs.feature.name);
+      // Lower number = higher priority; on a tie the first segment wins (like the engines).
+      if (!current || current.reason.kind === 'default' || priority < current.priority) {
+        chosen.set(fs.feature.name, { fs, reason: { kind: 'segment', segment: segment.name, priority: fs.feature_segment?.priority ?? null }, priority });
       }
     }
-    const identity = (doc.identity_overrides ?? []).find((i) => i.identifier === persona.identifier);
-    for (const fs of identity?.identity_features ?? []) chosen.set(fs.feature.name, { fs, reason: { kind: 'identity' }, priority: -Infinity });
   }
+  const identity = persona && (doc.identity_overrides ?? []).find((i) => i.identifier === persona.identifier);
+  for (const fs of identity ? identity.identity_features : []) chosen.set(fs.feature.name, { fs, reason: { kind: 'identity' }, priority: -Infinity });
 
   for (const [name, { fs, reason }] of chosen) out.set(name, { enabled: fs.enabled, ...valueFor(fs, key), reason });
   return out;

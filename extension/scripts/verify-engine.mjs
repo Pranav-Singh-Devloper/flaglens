@@ -114,6 +114,7 @@ async function admin(method, path, body) {
 }
 
 const cleanup = [];
+const segmentIds = [];
 if (OPERATORS) {
   const project = env.FLAGSMITH_PROJECT_ID;
   const devKey = env.FLAGSMITH_ENV_KEY_DEVELOPMENT;
@@ -141,7 +142,23 @@ if (OPERATORS) {
         feature_state_value: { type: 'unicode', string_value: `${operator} ${property ?? ''} ${value ?? ''}`.trim() },
         feature_segment: { segment: segment.id },
       });
+      segmentIds.push(segment.id);
     }
+    // A flag dependency ("child requires parent"), with a segment turning the parent on for plan = pro, so the
+    // dependency differs per user. Flagsmith stores it as a system segment reading $.flags["parent"].enabled.
+    const mkFlag = async (name, on) => {
+      const f = await admin('POST', `/projects/${project}/features/`, { name, default_enabled: on });
+      cleanup.push(() => admin('DELETE', `/projects/${project}/features/${f.id}/`));
+      return f;
+    };
+    const parent = await mkFlag('flaglens_verify_parent', false);
+    const child = await mkFlag('flaglens_verify_child', true);
+    await admin('POST', `/environments/${devKey}/features/${parent.id}/create-segment-override/`, {
+      enabled: true,
+      feature_state_value: { type: 'unicode', string_value: null },
+      feature_segment: { segment: segmentIds[0] },
+    });
+    await admin('POST', `/environments/${devKey}/features/${child.id}/dependencies/${parent.id}/`);
   } catch (e) {
     await runCleanup();
     throw e;
@@ -181,6 +198,15 @@ try {
           }
         }),
       );
+    }
+    // No identity: the server's environment flags must match too (flag dependencies apply even without one).
+    const envFlags = await json('/flags/', { headers: { 'X-Environment-Key': key } });
+    const noIdentity = evaluateFlags(doc);
+    for (const f of envFlags) {
+      const mine = noIdentity.get(f.feature.name);
+      checks++;
+      if (mine && mine.enabled === f.enabled && mine.value === f.feature_state_value) agree++;
+      else if (failures++ < 10) console.log(`  ✖ ${name} ${f.feature.name} with no identity: server ${f.enabled}/${JSON.stringify(f.feature_state_value)}, local ${mine?.enabled}/${JSON.stringify(mine?.value)}`);
     }
     const segments = doc.project.segments.filter((s) => s.feature_states.length).length;
     console.log(`${name.replace('FLAGSMITH_ENV_KEY_', '').padEnd(12)} ${COUNT} identities × ${server_flags(doc)} flags = ${checks} checks, ${agree} agree (${((agree / checks) * 100).toFixed(2)}%) · ${segments} segment(s) with overrides`);

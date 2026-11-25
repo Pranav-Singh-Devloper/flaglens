@@ -190,3 +190,41 @@ describe('uniformity', () => {
     expect(uniformity(plain, 'new_checkout')).toEqual({ enabled: true, value: true });
   });
 });
+
+describe('flag dependencies (verified against Flagsmith 2.295.2)', async () => {
+  const { dependenciesOf } = await import('../src/core/engine');
+  const fsOf = (id: number, name: string, enabled: boolean, priority: number | null = null, value: DocFeatureState['feature_state_value'] = null) =>
+    fs(id, name, enabled, value, { django_id: 500 + id * 10 + (priority ?? 9), feature_segment: priority === null ? null : { priority } });
+  // Flagsmith stores "child requires parent" as a system segment reading the parent's evaluated state.
+  const dependency: DocSegment = {
+    id: 90,
+    name: 'child-depends-on-parent',
+    rules: [{ type: 'ANY', rules: [], conditions: [{ operator: 'NOT_EQUAL', value: 'true', property_: '$.flags["parent"].enabled' }] }],
+    feature_states: [fsOf(1, 'child', false, 1)],
+  };
+  const proOn = segment(91, 'pro', [{ property: 'plan', operator: 'EQUAL', value: 'pro' }], [fsOf(2, 'parent', true, 0)]);
+  const base: EnvironmentDocument = {
+    api_key: 'k',
+    name: 'Dev',
+    feature_states: [fsOf(1, 'child', true), fsOf(2, 'parent', false)],
+    project: { segments: [proOn, dependency] },
+    identity_overrides: [],
+  };
+
+  it('turns the child off where the parent is off, per user and with no identity', () => {
+    expect(evaluateFlags(base, { identifier: 'f', traits: { plan: 'free' } }).get('child')).toMatchObject({ enabled: false, reason: { kind: 'segment', segment: 'child-depends-on-parent' } });
+    expect(evaluateFlags(base, { identifier: 'p', traits: { plan: 'pro' } }).get('child')?.enabled).toBe(true);
+    expect(evaluateFlags(base).get('child')?.enabled).toBe(false);
+    expect(evaluateFlags(base).get('parent')?.enabled).toBe(false);
+  });
+
+  it('is an ordinary override: a higher-priority override on the child still wins', () => {
+    const freeOn = segment(92, 'free', [{ property: 'plan', operator: 'EQUAL', value: 'free' }], [fsOf(1, 'child', true, 0, 'free-on')]);
+    const d = { ...base, project: { segments: [proOn, dependency, freeOn] } };
+    expect(evaluateFlags(d, { identifier: 'f', traits: { plan: 'free' } }).get('child')).toMatchObject({ enabled: true, value: 'free-on' });
+  });
+
+  it('lists dependencies', () => {
+    expect(dependenciesOf(base)).toEqual([{ flag: 'child', requires: 'parent' }]);
+  });
+});
