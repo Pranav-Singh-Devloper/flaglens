@@ -12,6 +12,7 @@ export const Code = {
   Unknown: 'unknown-flag',
   Archived: 'archived-flag',
   Stale: 'stale-flag',
+  Rules: 'rule-issue',
 } as const;
 
 /** Data attached to diagnostics so code actions don't need to recompute it. */
@@ -64,7 +65,9 @@ export class FlagDiagnostics implements vscode.Disposable {
         d.source = DIAGNOSTIC_SOURCE;
         meta.set(d, { key: ref.key, suggestion });
         diagnostics.push(d);
-      } else if (row.feature.isArchived) {
+        continue;
+      }
+      if (row.feature.isArchived) {
         const d = new vscode.Diagnostic(
           range,
           `Flag "${ref.key}" is archived in Flagsmith but still used here. Archived flags may stop being served; remove this code path.`,
@@ -75,7 +78,19 @@ export class FlagDiagnostics implements vscode.Disposable {
         d.tags = [vscode.DiagnosticTag.Deprecated];
         meta.set(d, { key: ref.key });
         diagnostics.push(d);
-      } else if (settings.staleDiagnostics) {
+        continue;
+      }
+      // Problems in the flag's segment overrides (shadowed, redundant…): one diagnostic listing them all.
+      const findings = store.findingsFor(ref.key);
+      if (findings.length) {
+        const serious = findings.some((f) => f.kind === 'shadowed' || f.kind === 'matches-nobody');
+        const d = new vscode.Diagnostic(range, findings.map((f) => f.message).join('\n'), serious ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Information);
+        d.code = Code.Rules;
+        d.source = DIAGNOSTIC_SOURCE;
+        meta.set(d, { key: ref.key });
+        diagnostics.push(d);
+      }
+      if (settings.staleDiagnostics) {
         const stale = staleFor(this.ctx, row);
         if (stale.stale) {
           const d = new vscode.Diagnostic(range, staleSentence(ref.key, stale), vscode.DiagnosticSeverity.Information);

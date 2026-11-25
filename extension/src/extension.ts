@@ -16,6 +16,7 @@ import {
   toggleCommand,
 } from './commands/flags';
 import { previewAsCommand, restorePersona, toggleDimmingCommand } from './commands/persona';
+import { checkRulesCommand, testPlanCommand } from './commands/rules';
 import { ApiKeyStore, readSettings } from './config';
 import { createLogger } from './log';
 import { FlagCodeLensProvider } from './providers/codeLens';
@@ -130,6 +131,8 @@ export function activate(context: vscode.ExtensionContext): App {
     register('flaglens.showOutput', () => log.show()),
     register('flaglens.previewAs', (persona?: never) => previewAsCommand(app, persona)),
     register('flaglens.toggleDimming', () => toggleDimmingCommand()),
+    register('flaglens.checkRules', (opts?: never) => checkRulesCommand(app, opts)),
+    register('flaglens.testPlan', (keys?: never, mode?: never, opts?: never) => testPlanCommand(app, keys, mode, opts)),
 
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (!e.affectsConfiguration('flaglens')) return;

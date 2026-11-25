@@ -151,6 +151,18 @@
         "command": "flaglens.toggleDimming",
         "title": "Toggle Greying Out Code That Won't Run",
         "category": "FlagLens"
+      },
+      {
+        "command": "flaglens.checkRules",
+        "title": "Check Targeting Rules",
+        "category": "FlagLens",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "flaglens.testPlan",
+        "title": "Generate Pairwise Test Plan…",
+        "category": "FlagLens",
+        "icon": "$(beaker)"
       }
     ],
     "viewsContainers": {
@@ -215,6 +227,16 @@
           "command": "flaglens.copyDiffMarkdown",
           "when": "view == flaglens.flags && flaglens.connected",
           "group": "1_flags@3"
+        },
+        {
+          "command": "flaglens.checkRules",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "1_flags@4"
+        },
+        {
+          "command": "flaglens.testPlan",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "1_flags@5"
         },
         {
           "command": "flaglens.selectProject",

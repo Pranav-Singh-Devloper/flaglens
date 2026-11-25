@@ -9,6 +9,7 @@ import { ApiError, AuthError, FlagsmithClient, NotFoundError } from '../api/clie
 import type { ApiExperiment, ApiFeatureState, ApiProject } from '../api/types';
 import type { FlagFacts } from '../core/deadcode';
 import { evaluateFlags, uniformity, type EnvironmentDocument, type Evaluated, type Persona } from '../core/engine';
+import { analyseRules, type RuleFinding } from '../core/rules';
 import { buildRows, compileProtectedPattern, rowSignature, toEnvironment, type FlagRow, type FsEnvironment, type FsState } from '../core/model';
 import type { Logger } from '../log';
 
@@ -41,6 +42,7 @@ export class FlagStore implements vscode.Disposable {
   private signatures = new Map<string, string>();
   private documentSignatures = new Map<number, string>();
   private evaluations = new Map<number, Map<string, Evaluated>>();
+  private findings: RuleFinding[] | undefined;
   /** Older or restricted servers may not serve the document; then previews are off and greying is conservative. */
   private documentsSupported = true;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -128,6 +130,7 @@ export class FlagStore implements vscode.Disposable {
     this.documents = new Map();
     this.documentSignatures = new Map();
     this.evaluations = new Map();
+    this.findings = undefined;
     this.status = 'disconnected';
     this.lastError = undefined;
     this.lastRefresh = undefined;
@@ -183,6 +186,7 @@ export class FlagStore implements vscode.Disposable {
         this.documents = documents;
         this.documentSignatures = documentSignatures;
         this.evaluations.clear();
+        this.findings = undefined;
       }
       const changed =
         this.status !== 'ok' ||
@@ -289,6 +293,24 @@ export class FlagStore implements vscode.Disposable {
     if (!doc) return { valueKnown: false };
     const uniform = uniformity(doc, key);
     return { enabled: uniform.enabled ? state.enabled : undefined, value: state.value, valueKnown: uniform.value };
+  }
+
+  /**
+   * Problems in segment overrides (shadowed, redundant, matching nobody, unreachable default) in every environment,
+   * computed from the environment documents and cached until they change.
+   */
+  ruleFindings(): RuleFinding[] {
+    if (!this.findings) {
+      this.findings = this.environments.flatMap((e) => {
+        const doc = this.documents.get(e.id);
+        return doc ? analyseRules(doc) : [];
+      });
+    }
+    return this.findings;
+  }
+
+  findingsFor(key: string): RuleFinding[] {
+    return this.ruleFindings().filter((f) => f.flag === key);
   }
 
   /** Segment overrides of a flag, per environment name, read from the environment documents (exact). */

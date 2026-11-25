@@ -70,6 +70,11 @@ export function badgesFor(ctx: Ctx, row: FlagRow): Badge[] {
     const envs = exps.map((x) => ctx.store.environment(x.envId)?.name ?? '?').join(', ');
     out.push({ icon: '$(lock)', label: 'experiment', detail: `Locked by experiment "${exps[0]!.name}" in ${envs}` });
   }
+  const findings = ctx.store.findingsFor(row.feature.name);
+  if (findings.length) {
+    const more = findings.length > 1 ? ` (and ${findings.length - 1} more: FlagLens: Check Targeting Rules)` : '';
+    out.push({ icon: '$(circle-slash)', label: findings.length === 1 ? 'rule issue' : `${findings.length} rule issues`, detail: `${findings[0]!.message}${more}` });
+  }
   const stale = staleFor(ctx, row);
   if (stale.stale) out.push({ icon: '$(trash)', label: 'stale', detail: staleSentence(row.feature.name, stale) });
   return out;

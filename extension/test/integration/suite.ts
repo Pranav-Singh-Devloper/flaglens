@@ -231,6 +231,30 @@ export async function run(): Promise<void> {
     }
   });
 
+  await test('targeting rule check finds the shadowed and the redundant override, and only those', async () => {
+    const md = await vscode.commands.executeCommand<string>('flaglens.checkRules', { show: false });
+    assert.match(md, /2 problems in \d+ segment overrides/);
+    assert.match(md, /`rate_limit_per_minute` \| Never applies \(shadowed\) \| .*caught first by "pro_plan" \(priority 1\)/);
+    assert.match(md, /`banner_text` \| Changes nothing \(redundant\)/);
+    const doc = await open('server.mjs');
+    const d = await waitFor('rule diagnostic', () => vscode.languages.getDiagnostics(doc.uri).find((x) => x.code === 'rule-issue' && /pro_eu/.test(x.message)));
+    assert.equal(doc.getText(d.range), 'rate_limit_per_minute');
+    assert.equal(d.severity, vscode.DiagnosticSeverity.Warning);
+    const lenses = await vscode.commands.executeCommand<vscode.CodeLens[]>('vscode.executeCodeLensProvider', doc.uri, 100);
+    assert.match(lenses.map((l) => l.command?.title ?? '').find((t) => t.includes('rate_limit_per_minute'))!, /rule issue/);
+  });
+
+  await test('pairwise test plan: optimal for on/off flags, covers values too', async () => {
+    const onoff = await vscode.commands.executeCommand<string>('flaglens.testPlan', ['new_checkout', 'dark_mode', 'maintenance_mode', 'banner_text'], 'onoff', { show: false });
+    assert.match(onoff, /\*\*5 runs instead of 16\*\*/);
+    assert.match(onoff, /Provably optimal/);
+    const values = await vscode.commands.executeCommand<string>('flaglens.testPlan', ['checkout_button_color', 'rate_limit_per_minute', 'new_checkout'], 'values', { show: false });
+    const json = JSON.parse(/```json\n([\s\S]*?)\n```/.exec(values)![1]!) as Record<string, { enabled: boolean; value: unknown }>[];
+    // rate_limit_per_minute takes off + 1000, 100, 50, 500, 800 somewhere; every one must appear in some run.
+    const limits = new Set(json.map((r) => (r.rate_limit_per_minute!.enabled ? r.rate_limit_per_minute!.value : 'off')));
+    assert.deepEqual([...limits].sort(), [100, 1000, 50, 500, 800, 'off'].sort());
+  });
+
   await test('environment matrix opens', async () => {
     await vscode.commands.executeCommand('flaglens.openMatrix');
     const tab = await waitFor('matrix tab', () =>
