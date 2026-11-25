@@ -211,5 +211,5 @@ describe('soundness (randomised): every finding holds for thousands of random us
       }
     }
     expect(findings).toBeGreaterThan(20); // the generator does produce anomalies to check
-  });
+  }, 60_000); // ~200 000 engine evaluations: give slow CI machines room
 });
