@@ -101,16 +101,28 @@
       "rules": [{ "type": "ALL", "conditions": [{ "property": "country", "operator": "EQUAL", "value": "IN" }] }]
     },
     {
+      "name": "pro_eu",
+      "description": "Pro customers in the EU. (Deliberate mistake for the rule checker: pro_plan catches them first.)",
+      "rules": [{ "type": "ALL", "conditions": [{ "property": "plan", "operator": "EQUAL", "value": "pro" }, { "property": "country", "operator": "IN", "value": "DE,FR,GB" }] }]
+    },
+    {
+      "name": "uk",
+      "description": "Visitors in the UK. (Deliberate mistake for the rule checker: its banner is the same as the default.)",
+      "rules": [{ "type": "ALL", "conditions": [{ "property": "country", "operator": "EQUAL", "value": "GB" }] }]
+    },
+    {
       "name": "canary_10pct",
       "description": "A stable 10% of identities (percentage split on the identity key).",
       "rules": [{ "type": "ALL", "conditions": [{ "property": null, "operator": "PERCENTAGE_SPLIT", "value": "10" }] }]
     }
   ],
-  "$comment_segment_overrides": "Production only, so Development and Staging behave exactly as before. Listed in priority order (first = highest).",
+  "$comment_segment_overrides": "Production only, so Development and Staging behave exactly as before. Listed in priority order (first = highest). The last two are deliberate mistakes that FlagLens: Check Targeting Rules finds.",
   "segment_overrides": [
     { "flag": "new_checkout", "segment": "beta_testers", "environment": "Production", "enabled": true },
     { "flag": "rate_limit_per_minute", "segment": "pro_plan", "environment": "Production", "enabled": true, "value": 500 },
     { "flag": "banner_text", "segment": "india", "environment": "Production", "enabled": true, "value": "Diwali sale: 40% off" },
-    { "flag": "checkout_button_color", "segment": "canary_10pct", "environment": "Production", "enabled": true, "value": "purple" }
+    { "flag": "checkout_button_color", "segment": "canary_10pct", "environment": "Production", "enabled": true, "value": "purple" },
+    { "flag": "rate_limit_per_minute", "segment": "pro_eu", "environment": "Production", "enabled": true, "value": 800 },
+    { "flag": "banner_text", "segment": "uk", "environment": "Production", "enabled": true, "value": "Black Friday: 30% off" }
   ]
 }
