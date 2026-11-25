@@ -16,3 +16,8 @@
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 ::selection { background: #dcd6ff; }
+
+/* Architecture diagram: dashes flow along the active edges. */
+@keyframes arch-dash { to { stroke-dashoffset: -30; } }
+.arch-flow { animation: arch-dash 0.9s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .arch-flow { animation: none; } }

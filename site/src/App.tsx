@@ -8,6 +8,7 @@ import GlareHover from './components/reactbits/GlareHover';
 import GradientText from './components/reactbits/GradientText';
 import Magnet from './components/reactbits/Magnet';
 import RotatingText from './components/reactbits/RotatingText';
+import Architecture from './Architecture';
 import ShinyText from './components/reactbits/ShinyText';
 import SplitText from './components/reactbits/SplitText';
 import SpotlightCard from './components/reactbits/SpotlightCard';
@@ -156,6 +157,7 @@ export default function App() {
               ['Demo', '#demo'],
               ['Quick start', '#start'],
               ['Research', '#research'],
+              ['Architecture', '#architecture'],
               ['GitHub', REPO],
             ].map(([label, href]) => (
               <a key={label} href={href} className="cursor-target hover:text-ink">
@@ -392,6 +394,20 @@ export default function App() {
               </div>
             </SpotlightCard>
           </Reveal>
+        </section>
+
+        <section id="architecture" className="pt-28">
+          <Reveal>
+            <h2 className="text-[clamp(28px,3.4vw,40px)] leading-tight font-extrabold tracking-tight">How it works, end to end</h2>
+            <p className="mt-3 max-w-3xl text-[17px] text-muted">
+              Pick a flow to watch it move through the editor and your self-hosted Flagsmith, or click any box for what it does, where the code is and which Flagsmith endpoints it uses.
+            </p>
+          </Reveal>
+          <div className="mt-8">
+            <Reveal>
+              <Architecture />
+            </Reveal>
+          </div>
         </section>
       </main>
 
