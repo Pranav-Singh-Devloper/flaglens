@@ -376,6 +376,147 @@ await take('stale', async (d) => {
   await d.wait(3200);
 });
 
+// ---------------------------------------------------------------------------------------------------------------
+// v0.3 takes: greyed-out code, Preview as user, rule check, pairwise test plan, and the hook.
+// ---------------------------------------------------------------------------------------------------------------
+
+/** Off camera: pick an item in a FlagLens quick pick opened from the palette. */
+async function paletteChoose(commandName, item) {
+  await command(commandName);
+  await sel.quickInput.waitFor({ state: 'visible' });
+  await p.keyboard.type(item);
+  await p.waitForTimeout(350);
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(900);
+}
+const statusPersona = (text) => p.locator('.statusbar-item', { hasText: text }).first();
+const dimmed = () => p.locator('.view-lines').first();
+
+if (want('hook')) {
+  await command('View: Close All Editors');
+  await paletteChoose('FlagLens: Switch Active Environment', 'Production');
+  await openFile('typo.ts');
+  await p.mouse.move(1500, 900);
+  await p.waitForTimeout(1200);
+}
+await take('hook', async (d) => {
+  await d.mark('code', dimmed());
+  await d.wait(1600);
+  await d.mark('dead', p.locator('.view-line', { hasText: "return 'new'" }).first());
+  await d.moveToLocator(sel.token('new_chekout'), { ms: 2600, dx: 0.5 });
+  await d.mark('typo', sel.token('new_chekout'));
+  await d.wait(2200);
+});
+
+if (want('greyout')) {
+  await p.keyboard.press('Escape');
+  await command('View: Close All Editors');
+  await paletteChoose('FlagLens: Switch Active Environment', 'Development');
+  await prepServer();
+  await scrollLineToTop(73);
+  await p.mouse.move(1300, 820);
+  await p.waitForTimeout(800);
+}
+await take('greyout', async (d) => {
+  await d.mark('dev', dimmed());
+  await d.wait(2400);
+  await d.clickLocator(sel.statusFlag, { ms: 1000 });
+  await sel.quickInput.waitFor({ state: 'visible' });
+  await d.mark('envpick', sel.quickInput);
+  await d.wait(700);
+  await d.clickLocator(sel.quickPickItem('Production'), { ms: 700, dx: 0.2 });
+  await p.waitForTimeout(400);
+  await d.mark('prod', dimmed());
+  await d.moveTo(1300, 820, 700);
+  await d.wait(2600);
+});
+
+if (want('preview')) {
+  // Recorded on its own: Production, flag block in view, no horizontal scroll, no leftover tooltip.
+  await p.keyboard.press('Escape');
+  if (!want('greyout')) await paletteChoose('FlagLens: Switch Active Environment', 'Production');
+  await prepServer();
+  await scrollLineToTop(73);
+  await p.mouse.move(1300, 820);
+  await p.waitForTimeout(1200);
+}
+await take('preview', async (d) => {
+  await d.clickLocator(statusPersona('Everyone'), { ms: 900 });
+  await sel.quickInput.waitFor({ state: 'visible' });
+  await d.mark('personas', sel.quickInput);
+  await d.wait(1200);
+  await d.clickLocator(sel.quickPickItem('Beta tester'), { ms: 800, dx: 0.2 });
+  await statusPersona('Beta tester').waitFor({ state: 'visible' });
+  await p.waitForTimeout(300);
+  await d.mark('beta', dimmed());
+  await d.wait(1800);
+  await hoverToken(d, 'new_checkout');
+  await d.wait(3800);
+  await d.moveTo(1300, 860, 600);
+  await d.wait(600);
+});
+
+if (want('rules')) {
+  await p.keyboard.press('Escape');
+  await paletteChoose('FlagLens: Preview Flags as User', 'Everyone');
+  await prepServer();
+  await scrollLineToTop(68);
+}
+await take('rules', async (d) => {
+  await hoverToken(d, 'rate_limit_per_minute');
+  await d.wait(3600);
+  await d.moveTo(1300, 900, 500);
+  await p.keyboard.press('Escape');
+  await d.key('Meta+Shift+P');
+  await sel.quickInput.waitFor({ state: 'visible' });
+  await d.type('Check Targeting Rules', { cps: 22 });
+  await d.wait(300);
+  await d.key('Enter');
+  await p.locator('.tab', { hasText: 'Targeting rule check' }).first().waitFor({ state: 'visible', timeout: 10_000 });
+  await d.wait(500);
+  await d.key('Meta+K');
+  await d.key('V');
+  await p.locator('.tab', { hasText: 'Preview' }).first().waitFor({ state: 'visible', timeout: 10_000 });
+  await p.waitForTimeout(800);
+  await d.mark('report', p.locator('.editor-group-container').last());
+  await d.wait(3400);
+});
+
+if (want('testplan')) {
+  await p.keyboard.press('Escape');
+  await command('View: Close All Editors');
+  const dont = sel.dialogButton("Don't Save");
+  for (let i = 0; i < 3 && (await dont.isVisible().catch(() => false)); i++) {
+    await dont.click();
+    await p.waitForTimeout(500);
+  }
+  await prepServer();
+}
+await take('testplan', async (d) => {
+  await d.wait(400);
+  await d.key('Meta+Shift+P');
+  await sel.quickInput.waitFor({ state: 'visible' });
+  await d.type('Generate Pairwise', { cps: 22 });
+  await d.wait(300);
+  await d.key('Enter');
+  await p.locator('.quick-input-widget', { hasText: 'which flags' }).first().waitFor({ state: 'visible' });
+  await d.mark('flags', sel.quickInput);
+  await d.wait(1700);
+  await d.key('Enter');
+  await p.locator('.quick-input-widget', { hasText: 'which values' }).first().waitFor({ state: 'visible' });
+  await d.mark('mode', sel.quickInput);
+  await d.wait(1800);
+  await d.key('Enter');
+  await p.locator('.tab', { hasText: 'Pairwise test plan' }).first().waitFor({ state: 'visible', timeout: 10_000 });
+  await d.wait(400);
+  await d.key('Meta+K');
+  await d.key('V');
+  await p.locator('.tab', { hasText: 'Preview' }).first().waitFor({ state: 'visible', timeout: 10_000 });
+  await p.waitForTimeout(800);
+  await d.mark('plan', p.locator('.editor-group-container').last());
+  await d.wait(3200);
+});
+
 await browser.close();
 vs.close();
 shop.kill();

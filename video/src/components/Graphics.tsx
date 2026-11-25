@@ -294,7 +294,7 @@ export const TestsPanel: React.FC<{ startAt: number }> = ({ startAt }) => {
 // ------------------------------------------------------------------------------------------------------------------
 // Outro
 // ------------------------------------------------------------------------------------------------------------------
-export const Outro: React.FC = () => {
+export const Outro: React.FC<{ fadeAt?: number }> = ({ fadeAt = 7.2 }) => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
   const a = pop(f, 0.1, fps);
@@ -316,7 +316,7 @@ export const Outro: React.FC = () => {
         </div>
         <div style={{ opacity: c, transform: `translateY(${(1 - c) * 20}px)`, fontSize: 40, fontWeight: 700, color: C.accent2 }}>github.com/Pranav-Singh-Devloper/flaglens</div>
         <div style={{ opacity: d, display: 'flex', gap: 14, marginTop: 10 }}>
-          {['Toggle Wars 2026', 'Track 03 · Build on Open Source Flagsmith', 'MIT'].map((p) => (
+          {['Toggle Wars 2026', 'Track 03 · Build on Open Source Flagsmith', '168 unit + 15 end-to-end tests', 'MIT'].map((p) => (
             <div key={p} style={{ padding: '10px 22px', borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.05)', color: C.muted, fontWeight: 600, fontSize: 24 }}>
               {p}
             </div>
@@ -324,9 +324,9 @@ export const Outro: React.FC = () => {
         </div>
       </AbsoluteFill>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 150, textAlign: 'center', fontFamily: SANS, fontSize: 20, color: C.muted, opacity: d }}>
-        Footage: the real extension against self-hosted Flagsmith · Edited with Remotion &amp; Manim · Voice, music &amp; sound: ElevenLabs
+        Footage: the real extension against self-hosted Flagsmith · Edited with Remotion · Voice, music &amp; sound: ElevenLabs · Reaction clips via Vlipsy, © their owners
       </div>
-      <AbsoluteFill style={{ background: 'black', opacity: interpolate(f, [7.2 * fps, 8 * fps], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }) }} />
+      <AbsoluteFill style={{ background: 'black', opacity: interpolate(f, [fadeAt * fps, (fadeAt + 0.8) * fps], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }) }} />
     </AbsoluteFill>
   );
 };

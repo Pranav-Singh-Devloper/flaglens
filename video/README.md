@@ -1,7 +1,8 @@
 # The FlagLens demo video, built in code
 
-The demo video is produced by a reproducible pipeline: real footage of the extension driven by a script, concept
-animations in Manim, and the edit, captions and mix in Remotion.
+The demo video is produced by a reproducible pipeline: real footage of the extension driven by a script, an
+expressive ElevenLabs voiceover that is checked by speech-to-text, reaction-clip memes, and the edit, captions and mix
+in Remotion.
 
 ```
 recordings (real)            animations            audio (ElevenLabs)
@@ -30,9 +31,17 @@ scripts/record-dashboard.mjs   └─ scripts/manim.sh   vo + word timings, sfx,
 - **An event log drives the edit.** The director logs every cursor move, click, keystroke and the on-screen box of
   key elements (hover cards, dialogs, toasts). Remotion uses it to draw a smooth cursor with click ripples, aim the
   camera, and place click and typing sounds on the exact frame.
-- **Manim** renders the concept scenes (21 states → one line, drift, the stale-flag rule).
-- **ElevenLabs** provides the voiceover (with word timestamps for the captions), sound effects and a seamless music
+- **An expressive, verified voiceover.** The script (`src/script.json`) uses Eleven v3 audio tags (`[whispers]`,
+  `[laughs]`, `[sighs]`) and pauses. v3 can improvise, so `scripts/audio.mjs` transcribes every take with ElevenLabs
+  Scribe (with audio-event tagging), compares the words with the script and checks that each tagged laugh or sigh
+  was actually performed. It keeps the best of up to three takes. Speech-to-text timings also give exact split points:
+  a scene's voice can be cut at a word so a meme lands mid-sentence while the footage freezes underneath.
+- **Memes.** `scripts/memes.mjs` fetches a few short reaction clips from [Vlipsy](https://vlipsy.com) and trims them.
+  They belong to their studios, so they are **not committed** (`public/memes/` and `.cache/` are git-ignored); each is
+  used for one to three seconds with its watermark intact, and credited in the outro.
+- **ElevenLabs** also provides the sound effects (including the meme boom and record scratch) and a seamless music
   loop. Every file is cached, so re-running never spends credits twice.
+- **Manim** scenes from the first cut are still in `manim/`; the current edit doesn't use them.
 
 ## Rebuild it
 
@@ -41,9 +50,11 @@ make up && make seed && make package          # from the repo root
 cd video && npm install
 node scripts/audio.mjs vo && node scripts/audio.mjs sfx && node scripts/audio.mjs beds   # needs ELEVENLABS_API_KEY in video/.env
 node scripts/record.mjs && node scripts/record-dashboard.mjs                               # real footage (opens VS Code)
-sh scripts/manim.sh                                                                        # needs Manim Community
+node scripts/memes.mjs                                                                     # reaction clips (not committed)
 node scripts/export-data.mjs
+node scripts/stills-at.mjs out/stills 10.3 74.5 115.5                                      # optional: check moments
 npm run render                                                                             # → out/flaglens-demo.mp4
 ```
 
-Voice, sound effects and music: [ElevenLabs](https://elevenlabs.io).
+Voice, sound effects and music: [ElevenLabs](https://elevenlabs.io). Reaction clips: [Vlipsy](https://vlipsy.com),
+© their respective owners.

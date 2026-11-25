@@ -9,3 +9,5 @@ public/manim/
 public/audio/credits.log
 dist-test/
 __pycache__/
+public/memes/
+.cache/
