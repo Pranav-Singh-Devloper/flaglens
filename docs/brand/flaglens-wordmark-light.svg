@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="300" viewBox="0 0 980 300" role="img" aria-label="FlagLens">
+  <g transform="translate(20 22) scale(2)">
+    <rect width="128" height="128" rx="30" fill="#1E1B3A"/>
+    <circle cx="54" cy="54" r="34" fill="#2A2652"/>
+    <circle cx="54" cy="54" r="34" fill="none" stroke="#7C6CFF" stroke-width="10"/>
+    <line x1="80" y1="80" x2="104" y2="104" stroke="#7C6CFF" stroke-width="16" stroke-linecap="round"/>
+    <line x1="44" y1="30" x2="44" y2="78" stroke="#E6E8F0" stroke-width="6.4" stroke-linecap="round"/>
+    <path d="M44 32 H78 L70 43 L78 54 H44 Z" fill="#2ECC71"/>
+  </g>
+  <text x="320" y="196" font-family="Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="150" letter-spacing="-6" fill="#141A2E">Flag<tspan fill="#6A58F0">Lens</tspan></text>
+</svg>
