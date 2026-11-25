@@ -17,7 +17,7 @@ import TargetCursor from './components/reactbits/TargetCursor';
 
 const REPO = 'https://github.com/Pranav-Singh-Devloper/flaglens';
 const RELEASES = `${REPO}/releases/latest`;
-const VIDEO = `${REPO}/releases/download/v0.3.1/flaglens-demo.mp4`;
+const VIDEO = `${REPO}/releases/download/v0.5.1/flaglens-demo.mp4`;
 const BRAND = '#6a58f0';
 
 /** True on devices with a precise pointer (mouse, trackpad): the custom cursor is only for those. */
@@ -189,14 +189,28 @@ export default function App() {
           <div className="mt-7 flex flex-wrap items-center justify-center gap-2 text-[19px] text-body">
             <span>A VS Code extension that</span>
             <RotatingText
-              texts={['greys out code that can’t run', 'previews flags as any user', 'proves your targeting rules', 'plans the smallest set of tests']}
+              texts={['knows what runs', 'proves your rules', 'is live with your Flagsmith']}
               mainClassName="overflow-hidden rounded-lg bg-brand px-3 py-0.5 font-semibold text-white"
               splitLevelClassName="overflow-hidden"
               staggerDuration={0.015}
               rotationInterval={2600}
             />
           </div>
-          <p className="mx-auto mt-4 max-w-2xl text-[17px] text-muted">Every answer is checked against your own Flagsmith server, and the maths is written up in a paper.</p>
+          <div className="mx-auto mt-7 grid max-w-4xl gap-3 text-left sm:grid-cols-3">
+            {[
+              ['1', 'It knows what runs', '15,050 of 15,050 local evaluations match the live server'],
+              ['2', 'It proves your rules', 'every finding holds for every possible user'],
+              ['3', "It's live", 'a dashboard toggle reaches the editor in about 3 s'],
+            ].map(([n, t, proof]) => (
+              <div key={n} className="rounded-2xl border border-line bg-white/85 p-4 shadow-sm">
+                <div className="flex items-center gap-2.5 text-[16px] font-bold text-ink">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand text-[12px] text-white">{n}</span>
+                  {t}
+                </div>
+                <div className="mt-1.5 text-[14px] text-go">{proof}</div>
+              </div>
+            ))}
+          </div>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Magnet padding={60} magnetStrength={6}>
@@ -204,7 +218,7 @@ export default function App() {
                 <span className="px-2 text-[15px] font-semibold">Download for VS Code</span>
               </StarBorder>
             </Magnet>
-            <Button href="#demo">Watch the 2:47 demo</Button>
+            <Button href="#demo">Watch the 2:33 demo</Button>
             <Button href={REPO}>View on GitHub</Button>
           </div>
           <p className="mt-4 text-[13px] text-muted">Free and MIT licensed · Toggle Wars 2026, Track 03: Build on Open Source Flagsmith</p>
@@ -355,7 +369,7 @@ export default function App() {
               ['Fits the toolchain.', "Reads the Flagsmith CLI's flagsmith.json and finds flags like Flagsmith's Code References scanner."],
               ['Code References, published.', 'One command uploads every flag reference, so the Flagsmith dashboard links each flag to its files and lines.'],
               ['Feature Health in the editor.', 'When monitoring marks a flag unhealthy in Flagsmith, every reference shows it, and so does the confirmation.'],
-              ['Real time, and editable.', 'Changes arrive through a signed Flagsmith webhook in about two seconds; segment and identity overrides are edited right next to the code.'],
+              ['Real time, and editable.', 'Changes arrive through a signed Flagsmith webhook in a few seconds; segment and identity overrides are edited right next to the code.'],
               ['Dependencies and lifecycle.', "A flag that requires another is marked blocked where it can't serve; lifecycle stage and owners are in the hover."],
               ['Safe by default.', "API keys live in VS Code's SecretStorage; every write is confirmed and logged in Flagsmith's audit log."],
             ].map(([b, t], i) => (

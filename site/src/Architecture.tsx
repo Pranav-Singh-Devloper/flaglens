@@ -171,7 +171,7 @@ const NODES: Record<NodeId, Box> = {
       "X-Flagsmith-Signature",
       "FLAG_UPDATED, AUDIT_LOG_CREATED",
     ],
-    facts: ["About two seconds from a change anywhere to the editor"],
+    facts: ["Measured: about 4 seconds from a toggle in the dashboard to the editor"],
   },
   client: {
     x: 32,
@@ -428,7 +428,7 @@ const FLOWS: Flow[] = [
       {
         nodes: ["realtime", "store", "ui"],
         edges: ["realtime>store", "store>ui"],
-        text: "A refresh, and the editor shows the change: about two seconds end to end. Polling stays as the fallback.",
+        text: "A refresh, and the editor shows the change: a few seconds end to end (about 4 s measured). Polling stays as the fallback.",
       },
     ],
   },
