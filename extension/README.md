@@ -10,6 +10,12 @@ typos and stale flags before they bite.
 ## Features
 
 - **Inline state for every environment**: `⚑ new_checkout   Development ● on   Staging ● on   Production ○ off`
+- **Greys out code that can't run** in the active environment, like an inactive `#ifdef`: the losing `if`/`else` or
+  ternary branch and the rest of a block after a flag guard that returns, with the reason at the end of the line.
+  Only when it's certain: a flag that differs between users is left alone.
+- **Preview as a user**: pick a test user (identifier + traits) and every CodeLens, hover and greyed-out region shows
+  what *they* get and which segment, % split or override decided. Evaluated locally with Flagsmith's own rules from
+  the environment document, verified against a live server.
 - **Hover card**: values, variants and weights, overrides, last change, one-click toggles.
 - **Safe changes**: confirmation for every write; protected environments (`prod|live|main`) need the flag name typed;
   Undo; every change logged.
@@ -47,5 +53,7 @@ Flag references are found with the same pattern as Flagsmith's Code References s
 | `flaglens.codeLens.enabled` | `true` | |
 | `flaglens.diagnostics.unknownFlagSeverity` | `warning` | |
 | `flaglens.diagnostics.staleFlags` | `true` | |
+| `flaglens.personas` | `[]` | Test users for *Preview as* (`name`, `identifier`, `traits`) |
+| `flaglens.dimInactiveCode` | `true` | Grey out code that can't run |
 
 MIT licensed.

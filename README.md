@@ -11,7 +11,9 @@ FlagLens is two things that work together:
 
 1. **A VS Code extension** that puts live Flagsmith state next to every flag in your code: every environment's
    on/off and value, a ⚠ when Staging and Production disagree, squiggles under misspelled flag keys, and safe,
-   confirmed toggles without leaving the editor.
+   confirmed toggles without leaving the editor. It also **greys out code that can't run** in the environment you
+   pick, and lets you **preview every flag as a specific user**, evaluated locally with Flagsmith's own segment,
+   % split and override rules (checked against the server: 16,700 checks, 100% match).
 2. **A one-command self-hosted dev kit**: `make up && make seed` starts the official open-source Flagsmith 2.295.2
    in Docker and fills it with a realistic demo project, so anyone can try the extension in about five minutes.
 
@@ -28,12 +30,17 @@ const limit = flags.getFeatureValue('rate_limit_per_minute');
 
 if (flags.isFeatureEnabled('new_chekout')) {      ← Flag "new_chekout" doesn't exist in Flagsmith. Did you mean "new_checkout"?
                             ~~~~~~~~~~~              Quick fix: Replace with "new_checkout" · Create flag in Flagsmith…
+
+⚑ new_checkout   👤 Beta tester:  Development ● on · Staging ● on · Production ● on (beta_testers)
+${newCheckout ? 'new' : 'old'}                    ⟵ new_checkout is on → never runs (Production · Beta tester)
+                        ░░░░░                        (greyed out, like an inactive #ifdef)
 ```
 
 ## Screenshots
 
 | | |
 |---|---|
+| ![Code that can't run is greyed out](docs/screenshots/grey-out.png) **Greys out code that can't run** in the active environment, with the reason: here the old checkout, because `new_checkout` is on in Development. | ![Preview as a user](docs/screenshots/preview-as.png) **Preview as a user**: Production is off for everyone, but on for this beta tester via the `beta_testers` segment. CodeLens, hover and greying all follow. |
 | ![CodeLens above every flag reference](docs/screenshots/codelens.png) **Live state inline**: every environment above every flag, with ⚠ drift, 🗑 stale and archived badges. | ![Environment Matrix](docs/screenshots/matrix.png) **Environment Matrix**: every flag × environment, differences highlighted, copy the diff as Markdown. |
 | ![Typo quick fix](docs/screenshots/typo-quick-fix.png) **Typo detection**: unknown keys are underlined, with *Replace with…* and *Create flag…* quick fixes. | ![Typed confirmation for Production](docs/screenshots/protected-confirm.png) **Protected environments**: changing Production means typing the flag's name. |
 | ![Hover card](docs/screenshots/hover.png) **Hover card**: every environment's state and value, variant weights, overrides, last change, one-click toggles. | ![The demo shop](docs/screenshots/demo-shop.png) **The demo shop** (`make demo`): banner, checkout and button colour all come from self-hosted Flagsmith. |
@@ -47,6 +54,8 @@ if (flags.isFeatureEnabled('new_chekout')) {      ← Flag "new_chekout" doesn't
   clicking through every environment.
 - **Silent typos.** `isFeatureEnabled("new_chekout")` doesn't error: every SDK returns the default and the feature
   never ships.
+- **"Which branch actually runs for this user?"** Segments, % splits and identity overrides decide, and they live in
+  the dashboard, far from the `if` they control. Reading the code, you can't tell which half is dead.
 - **Flag debt on open source.** Flags stay fully on for months. Flagsmith's stale-flag detection is a paid SaaS
   feature, and on self-hosted open-source Flagsmith even the audit-log API returns nothing. FlagLens computes
   staleness itself.
@@ -56,6 +65,8 @@ if (flags.isFeatureEnabled('new_chekout')) {      ← Flag "new_chekout" doesn't
 | | Feature | Flagsmith API it uses |
 |---|---|---|
 | 🔍 | Live state of every environment above each flag reference (CodeLens) and in a hover card with values, variant weights, overrides and last change | `GET /projects/{id}/features/`, `GET /environments/{key}/featurestates/` |
+| 👤 | **Preview as a user**: pick a test user (identifier + traits) from the status bar, and every CodeLens, hover and greyed-out region shows what *that user* gets, and why: segment and priority, % split bucket, identity override. Evaluated locally from the environment document with Flagsmith's own rules (ported from its open-source engine), and [verified against the server](#development-and-tests) | `GET /environments/{key}/document/` |
+| 🌫 | **Greys out code that can't run** in the active environment (and for the previewed user), like an inactive `#ifdef`: the losing branch of `if`/`else` and ternaries, through simple `const x = flags…` aliases, and the rest of a block after a flag guard that returns. JS/TS and other brace languages, and Python. It uses three-valued logic, so it only greys code when the outcome is **certain**: a flag with a segment override counts as unknown for "everyone" | environment document + feature states |
 | 🔁 | **Safe toggles and value edits**: modal confirmation, typed confirmation for protected environments (`prod\|live\|main`), Undo, every change logged | `PATCH /environments/{key}/featurestates/{id}/` |
 | ⚠️ | **Drift badge** when Staging ≠ Production, **Environment Matrix** of every flag × environment, **Copy diff as Markdown** for a PR | feature states × environments |
 | ✍️ | **Typo detection** for unknown keys with *Replace with…* and *Create flag in Flagsmith…* quick fixes (respects the project's naming rules) | `POST /projects/{id}/features/` |
@@ -93,7 +104,7 @@ is healthy.
 
 Then install the extension, in either of two ways:
 
-- **Download** `flaglens-0.1.1.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
+- **Download** `flaglens-0.2.0.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
   then in VS Code: Command Palette → **Extensions: Install from VSIX…** → pick the file.
 - **Or build it**: `make package` (npm: `npm install && npm run package`) creates `extension/flaglens.vsix`. If the
   `code` command is on your PATH, `make install-ext` builds and installs it in one step.
@@ -111,6 +122,12 @@ Finally open the demo workspace: **File → Open Folder… → `flaglens/example
 - `typo.ts` has a yellow squiggle under `new_chekout` (try the quick fix) and a blue hint on `dark_mode` (stale).
 - Click the `new_checkout` CodeLens → **Turn off in Development** → confirm. Within 3 seconds the shop at
   http://localhost:3030 switches back to the classic checkout. Try Production: you'll be asked to type the flag name.
+- Code that can't run is greyed, with the reason at the end of the line: in `server.mjs` the old three-step checkout
+  shows `⟵ new_checkout is on → never runs (Development)`, and in `typo.ts` the branch behind the typo is greyed
+  because `new_chekout` doesn't exist.
+- Click **🌐 Everyone** in the status bar → **Beta tester**, then switch to Production (click the environment in the
+  status bar). The `new_checkout` CodeLens now reads `Production ● on (beta_testers)`, the old checkout is greyed out
+  for this user, and the hover shows which segment decided.
 - The Flagsmith dashboard at http://localhost:8000 shows the same change. Log in with
   `admin@flaglens.local` / `FlagLens-demo-2026`.
 
@@ -137,6 +154,8 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | FlagLens: Copy Environment Diff as Markdown… | Paste-ready table of differences between two environments |
 | FlagLens: Show Flag History… | Audit log (if the server exposes it), last change per environment, changes made with FlagLens |
 | FlagLens: Find Unused Flags in Workspace | Project flags that no file references |
+| FlagLens: Preview Flags as User… | Pick a test user (from `flaglens.personas`, or type an identifier and traits). Also: click the 👤/🌐 item in the status bar |
+| FlagLens: Toggle Greying Out Code That Won't Run | Turn the greying on or off |
 | FlagLens: Switch Active Environment… / Switch Project… / Refresh Flags / Show Log | |
 
 ## Configuration
@@ -156,6 +175,8 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | `flaglens.codeLens.enabled` | `true` | Show the inline states |
 | `flaglens.diagnostics.unknownFlagSeverity` | `warning` | `error`, `warning`, `information` or `off` |
 | `flaglens.diagnostics.staleFlags` | `true` | Show stale-flag hints |
+| `flaglens.personas` | `[]` | Test users for *Preview as*: `[{ "name": "Beta tester", "identifier": "alice@demo-shop.dev", "traits": { "plan": "pro" } }]`. The demo workspace defines three |
+| `flaglens.dimInactiveCode` | `true` | Grey out code that can't run in the active environment (and for the previewed user) |
 
 ## Environment variables (dev kit)
 
@@ -198,6 +219,16 @@ The seeded flags are designed so every feature is visible:
 | `maintenance_mode` | off | off | off | Tagged `kill-switch` (permanent), so never stale |
 | `legacy_search` | off | off | off | **Archived** but still referenced |
 
+Production also has four segments with overrides, so *Preview as* has something to show (the demo workspace's
+`flaglens.personas` match them):
+
+| Segment | Rule | Production override |
+|---|---|---|
+| `beta_testers` | `email` matches `.*@demo-shop\.dev$` | `new_checkout` on |
+| `pro_plan` | `plan` = `pro` | `rate_limit_per_minute` = 500 |
+| `india` | `country` = `IN` | `banner_text` = "Diwali sale: 40% off" |
+| `canary_10pct` | 10% split on the identity | `checkout_button_color` = purple |
+
 ## How it uses Flagsmith
 
 Remove Flagsmith and FlagLens does nothing: every badge, value and warning is live data from the Flagsmith API, and
@@ -206,8 +237,9 @@ every change is a Flagsmith write.
 ```mermaid
 flowchart LR
   subgraph Editor["VS Code + FlagLens"]
-    S[Scanner<br/>Code References pattern] --> V[CodeLens · Hover · Diagnostics<br/>Tree · Matrix · Autocomplete]
+    S[Scanner<br/>Code References pattern] --> V[CodeLens · Hover · Diagnostics<br/>Greyed-out code · Tree · Matrix]
     ST[Flag store<br/>polls every 10 s] --> V
+    ST -- "environment documents" --> E[Local evaluation<br/>Flagsmith's own rules] --> V
     V -- "toggle / set value / create<br/>(confirmed)" --> C[API client]
     ST --> C
   end
@@ -225,6 +257,12 @@ flowchart LR
   `GET /environments/{key}/featurestates/` per environment. This gives enabled, value, `updated_at` and per-environment
   variant weights for every flag in N+1 requests, joined into a feature × environment matrix. Experiments (beta) are
   read per environment to show the 🔒 lock.
+- **Environment documents.** `GET /environments/{key}/document/` (readable with the same Organisation key) returns
+  every flag's default, every segment with its rules and overrides, and identity overrides: the document Flagsmith's
+  server-side SDKs use for local evaluation. FlagLens evaluates it with a TypeScript port of Flagsmith's open-source
+  engine (identity key `envkey_identifier`, `md5` percentages mod 9999, segment priorities, multivariate buckets,
+  all 14 rule operators), which powers *Preview as* and tells the greying-out exactly which flags are the same for
+  every user.
 - **Management API, write.** Toggles and values are `PATCH /environments/{key}/featurestates/{id}/` on the
   environment's default state (raw JSON values keep their type). New flags are `POST /projects/{id}/features/`. Every
   write also appears in Flagsmith's own audit log.
@@ -240,17 +278,18 @@ devkit/            compose.yaml (pinned 2.295.2 + optional MCP), seed.mjs + seed
 extension/src/
   api/             typed Management API client: fetch, Api-Key auth, pagination, timeouts, typed errors
   core/            PURE logic, unit-tested: scanner (Code References pattern), model (matrix), analysis (drift,
-                   stale, typo suggestions, name rules), report (Markdown diff)
+                   stale, typo suggestions, name rules), report (Markdown diff), engine (Flagsmith's evaluation
+                   rules, ported), deadcode (lexer + if/else/ternary/alias analysis with three-valued logic)
   store/           FlagStore: polling, change detection, offline handling with backoff
-  providers/       CodeLens, hover, diagnostics + quick fixes, autocomplete
+  providers/       CodeLens, hover, diagnostics + quick fixes, autocomplete, greyed-out code decorations
   views/           sidebar tree, status bar, Environment Matrix webview
-  commands/        connect, toggle, set value, create, history, diff, find unused
+  commands/        connect, toggle, set value, create, history, diff, find unused, preview as user
   safety.ts        confirmations, protected environments, write journal
 examples/demo-shop the shop (Node SDK), plus Python / React / TypeScript files used in the demo
 ```
 
 - **Zero runtime dependencies.** The extension uses only the VS Code API and Node's global `fetch`. The packaged
-  `.vsix` is about 33 KB.
+  `.vsix` is about 44 KB.
 - Activation is cheap (`workspaceContains:**/flagsmith.json` or after startup). The matrix webview loads only when opened.
 - Only open documents are scanned (debounced, cached by document version). *Find unused flags* scans the workspace on
   demand.
@@ -278,14 +317,22 @@ npm run build                    # bundle the extension (esbuild)
 
 make up && make seed
 npm run test:integration -w extension   # end-to-end: real VS Code + real self-hosted Flagsmith
+make verify-engine                      # local evaluation vs the live server (npm run verify:engine -w extension)
 ```
 
-- **Unit tests** (Vitest, ~100 tests) cover the scanner (call styles in 9 languages, multi-line calls, false
+- **Unit tests** (Vitest, ~140 tests) cover the scanner (call styles in 9 languages, multi-line calls, false
   positives), drift and staleness rules, typo suggestions, the API client (pagination, internal hostnames in `next`,
-  timeouts, retry rules, error mapping) and the Markdown diff.
+  timeouts, retry rules, error mapping), the Markdown diff, the evaluation engine (hashes checked against values
+  computed independently with Python's `hashlib`, a chi-square test that splits are uniform, priorities, every
+  operator) and the dead-code analysis (if/else, guards, ternaries, aliases, Python, unknown operands).
+- **Engine verification** (`make verify-engine`) asks the running Flagsmith what hundreds of random identities get,
+  using *transient* identities so nothing is stored, and compares every flag with FlagLens's local answer. A second
+  pass creates one temporary segment per rule operator (`EQUAL` … `REGEX`, `IN`, `MODULO`, SemVer, `IS_SET`, % split,
+  JSONPath properties), runs the comparison, and deletes them again. Last run: 6,300 + 10,400 checks, **100% match**.
 - **End-to-end tests** launch VS Code with the demo workspace against the seeded Flagsmith and check CodeLens, hover,
   diagnostics, quick fixes, autocomplete, a real toggle and toggle-back, pick-up of a change made outside the editor,
-  that a declined confirmation changes nothing, and the Markdown diff.
+  that a declined confirmation changes nothing, the Markdown diff, *Preview as* (including a comparison with the
+  server's answer for the same user) and greying out, including that nothing is greyed when users can differ.
 - **CI** runs both on every push, including `make up && make seed` (twice, to prove the seed is idempotent) on a
   fresh Ubuntu runner.
 
@@ -295,7 +342,12 @@ npm run test:integration -w extension   # end-to-end: real VS Code + real self-h
   (create version → edit → publish) is on the roadmap.
 - **Polling, not push.** Changes appear within `refreshIntervalSeconds` (default 10). Real-time updates are an
   Enterprise feature; environment webhooks to a local listener are on the roadmap.
-- **Segment and identity overrides are counted, not edited.**
+- **Segment and identity overrides are previewed and counted, not edited.**
+- **Greying out is an analysis of common shapes, not a full parser.** It understands `if`/`else`, guards that return,
+  ternaries and `const` aliases in the same block; JSX `{flag && <X/>}`, `switch` and values passed through other
+  functions are left alone (never greyed by mistake: when unsure it does nothing).
+- **Local evaluation assumes composite-key hashing** (`use_identity_composite_key_for_hashing`, the default on
+  current Flagsmith). Environments created before that setting existed may bucket stored identities differently.
 - **Detection is pattern-based**, like Flagsmith's Code References: keys built at runtime (`isFeatureEnabled(name)`)
   aren't seen. Custom wrappers can be added with `flaglens.extraPatterns`.
 - **History on open-source Flagsmith is partial.** The server hides audit-log entries from the API without a
@@ -316,6 +368,13 @@ Checked against a live 2.295.2 instance (these shaped the design):
   `PATCH …/mv-options/{id}/` without `default_percentage_allocation` returns HTTP 500 (`KeyError`). Multivariate
   `key`s sent when creating a feature are ignored. The seed works around this.
 - `POST /projects/` creates no environments, and `GET /projects/` returns a plain array rather than a paginated object.
+- `num_segment_overrides` in the features list is only counted when you pass `?environment=`; without it it's always 0.
+  FlagLens counts overrides from the environment documents instead.
+- `GET /environments/{key}/document/` works with an Organisation API key, so local evaluation needs no server-side
+  environment key.
+- A segment override of a multivariate flag copies the flag's variant split unless you send
+  `multivariate_feature_state_values` with 0%, so the override's own value would never be served. The seed does that.
+- The `REGEX` operator is anchored at the start (Python's `re.match`): `demo-shop` doesn't match `a@demo-shop.dev`.
 
 ## Troubleshooting
 
@@ -332,6 +391,7 @@ Checked against a live 2.295.2 instance (these shaped the design):
 ## Demo
 
 ▶ **Demo video (2:29, 1080p60):** [flaglens-demo.mp4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.1.1/flaglens-demo.mp4)
+(recorded with v0.1; *Preview as* and greying out are shown in the screenshots above)
 
 Everything in the video is real: the VS Code footage is the released extension, driven by a script against the
 self-hosted Flagsmith from `make up && make seed`. The video itself is built in code (Playwright-driven capture,
