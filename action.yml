@@ -1,0 +1,61 @@
+# FlagLens check as a GitHub Action: unknown flag keys, archived flags still in code, and targeting-rule mistakes,
+# checked against your Flagsmith, as a job summary (and a PR comment on pull requests).
+#
+#   - uses: Pranav-Singh-Devloper/flaglens@v0.6.0
+#     with:
+#       api-url: https://flagsmith.example.com
+#       api-key: ${{ secrets.FLAGSMITH_API_KEY }}     # an Organisation API key
+#       project-id: 12
+#       path: src                                     # optional
+#       strict: true                                  # optional: fail the job when there are problems
+name: FlagLens check
+description: Check flag references and targeting rules against Flagsmith, and report them on the pull request.
+author: Pranav-Singh-Devloper
+branding:
+  icon: flag
+  color: purple
+inputs:
+  api-url:
+    description: Flagsmith base URL, without /api/v1
+    required: true
+  api-key:
+    description: Flagsmith Organisation API key (use a secret)
+    required: true
+  project-id:
+    description: Flagsmith project id
+    required: true
+  path:
+    description: Only check files under this folder
+    required: false
+    default: ''
+  strict:
+    description: Fail the job when there are problems
+    required: false
+    default: 'false'
+  comment:
+    description: On pull requests, also post the report as a comment (needs pull-requests write permission)
+    required: false
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Install FlagLens
+      shell: bash
+      run: npm ci --prefix "$GITHUB_ACTION_PATH" --no-audit --no-fund --loglevel=error
+    - name: FlagLens check
+      shell: bash
+      env:
+        FLAGSMITH_API_URL: ${{ inputs.api-url }}
+        FLAGSMITH_API_KEY: ${{ inputs.api-key }}
+        FLAGSMITH_PROJECT_ID: ${{ inputs.project-id }}
+        GH_TOKEN: ${{ github.token }}
+        NODE_PATH: ${{ github.action_path }}/node_modules
+      run: |
+        args=()
+        [ -n "${{ inputs.path }}" ] && args+=(--path "${{ inputs.path }}")
+        [ "${{ inputs.strict }}" = "true" ] && args+=(--strict)
+        [ "${{ inputs.comment }}" = "true" ] && [ "${{ github.event_name }}" = "pull_request" ] && args+=(--comment)
+        node "$GITHUB_ACTION_PATH/extension/scripts/check.mjs" "${args[@]}"

@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   check:
@@ -48,6 +49,12 @@ jobs:
           for i in $(seq 1 20); do curl -fs http://localhost:3030/ > page.html && break; sleep 1; done
           grep -q "dev build" page.html
           grep -q "One-page checkout" page.html
+      # FlagLens in CI: the demo shop deliberately has a typo, an archived flag in use and two rule mistakes, so this
+      # report always has something to show. Not --strict, for that reason. On pull requests it is also a comment.
+      - name: FlagLens check (job summary, and a PR comment on pull requests)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node extension/scripts/check.mjs --path examples/demo-shop ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && '--comment' || '' }}
       - name: Extension tests in a real VS Code
         run: xvfb-run -a npm run test:integration -w extension
       - if: failure()

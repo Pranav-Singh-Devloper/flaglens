@@ -182,6 +182,8 @@ It is a community project, not an official Flagsmith product.
 | **Publish Code References to Flagsmith**: one command (or `make code-refs` in CI) uploads every flag reference in the repository, in the format of Flagsmith's own scanner. The Flagsmith dashboard then lists each flag's files and lines with links to GitHub, counts them in the flag list, and moves flags from *new* to *live* | `POST /projects/{id}/code-references/` |
 | **Feature Health**: when monitoring (Grafana, Alertmanager, anything that can POST) reports a flag unhealthy through Flagsmith's Feature Health webhook, FlagLens badges it *unhealthy* at every reference, shows the reason and links in the hover, and repeats the warning in the confirmation before anyone toggles it | `GET /projects/{id}/feature-health/events/` |
 | **Lifecycle and owners**: Flagsmith's lifecycle stage (*new*, *live*, *stale*, *permanent*, *to remove*…), its code-reference count and the flag's owners appear in the hover; *to remove* is also a badge | `GET /projects/{id}/features/?environment=` |
+| **FlagLens in CI**: `flaglens check` (a GitHub Action, or `make flag-check`) runs the editor's checks over a repository: unknown flag keys with a suggested fix, archived flags still in code, and targeting-rule mistakes. The report goes to the job summary and, on pull requests, a comment; `strict` fails the build | features list, environment documents |
+| **Kill switch for unhealthy flags**: when Feature Health newly reports a flag unhealthy where it is on, FlagLens says so once and offers *Turn off in <environment>* (also in the hover), with the usual confirmation and Undo | feature states |
 | **Experiment lock**: flags in a running experiment are badged and can't be toggled | `GET /environments/{key}/experiments/` (beta) |
 | Autocomplete flag keys inside `isFeatureEnabled("…")`, sidebar tree, status-bar environment switcher, flag history, *Find unused flags* in the workspace | all of the above |
 | **Dev kit**: pinned official images, idempotent REST seed, demo shop using the official Node SDK | Docker, REST, SDK API |
@@ -349,6 +351,7 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | `make install-ext` | | Build the `.vsix` and install it with the `code` command |
 | `make test` / `make lint` / `make typecheck` / `make check` | `npm test` / `npm run lint` / `npm run typecheck` / `npm run check` | Unit tests, lint, type-check, or all three |
 | `make verify-engine` | `npm run verify:engine -w extension` | Compare FlagLens's local evaluation with the running Flagsmith |
+| `make flag-check` | `node extension/scripts/check.mjs --path examples/demo-shop` | The editor's checks for a whole folder, as CI runs them: unknown keys, archived flags in code, rule mistakes |
 | `make code-refs` | `npm run code-refs -w extension` | Publish this repository's flag references to Flagsmith's Code References (what a CI job would run) |
 | `make alert` / `make recover` | `node devkit/health.mjs alert\|recover` | Mark `new_checkout` unhealthy (or healthy again) in Production through the Feature Health webhook, as a monitoring tool would |
 
@@ -436,6 +439,31 @@ flowchart LR
   creates a Feature Health *Webhook* provider (`POST /projects/{id}/feature-health/providers/`) for `make alert`.
   The seed uses only the public REST API (signup → organisation → project → environments → tags → flags →
   Organisation API key), so it doubles as a worked example of bootstrapping Flagsmith without clicking.
+
+## FlagLens in CI
+
+The same checks run outside the editor, so a pull request can't introduce a flag typo or a dead targeting rule unnoticed:
+
+```yaml
+# .github/workflows/flags.yml
+on: pull_request
+permissions: { contents: read, pull-requests: write }
+jobs:
+  flags:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Pranav-Singh-Devloper/flaglens@v0.6.0
+        with:
+          api-url: https://flagsmith.example.com
+          api-key: ${{ secrets.FLAGSMITH_API_KEY }}   # an Organisation API key
+          project-id: 12
+          strict: true                                # fail the job when there are problems
+```
+
+The report lists each unknown key with a suggested fix and a link to the line, archived flags still in code, and
+every targeting-rule finding. This repository's own CI runs it against the demo shop on every push (see the job
+summary); locally, `make flag-check`.
 
 ## How much of Flagsmith it uses
 
