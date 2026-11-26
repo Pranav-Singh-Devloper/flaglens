@@ -73,6 +73,7 @@ Then, in `server.mjs`:
 | **Integrations and plugins** | A VS Code extension, a Flagsmith organisation webhook, Code References from the editor or CI, Feature Health alerts |
 | **Developer tools** | Greying out, *Preview as*, the rule check with fixes, test plans, typo fixes, drift, stale flags |
 | **Easy for others to reuse** | On [Open VSX](https://open-vsx.org/extension/pranav-singh-devloper/flaglens) (verified publisher) and as a `.vsix`; two commands to a seeded instance, [every environment variable](#environment-variables-dev-kit), [what success looks like](#what-success-looks-like), CI that seeds twice on a fresh machine, MIT licence |
+| **Open-source citizenship** | Three Flagsmith bugs found while building this, reported ([#9117](https://github.com/Flagsmith/flagsmith/issues/9117), [#9118](https://github.com/Flagsmith/flagsmith/issues/9118), [#9119](https://github.com/Flagsmith/flagsmith/issues/9119)), and a fix with regression tests for #9118 in [Flagsmith#9123](https://github.com/Flagsmith/flagsmith/pull/9123) |
 | **Quality** | 192 unit and 23 end-to-end tests against real Flagsmith; the engine verified on [15,050 checks](#development-and-tests); a [paper](docs/paper/flaglens.pdf) |
 | **Demo video** | [2:33 on YouTube](https://youtu.be/n9qszMKXoB4), with captions and chapters |
 
@@ -657,7 +658,8 @@ Checked against a live 2.295.2 instance (these shaped the design):
   URLs on private addresses unless the host is in `SSRF_ALLOWED_HOSTS`, so the dev kit allows `host.docker.internal`.
   Calls go through the task processor and arrive in under two seconds.
 - `PATCH /features/featurestates/{id}/` on a segment override returns HTTP 500 (`KeyError: 'environment'`,
-  [Flagsmith#9118](https://github.com/Flagsmith/flagsmith/issues/9118)); `PUT` with
+  [Flagsmith#9118](https://github.com/Flagsmith/flagsmith/issues/9118), fixed in our pull request
+  [Flagsmith#9123](https://github.com/Flagsmith/flagsmith/pull/9123)); `PUT` with
   the full body works, and values there must use the typed form (`{"type": "int", "integer_value": 7}`).
 - In a v2-versioned environment, one `POST …/versions/` with `feature_states_to_update` and `publish_immediately`
   changes a flag; variant weights are kept. The v1 `PATCH` answers HTTP 400.
