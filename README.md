@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <b><a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.5.1/flaglens-demo.mp4">Watch the 2:33 demo</a></b> ·
+  <b><a href="https://youtu.be/n9qszMKXoB4">Watch the 2:33 demo</a></b> ·
   <a href="https://flaglens-one.vercel.app">Website</a> ·
   <a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest">Download the .vsix</a> ·
   <a href="docs/paper/flaglens.pdf">Research paper (PDF)</a> ·
@@ -632,7 +632,7 @@ Checked against a live 2.295.2 instance (these shaped the design):
 
 ## Demo
 
-**Demo video (2:33, 1080p60):** [flaglens-demo.mp4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.5.1/flaglens-demo.mp4)
+**Demo video (2:33, 1080p60):** [YouTube](https://youtu.be/n9qszMKXoB4), with captions and chapters · [download the MP4](https://github.com/Pranav-Singh-Devloper/flaglens/releases/download/v0.5.1/flaglens-demo.mp4)
 
 It follows the [three promises](#in-60-seconds): greying out and *Preview as* (it knows what runs), the rule check
 and fixing a shadowed override from the editor (it proves your rules), a toggle in the Flagsmith dashboard reaching

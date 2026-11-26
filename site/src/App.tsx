@@ -296,7 +296,13 @@ export default function App() {
         <section id="demo" className="pt-28">
           <Reveal>
             <h2 className="text-[clamp(28px,3.4vw,40px)] leading-tight font-extrabold tracking-tight">See it in 2 minutes 33 seconds</h2>
-            <p className="mt-3 max-w-2xl text-[17px] text-muted">Everything in the video is real: the released extension, driven by a script against a self-hosted Flagsmith started with one command.</p>
+            <p className="mt-3 max-w-2xl text-[17px] text-muted">
+              Everything in the video is real: the released extension, driven by a script against a self-hosted Flagsmith started with one command. Also{' '}
+              <a href="https://youtu.be/n9qszMKXoB4" className="cursor-target font-semibold text-brand hover:underline">
+                on YouTube
+              </a>
+              , with captions and chapters.
+            </p>
             <div className="mt-8">
               <Window>
                 <video controls preload="none" poster="/assets/poster.jpg" playsInline className="block h-auto w-full">
