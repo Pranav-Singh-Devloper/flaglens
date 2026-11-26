@@ -1,8 +1,17 @@
 name: Release
 
+# On a version tag: test, package, attach the .vsix to a GitHub Release, and publish to Open VSX and the VS Code
+# Marketplace when their tokens are configured (repository secrets OVSX_PAT and VSCE_PAT). Without a token, that
+# registry is skipped. "Run workflow" (workflow_dispatch) publishes an existing tag to the registries only.
+
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to publish to Open VSX / the Marketplace, e.g. v0.5.1'
+        required: true
 
 permissions:
   contents: write
@@ -10,8 +19,13 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -20,6 +34,7 @@ jobs:
       - run: npm run check
       - run: npm run package
       - name: Attach the .vsix to a GitHub Release
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -28,3 +43,9 @@ jobs:
           gh release create "$GITHUB_REF_NAME" "flaglens-${version}.vsix" \
             --title "FlagLens ${GITHUB_REF_NAME}" \
             --notes-file extension/CHANGELOG.md
+      - name: Publish to Open VSX
+        if: env.OVSX_PAT != ''
+        run: npx --yes ovsx@0.10 publish extension/flaglens.vsix --pat "$OVSX_PAT"
+      - name: Publish to the VS Code Marketplace
+        if: env.VSCE_PAT != ''
+        run: npx --yes @vscode/vsce@3 publish --packagePath extension/flaglens.vsix --pat "$VSCE_PAT"

@@ -1,7 +1,7 @@
 {
   "name": "flaglens",
   "displayName": "FlagLens for Flagsmith",
-  "description": "A community VS Code extension for self-hosted Flagsmith: live flag states inline, safe toggles, environment drift, typo and stale-flag detection.",
+  "description": "See, test and trust self-hosted Flagsmith flags in VS Code: greys out code that can't run, previews flags as any user, proves your targeting rules, and updates live.",
   "version": "0.5.1",
   "publisher": "pranav-singh-devloper",
   "license": "MIT",
@@ -12,7 +12,7 @@
     "type": "git",
     "url": "https://github.com/Pranav-Singh-Devloper/flaglens"
   },
-  "homepage": "https://github.com/Pranav-Singh-Devloper/flaglens#readme",
+  "homepage": "https://flaglens-one.vercel.app",
   "bugs": "https://github.com/Pranav-Singh-Devloper/flaglens/issues",
   "icon": "media/icon.png",
   "galleryBanner": {
@@ -25,11 +25,15 @@
     "feature toggles",
     "remote config",
     "self-hosted",
+    "open source",
+    "dead code",
+    "targeting rules",
     "codelens"
   ],
   "categories": [
-    "Other",
-    "Linters"
+    "Linters",
+    "Testing",
+    "Other"
   ],
   "engines": {
     "vscode": "^1.95.0"
@@ -467,7 +471,11 @@
         },
         "flaglens.realtime.mode": {
           "type": "string",
-          "enum": ["auto", "on", "off"],
+          "enum": [
+            "auto",
+            "on",
+            "off"
+          ],
           "enumDescriptions": [
             "Real-time updates when Flagsmith runs on this machine (the dev kit, or any local Docker setup)",
             "Always try: for a Flagsmith that can reach this machine at `flaglens.realtime.callbackHost`",
