@@ -1,11 +1,15 @@
 # FlagLens for Flagsmith
 
-A community VS Code extension for **self-hosted Flagsmith** (works with Flagsmith Cloud too).
-See every flag's live state right where your code uses it, change flags safely, and catch environment drift,
-typos and stale flags before they bite.
+A community VS Code extension for **self-hosted Flagsmith** (works with Flagsmith Cloud too). It makes three
+promises: **it knows what runs** (greys out code that can't run, previews flags as any user), **it proves your
+rules** (finds segment overrides that can never apply, and fixes them from the editor), and **it's live** (changes
+made anywhere arrive in seconds; Feature Health alerts land on the code).
 
-> Not an official Flagsmith product. Full documentation, the one-command self-hosted dev kit and the demo:
-> https://github.com/Pranav-Singh-Devloper/flaglens
+**[Watch the 2:33 demo](https://youtu.be/n9qszMKXoB4)** · [Website](https://flaglens-one.vercel.app) ·
+[Source, docs and the one-command dev kit](https://github.com/Pranav-Singh-Devloper/flaglens) ·
+[Research paper](https://github.com/Pranav-Singh-Devloper/flaglens/blob/main/docs/paper/flaglens.pdf)
+
+> Not an official Flagsmith product.
 
 ## Features
 

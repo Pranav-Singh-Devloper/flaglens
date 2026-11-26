@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+
+- The listing (Open VSX) links the demo video, the website, the source and the research paper.
+
 ## 0.6.0
 
 - **FlagLens in CI.** `flaglens check` runs the editor's checks over a repository against Flagsmith: unknown flag keys

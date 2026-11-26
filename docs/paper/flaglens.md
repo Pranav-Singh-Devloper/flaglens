@@ -374,7 +374,9 @@ tests [26, 27], and using FlagLens's proofs as oracles for automated flag remova
 # Reproducibility
 
 Everything in this paper can be reproduced from the repository
-(<https://github.com/Pranav-Singh-Devloper/flaglens>):
+(<https://github.com/Pranav-Singh-Devloper/flaglens>). The extension is on Open VSX
+(<https://open-vsx.org/extension/pranav-singh-devloper/flaglens>), and a 2:33 demo of every analysis running against
+self-hosted Flagsmith is at <https://youtu.be/n9qszMKXoB4>:
 
 ```bash
 make up && make seed          # self-hosted Flagsmith 2.295.2 with the demo project

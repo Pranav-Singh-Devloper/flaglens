@@ -17,6 +17,8 @@ import TargetCursor from './components/reactbits/TargetCursor';
 
 const REPO = 'https://github.com/Pranav-Singh-Devloper/flaglens';
 const RELEASES = `${REPO}/releases/latest`;
+const OPEN_VSX = 'https://open-vsx.org/extension/pranav-singh-devloper/flaglens';
+const YOUTUBE = 'https://youtu.be/n9qszMKXoB4';
 const VIDEO = `${REPO}/releases/download/v0.5.1/flaglens-demo.mp4`;
 const BRAND = '#6a58f0';
 
@@ -218,7 +220,7 @@ export default function App() {
                 <span className="px-2 text-[15px] font-semibold">Download for VS Code</span>
               </StarBorder>
             </Magnet>
-            <Button href="https://open-vsx.org/extension/pranav-singh-devloper/flaglens">Open VSX</Button>
+            <Button href={OPEN_VSX}>Open VSX</Button>
             <Button href="#demo">Watch the 2:33 demo</Button>
             <Button href={REPO}>View on GitHub</Button>
           </div>
@@ -299,7 +301,7 @@ export default function App() {
             <h2 className="text-[clamp(28px,3.4vw,40px)] leading-tight font-extrabold tracking-tight">See it in 2 minutes 33 seconds</h2>
             <p className="mt-3 max-w-2xl text-[17px] text-muted">
               Everything in the video is real: the released extension, driven by a script against a self-hosted Flagsmith started with one command. Also{' '}
-              <a href="https://youtu.be/n9qszMKXoB4" className="cursor-target font-semibold text-brand hover:underline">
+              <a href={YOUTUBE} className="cursor-target font-semibold text-brand hover:underline">
                 on YouTube
               </a>
               , with captions and chapters.
@@ -344,7 +346,11 @@ export default function App() {
             <Reveal delay={0.1}>
               <ol className="list-decimal space-y-3 pl-5 text-[16px] text-body marker:font-semibold marker:text-brand">
                 <li>
-                  Install the <code className="rounded bg-brand-soft px-1.5 py-0.5 font-mono text-[14px]">.vsix</code> from{' '}
+                  Install FlagLens. In Cursor, VSCodium or Windsurf, search for it in the Extensions view (it is on{' '}
+                  <a href={OPEN_VSX} className="cursor-target text-brand hover:underline">
+                    Open VSX
+                  </a>
+                  ). In VS Code, install the <code className="rounded bg-brand-soft px-1.5 py-0.5 font-mono text-[14px]">.vsix</code> from{' '}
                   <a href={RELEASES} className="cursor-target text-brand hover:underline">
                     Releases
                   </a>
@@ -443,6 +449,14 @@ export default function App() {
             for Toggle Wars 2026 ·{' '}
             <a href={REPO} className="cursor-target text-brand hover:underline">
               Source on GitHub
+            </a>{' '}
+            ·{' '}
+            <a href={OPEN_VSX} className="cursor-target text-brand hover:underline">
+              Open VSX
+            </a>{' '}
+            ·{' '}
+            <a href={YOUTUBE} className="cursor-target text-brand hover:underline">
+              Demo on YouTube
             </a>
           </div>
         </div>
