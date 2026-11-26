@@ -10,6 +10,7 @@
 <p align="center">
   <a href="https://github.com/Pranav-Singh-Devloper/flaglens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Pranav-Singh-Devloper/flaglens/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Pranav-Singh-Devloper/flaglens?color=7C6CFF"></a>
+  <a href="https://open-vsx.org/extension/pranav-singh-devloper/flaglens"><img alt="Open VSX" src="https://img.shields.io/open-vsx/v/pranav-singh-devloper/flaglens?label=Open%20VSX&color=a60ee5"></a>
   <img alt="Flagsmith 2.295.2, self-hosted" src="https://img.shields.io/badge/Flagsmith-2.295.2%20self--hosted-2ECC71">
   <img alt="Zero runtime dependencies" src="https://img.shields.io/badge/runtime%20deps-0-blue">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/licence-MIT-lightgrey"></a>
@@ -71,7 +72,7 @@ Then, in `server.mjs`:
 | **Flagsmith is central** | Remove it and FlagLens does nothing. [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses): flags, environment documents, segments and overrides, identities, v2 versions, webhooks, Code References, Feature Health, lifecycle, dependencies, trait keys, CLI config, SDK, MCP |
 | **Integrations and plugins** | A VS Code extension, a Flagsmith organisation webhook, Code References from the editor or CI, Feature Health alerts |
 | **Developer tools** | Greying out, *Preview as*, the rule check with fixes, test plans, typo fixes, drift, stale flags |
-| **Easy for others to reuse** | Two commands to a seeded instance, [every environment variable](#environment-variables-dev-kit), [what success looks like](#what-success-looks-like), CI that seeds twice on a fresh machine, MIT licence |
+| **Easy for others to reuse** | On [Open VSX](https://open-vsx.org/extension/pranav-singh-devloper/flaglens) (verified publisher) and as a `.vsix`; two commands to a seeded instance, [every environment variable](#environment-variables-dev-kit), [what success looks like](#what-success-looks-like), CI that seeds twice on a fresh machine, MIT licence |
 | **Quality** | 192 unit and 23 end-to-end tests against real Flagsmith; the engine verified on [15,050 checks](#development-and-tests); a [paper](docs/paper/flaglens.pdf) |
 | **Demo video** | [2:33 on YouTube](https://youtu.be/n9qszMKXoB4), with captions and chapters |
 
@@ -218,9 +219,11 @@ make demo    # the demo shop on http://localhost:3030, reading flags via the SDK
 The first `make up` pulls the images and runs database migrations, which takes 1–3 minutes. It returns once Flagsmith
 is healthy.
 
-Then install the extension, in either of two ways:
+Then install the extension, in one of these ways:
 
-- **Download** `flaglens-0.4.0.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
+- **Cursor, VSCodium, Windsurf, Gitpod and other VS Code forks:** search for **FlagLens** in the Extensions view; it
+  is on [Open VSX](https://open-vsx.org/extension/pranav-singh-devloper/flaglens) (verified publisher).
+- **VS Code: download** the latest `flaglens-<version>.vsix` from [Releases](https://github.com/Pranav-Singh-Devloper/flaglens/releases/latest),
   then in VS Code: Command Palette → **Extensions: Install from VSIX…** → pick the file.
 - **Or build it**: `make package` (npm: `npm install && npm run package`) creates `extension/flaglens.vsix`. If the
   `code` command is on your PATH, `make install-ext` builds and installs it in one step.

@@ -218,6 +218,7 @@ export default function App() {
                 <span className="px-2 text-[15px] font-semibold">Download for VS Code</span>
               </StarBorder>
             </Magnet>
+            <Button href="https://open-vsx.org/extension/pranav-singh-devloper/flaglens">Open VSX</Button>
             <Button href="#demo">Watch the 2:33 demo</Button>
             <Button href={REPO}>View on GitHub</Button>
           </div>
