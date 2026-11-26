@@ -72,7 +72,7 @@ Then, in `server.mjs`:
 | **Integrations and plugins** | A VS Code extension, a Flagsmith organisation webhook, Code References from the editor or CI, Feature Health alerts |
 | **Developer tools** | Greying out, *Preview as*, the rule check with fixes, test plans, typo fixes, drift, stale flags |
 | **Easy for others to reuse** | Two commands to a seeded instance, [every environment variable](#environment-variables-dev-kit), [what success looks like](#what-success-looks-like), CI that seeds twice on a fresh machine, MIT licence |
-| **Quality** | 190 unit and 22 end-to-end tests against real Flagsmith; the engine verified on [15,050 checks](#development-and-tests); a [paper](docs/paper/flaglens.pdf) |
+| **Quality** | 192 unit and 23 end-to-end tests against real Flagsmith; the engine verified on [15,050 checks](#development-and-tests); a [paper](docs/paper/flaglens.pdf) |
 | **Demo video** | [2:33 on YouTube](https://youtu.be/n9qszMKXoB4), with captions and chapters |
 
 Everything else is below: [what it does](#what-it-does), [how it uses Flagsmith](#how-much-of-flagsmith-it-uses),
@@ -116,7 +116,7 @@ verification method and 27 references.
   editor; trait keys feed *Preview as*. See [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses).
 - **Fits the Flagsmith toolchain.** It reads the Flagsmith CLI's `flagsmith.json` and finds flags with the same pattern
   as Flagsmith's Code References scanner, in JS/TS, Python, Go, Java, Kotlin, C#, Dart and Ruby.
-- **Tested against the real thing.** 190 unit tests, 22 end-to-end tests in a real VS Code against self-hosted
+- **Tested against the real thing.** 192 unit tests, 23 end-to-end tests in a real VS Code against self-hosted
   Flagsmith, and a differential verifier for the local engine. Zero runtime dependencies; the extension is 62 KB.
 
 ```
@@ -201,7 +201,7 @@ It fits the existing Flagsmith toolchain instead of inventing its own:
 ## Quick start (about 5 minutes)
 
 > **Checked on a fresh clone on 26 Nov 2026:** `git clone` → `make reset` → `make up` → `make seed` (twice) →
-> `npm ci` → `npm run check` (190 tests) → `make package` took 63 seconds with the Docker images already downloaded.
+> `npm ci` → `npm run check` (190 tests at the time) → `make package` took 63 seconds with the Docker images already downloaded.
 > The first `make up` also pulls the images (1–3 minutes). CI runs the same steps on a fresh Ubuntu machine on every push.
 
 **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with Compose v2 (Docker Desktop is fine),
