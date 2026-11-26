@@ -33,6 +33,9 @@ typos and stale flags before they bite.
 - **Change targeting from the editor**: set a flag for the user you are previewing as (identity override), and add,
   change, reorder or remove segment overrides, with the rule check re-run after each change. Environments with
   feature versioning get a new published version per change.
+- **Kill switch**: when Flagsmith Feature Health reports a flag unhealthy where it is on, turn it off from the alert or
+  the hover.
+- **FlagLens in CI**: the same checks for a whole repository, as a GitHub Action with a pull-request comment.
 - **Publish Code References to Flagsmith**: upload every flag reference in the repository, so the Flagsmith
   dashboard links each flag to its files and lines.
 - **Drift**: a ⚠ badge when Staging and Production disagree; Environment Matrix; *Copy diff as Markdown*.

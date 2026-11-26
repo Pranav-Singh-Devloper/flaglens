@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0
+
+- **FlagLens in CI.** `flaglens check` runs the editor's checks over a repository against Flagsmith: unknown flag keys
+  (with a suggested fix and a link to the line), archived flags still in code, and targeting-rule mistakes. As a
+  GitHub Action (`uses: Pranav-Singh-Devloper/flaglens@v0.6.0`) the report goes to the job summary and, on pull
+  requests, a comment; `strict: true` fails the job. Locally: `make flag-check`.
+- **Kill switch for unhealthy flags.** When Flagsmith Feature Health newly reports a flag unhealthy in an environment
+  where it is on, FlagLens says so once and offers *Turn off in <environment>*; the hover has the same link. It is the
+  ordinary toggle: the confirmation (typed for protected environments), the journal and Undo.
+- Releases publish to Open VSX and the VS Code Marketplace when their tokens are configured.
+
 ## 0.5.1
 
 - The hover links *Set for <user>…* and *Segment overrides…* now work. Hover links may only run allow-listed commands,

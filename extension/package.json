@@ -2,7 +2,7 @@
   "name": "flaglens",
   "displayName": "FlagLens for Flagsmith",
   "description": "See, test and trust self-hosted Flagsmith flags in VS Code: greys out code that can't run, previews flags as any user, proves your targeting rules, and updates live.",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "publisher": "pranav-singh-devloper",
   "license": "MIT",
   "author": {
