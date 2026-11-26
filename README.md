@@ -44,6 +44,8 @@ FlagLens makes three promises, and proves each one:
 
 All of it runs on **self-hosted, open-source Flagsmith 2.295.2**, and every change is a confirmed Flagsmith write.
 
+![A toggle in the self-hosted Flagsmith dashboard reaches VS Code in 2.9 seconds: the request handler greys out because maintenance_mode is now on](docs/realtime.gif)
+
 ### Try it in 5 minutes
 
 ```bash
@@ -60,6 +62,18 @@ Then, in `server.mjs`:
 3. Hover `rate_limit_per_minute` → **Segment overrides…** → Production → `pro_eu` → **Move up**. The rule warning disappears.
 4. Toggle `maintenance_mode` in the dashboard (http://localhost:8000, `admin@flaglens.local` / `FlagLens-demo-2026`)
    and watch the editor follow.
+
+### For judges: Track 03 at a glance
+
+| Track 03 looks for | Where to see it |
+|---|---|
+| **Self-hosted Flagsmith** | `make up` starts the official Flagsmith 2.295.2 images ([compose.yaml](devkit/compose.yaml)); the demo, the tests and the video all run against it |
+| **Flagsmith is central** | Remove it and FlagLens does nothing. [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses): flags, environment documents, segments and overrides, identities, v2 versions, webhooks, Code References, Feature Health, lifecycle, dependencies, trait keys, CLI config, SDK, MCP |
+| **Integrations and plugins** | A VS Code extension, a Flagsmith organisation webhook, Code References from the editor or CI, Feature Health alerts |
+| **Developer tools** | Greying out, *Preview as*, the rule check with fixes, test plans, typo fixes, drift, stale flags |
+| **Easy for others to reuse** | Two commands to a seeded instance, [every environment variable](#environment-variables-dev-kit), [what success looks like](#what-success-looks-like), CI that seeds twice on a fresh machine, MIT licence |
+| **Quality** | 190 unit and 22 end-to-end tests against real Flagsmith; the engine verified on [15,050 checks](#development-and-tests); a [paper](docs/paper/flaglens.pdf) |
+| **Demo video** | [2:33 on YouTube](https://youtu.be/n9qszMKXoB4), with captions and chapters |
 
 Everything else is below: [what it does](#what-it-does), [how it uses Flagsmith](#how-much-of-flagsmith-it-uses),
 [architecture](#architecture), [the research paper](#research).
@@ -183,6 +197,10 @@ It fits the existing Flagsmith toolchain instead of inventing its own:
   `useFlags(['x', 'y'])`, which the official scanner misses.
 
 ## Quick start (about 5 minutes)
+
+> **Checked on a fresh clone on 26 Nov 2026:** `git clone` → `make reset` → `make up` → `make seed` (twice) →
+> `npm ci` → `npm run check` (190 tests) → `make package` took 63 seconds with the Docker images already downloaded.
+> The first `make up` also pulls the images (1–3 minutes). CI runs the same steps on a fresh Ubuntu machine on every push.
 
 **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with Compose v2 (Docker Desktop is fine),
 Node.js 22 or newer, VS Code 1.95 or newer, and `make` (on Windows, use the `npm run …` command shown next to each step).
