@@ -630,8 +630,10 @@ Checked against a live 2.295.2 instance (these shaped the design):
   FlagLens uses feature-state `updated_at` instead.
 - The project audit-log API returns no rows on unlicensed self-hosted instances (`audit_log_visibility_days = 0` on the
   free plan), even though the rows are in the database.
-- `GET /api/v1/audit/` returns HTTP 500 when called with an Organisation API key, and
-  `PATCH …/mv-options/{id}/` without `default_percentage_allocation` returns HTTP 500 (`KeyError`). Multivariate
+- `GET /api/v1/audit/` returns HTTP 500 when called with an Organisation API key
+  ([Flagsmith#9117](https://github.com/Flagsmith/flagsmith/issues/9117)), and a partial
+  `PATCH …/mv-options/{id}/` returns HTTP 500 (`KeyError: 'feature'`,
+  [Flagsmith#9119](https://github.com/Flagsmith/flagsmith/issues/9119)). Multivariate
   `key`s sent when creating a feature are ignored. The seed works around this.
 - `POST /projects/` creates no environments, and `GET /projects/` returns a plain array rather than a paginated object.
 - `num_segment_overrides` in the features list is only counted when you pass `?environment=`; without it it's always 0.
@@ -651,7 +653,8 @@ Checked against a live 2.295.2 instance (these shaped the design):
   (segments included), signed with `X-Flagsmith-Signature` (hex HMAC-SHA256 of the body). Flagsmith refuses webhook
   URLs on private addresses unless the host is in `SSRF_ALLOWED_HOSTS`, so the dev kit allows `host.docker.internal`.
   Calls go through the task processor and arrive in under two seconds.
-- `PATCH /features/featurestates/{id}/` on a segment override returns HTTP 500 (`KeyError: 'environment'`); `PUT` with
+- `PATCH /features/featurestates/{id}/` on a segment override returns HTTP 500 (`KeyError: 'environment'`,
+  [Flagsmith#9118](https://github.com/Flagsmith/flagsmith/issues/9118)); `PUT` with
   the full body works, and values there must use the typed form (`{"type": "int", "integer_value": 7}`).
 - In a v2-versioned environment, one `POST …/versions/` with `feature_states_to_update` and `publish_immediately`
   changes a flag; variant weights are kept. The v1 `PATCH` answers HTTP 400.
