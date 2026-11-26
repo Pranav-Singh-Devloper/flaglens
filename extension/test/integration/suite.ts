@@ -338,6 +338,31 @@ export async function run(): Promise<void> {
     }
   });
 
+  await test('Feature Health kill switch: where an unhealthy flag is on, the hover offers to turn it off there', async () => {
+    const client = store.connection!.client;
+    const [provider] = await client.request<{ webhook_url: string }[]>('GET', `/projects/${store.project!.id}/feature-health/providers/`);
+    const post = (status: string) =>
+      fetch(provider!.webhook_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feature: 'new_checkout', environment: 'Staging', status, reason: { text_blocks: [{ title: 'Checkout errors', text: 'Error rate 4.2%' }], url_blocks: [] } }),
+      });
+    assert.ok((await post('unhealthy')).ok);
+    try {
+      const row = store.row('new_checkout')!;
+      assert.equal(row.states.get(stg.id)!.enabled, true, 'new_checkout is on in Staging');
+      await waitFor('health event', () => (store.unhealthy(row.feature.id).some((u) => u.env?.id === stg.id) ? true : (void store.refresh(), false)));
+      const doc = await open('server.mjs');
+      const hover = hoverText(await vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', doc.uri, positionOf(doc, "'new_checkout'", 3)));
+      assert.match(hover, /\*\*Unhealthy\*\* in Staging[^\n]*Turn off in Staging\]\(command:flaglens\.toggleFlag/);
+      // Production is off already: no kill switch there.
+      assert.doesNotMatch(hover, /Turn off in Production\]/);
+    } finally {
+      await post('healthy');
+      await store.refresh();
+    }
+  });
+
   await test('flag dependencies: blocked where the prerequisite is off, and evaluated per user like the server', async () => {
     const client = store.connection!.client;
     const child = store.row('checkout_button_color')!.feature.id;

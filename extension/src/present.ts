@@ -259,7 +259,9 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
   }
   for (const u of ctx.store.unhealthy(f.id)) {
     const links = (u.event.reason?.url_blocks ?? []).map((b) => `[${escapeMd(b.title ?? 'details')}](${b.url})`).join(' · ');
-    md.appendMarkdown(`$(pulse) **Unhealthy** in ${escapeMd(u.env?.name ?? 'all environments')} (Flagsmith Feature Health, ${escapeMd(u.event.provider_name)})${healthReason(u.event) ? `: ${escapeMd(healthReason(u.event))}` : ''}${links ? ` · ${links}` : ''}  \n`);
+    const onThere = u.env && row.states.get(u.env.id)?.enabled;
+    const kill = onThere ? ` · [$(debug-stop) Turn off in ${escapeMd(u.env!.name)}](${commandUri('flaglens.toggleFlag', key, u.env!.id)} "Turn the flag off where it is unhealthy")` : '';
+    md.appendMarkdown(`$(pulse) **Unhealthy** in ${escapeMd(u.env?.name ?? 'all environments')} (Flagsmith Feature Health, ${escapeMd(u.event.provider_name)})${healthReason(u.event) ? `: ${escapeMd(healthReason(u.event))}` : ''}${links ? ` · ${links}` : ''}${kill}  \n`);
   }
   const facts: string[] = [];
   if (f.lifecycle) facts.push(`lifecycle in ${escapeMd(ctx.store.activeEnvironment?.name ?? '')}: **${f.lifecycle.replace('_', ' ')}**`);

@@ -27,6 +27,7 @@ import { FlagCompletionProvider } from './providers/completion';
 import { DeadCodeDecorator } from './providers/deadCode';
 import { FlagCodeActions, FlagDiagnostics } from './providers/diagnostics';
 import { FlagHoverProvider } from './providers/hover';
+import { HealthAlerts } from './healthAlerts';
 import { RealtimeSync } from './realtime';
 import { ReferenceIndex } from './references';
 import { confirmWrite, WriteJournal } from './safety';
@@ -82,8 +83,10 @@ export function activate(context: vscode.ExtensionContext): App {
     else void realtime.stop();
   };
 
+  const healthAlerts = new HealthAlerts(app);
   const onStoreChange = () => {
     restartRealtime();
+    healthAlerts.update();
     void vscode.commands.executeCommand('setContext', 'flaglens.connected', store.connected);
     statusBar.update();
     codeLens.refresh();
@@ -108,6 +111,7 @@ export function activate(context: vscode.ExtensionContext): App {
     store,
     refs,
     statusBar,
+    healthAlerts,
     realtime,
     realtime.onDidChange(() => statusBar.update()),
     diagnostics,
