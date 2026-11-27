@@ -80,12 +80,12 @@ async function sendEvents(envName, events) {
     // Analytics must never break the shop.
   }
 }
-function recordExposure(envName, visitorId, colour) {
+function recordExposure(envName, visitorId, feature, colour) {
   const key = `${envName}:${visitorId}`;
   if (exposed.has(key)) return;
   exposed.add(key);
   const variant = colour === CONTROL_COLOUR ? 'control' : colour;
-  void sendEvents(envName, [{ event: '$flag_exposure', feature_name: 'checkout_button_color', identifier: visitorId, value: variant }]);
+  void sendEvents(envName, [{ event: '$flag_exposure', feature_name: feature, identifier: visitorId, value: variant }]);
 }
 
 const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -102,7 +102,7 @@ async function render(envName, visitorId, bought) {
   const banner = flags.getFeatureValue('banner_text');
   const newCheckout = flags.isFeatureEnabled('new_checkout');
   const buttonColor = flags.getFeatureValue('checkout_button_color') ?? CONTROL_COLOUR;
-  recordExposure(envName, visitorId, buttonColor);
+  recordExposure(envName, visitorId, 'checkout_button_color', buttonColor);
   const rateLimit = flags.getFeatureValue('rate_limit_per_minute');
   const darkMode = flags.isFeatureEnabled('dark_mode');
   const legacySearch = flags.isFeatureEnabled('legacy_search'); // archived in Flagsmith
