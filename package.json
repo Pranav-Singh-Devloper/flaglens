@@ -13,6 +13,7 @@
   "scripts": {
     "devkit:up": "docker compose -f devkit/compose.yaml up -d --wait",
     "devkit:seed": "node devkit/seed.mjs",
+    "devkit:seed-cloud": "node devkit/seed.mjs --cloud",
     "devkit:down": "docker compose -f devkit/compose.yaml down",
     "devkit:reset": "docker compose -f devkit/compose.yaml down -v",
     "devkit:logs": "docker compose -f devkit/compose.yaml logs -f flagsmith",

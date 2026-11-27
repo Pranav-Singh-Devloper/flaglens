@@ -2,6 +2,8 @@
 // FlagLens dev-kit seed: turns a fresh self-hosted Flagsmith into a ready-to-demo instance.
 //
 //   node devkit/seed.mjs          (or: make seed / npm run devkit:seed)
+//   node devkit/seed.mjs --cloud  (or: make seed-cloud) seeds the same project into a Flagsmith Cloud organisation,
+//                                 using the organisation API key in .env.cloud (see .env.example)
 //
 // It is idempotent: it logs in if the admin already exists, reuses the organisation, project, environments
 // and flags it finds, and resets every demo flag to the state declared in devkit/seed-data.json.
@@ -16,14 +18,17 @@ import { parseDotenv, renderDotenv, envVarSuffix, normaliseBaseUrl, waitUntil } 
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
-const rootEnvPath = join(root, '.env');
+// Flagsmith Cloud: no sign-up through the API, so the seed uses an organisation API key you create in the dashboard,
+// reuses that organisation, and keeps everything in .env.cloud so the self-hosted .env is untouched.
+const CLOUD = process.argv.includes('--cloud');
+const rootEnvPath = join(root, CLOUD ? '.env.cloud' : '.env');
 const demoEnvPath = join(root, 'examples', 'demo-shop', '.env');
 
 // Values already in .env win over defaults, and real environment variables win over both.
 const fileEnv = existsSync(rootEnvPath) ? parseDotenv(readFileSync(rootEnvPath, 'utf8')) : {};
 const setting = (name, fallback) => process.env[name] || fileEnv[name] || fallback;
 
-const API_URL = normaliseBaseUrl(setting('FLAGSMITH_API_URL', 'http://localhost:8000'));
+const API_URL = normaliseBaseUrl(setting('FLAGSMITH_API_URL', CLOUD ? 'https://api.flagsmith.com' : 'http://localhost:8000'));
 const ADMIN_EMAIL = setting('ADMIN_EMAIL', 'admin@flaglens.local');
 const ADMIN_PASSWORD = setting('ADMIN_PASSWORD', 'FlagLens-demo-2026');
 const DEMO_PORT = setting('DEMO_PORT', '3030');
@@ -113,6 +118,14 @@ async function signUpOrLogIn() {
 }
 
 async function getOrCreateOrganisation() {
+  if (CLOUD) {
+    // An organisation API key sees exactly one organisation: its own.
+    step('Organisation (from the API key)');
+    const [org] = await listAll('/organisations/');
+    if (!org) throw new Error('The API key in .env.cloud sees no organisation. Create an organisation API key in Flagsmith Cloud.');
+    log(`"${org.name}" (id ${org.id})`);
+    return org;
+  }
   step(`Organisation "${data.organisation}"`);
   const orgs = await listAll('/organisations/');
   let org = orgs.find((o) => o.name === data.organisation);
@@ -125,10 +138,32 @@ async function getOrCreateOrganisation() {
 
 async function getOrCreateProject(org) {
   step(`Project "${data.project}"`);
+  // Flagsmith Cloud's free plan allows one project. FLAGSMITH_PROJECT_ID in .env.cloud seeds into an existing project
+  // instead (it is renamed to the demo's name; everything already in it is left as it is).
+  const chosen = CLOUD && setting('FLAGSMITH_PROJECT_ID', '');
+  if (chosen) {
+    let project = await api('GET', `/projects/${chosen}/`);
+    if (project.name !== data.project) {
+      log(`using project ${project.id} ("${project.name}"), renamed to "${data.project}"`);
+      project = await api('PUT', `/projects/${project.id}/`, { name: data.project, organisation: org.id });
+    } else log(`found (id ${project.id})`);
+    return project;
+  }
   const projects = await listAll(`/projects/?organisation=${org.id}`);
   let project = projects.find((p) => p.name === data.project && p.organisation === org.id);
   if (!project) {
-    project = await api('POST', '/projects/', { name: data.project, organisation: org.id });
+    try {
+      project = await api('POST', '/projects/', { name: data.project, organisation: org.id });
+    } catch (e) {
+      if (CLOUD && e.status === 403) {
+        throw new Error(
+          `Flagsmith Cloud would not create another project (${e.message}). The free plan allows one.\n` +
+            '  To seed into an existing project instead, add FLAGSMITH_PROJECT_ID=<its id> to .env.cloud (it is renamed\n' +
+            `  "${data.project}"; nothing in it is deleted), then run make seed-cloud again.`,
+        );
+      }
+      throw e;
+    }
     log(`created (id ${project.id}) ✓`);
   } else log(`found (id ${project.id})`);
   return project;
@@ -166,7 +201,16 @@ async function getOrCreateTags(project) {
 }
 
 /** Converts a JS value into Flagsmith's typed multivariate-option fields. */
+/**
+ * Feature versioning (v2), which every Flagsmith Cloud environment uses: direct state writes are rejected, and a
+ * change is a new version of the flag in that environment, published at once. Flagsmith keeps the previous ones.
+ */
+async function publishVersion(env, featureId, change) {
+  await api('POST', `/environments/${env.id}/features/${featureId}/versions/`, { publish_immediately: true, description: 'make seed', ...change });
+}
+
 function typedValue(value) {
+  if (value === null || value === undefined) return { type: 'unicode', string_value: null };
   if (typeof value === 'number') return { type: 'int', integer_value: value };
   if (typeof value === 'boolean') return { type: 'bool', boolean_value: value };
   return { type: 'unicode', string_value: String(value) };
@@ -232,6 +276,12 @@ async function seedFlags(project, envs, tagIds) {
       // Verified on 2.295.2: a raw JSON value is accepted and keeps its type (string, int or bool).
       if ('value' in wanted) patch.feature_state_value = wanted.value;
       if (lockedByExperiment.has(`${env.id}:${feature.id}`)) continue;
+      if (env.use_v2_feature_versioning) {
+        const value = 'value' in wanted ? wanted.value : fs.feature_state_value;
+        if (fs.enabled === wanted.enabled && fs.feature_state_value === value) continue; // no new version for nothing
+        await publishVersion(env, feature.id, { feature_states_to_update: [{ feature_segment: null, enabled: wanted.enabled, feature_state_value: typedValue(value) }] });
+        continue;
+      }
       await api('PATCH', `/environments/${env.api_key}/featurestates/${fs.id}/`, patch);
     }
 
@@ -268,7 +318,37 @@ async function seedSegments(project, envs) {
   if (!overrides.length) return;
   const features = await listAll(`/projects/${project.id}/features/?page_size=100`);
   const seededFlags = new Set(overrides.map((o) => o.flag));
-  for (const env of envs) {
+  const overrideState = (o, feature, segment, priority) => ({
+    enabled: o.enabled,
+    feature_state_value: 'value' in o ? typedValue(o.value) : { type: 'unicode', string_value: null },
+    feature_segment: { segment: segment.id, priority },
+    // Verified on 2.295.2: an override of a multivariate flag copies the flag's variant split unless told
+    // otherwise, which would hide the override's own value. 0% on every variant makes everyone get `value`.
+    ...(feature.type === 'MULTIVARIATE' &&
+      'value' in o && { multivariate_feature_state_values: feature.multivariate_options.map((m) => ({ multivariate_feature_option: m.id, percentage_allocation: 0 })) }),
+  });
+  // v2 environments: one version per flag replaces its overrides with the declared ones, in priority order.
+  for (const env of envs.filter((e) => e.use_v2_feature_versioning)) {
+    for (const name of seededFlags) {
+      const feature = features.find((f) => f.name === name);
+      if (!feature) continue;
+      const wanted = overrides.map((o, priority) => ({ o, priority })).filter(({ o }) => o.flag === name && o.environment === env.name);
+      const current = (await listAll(`/features/feature-segments/?feature=${feature.id}&environment=${env.id}`)).filter((f) => !f.is_system_segment);
+      const same =
+        current.length === wanted.length &&
+        wanted.every(({ o }, i) => [...current].sort((a, b) => a.priority - b.priority)[i]?.segment === segments.get(o.segment)?.id);
+      if (same && !process.argv.includes('--force')) {
+        for (const { o } of wanted) log(`${o.flag} → ${o.segment} in ${o.environment}: already in place`);
+        continue;
+      }
+      await publishVersion(env, feature.id, {
+        segment_ids_to_delete_overrides: current.map((f) => f.segment),
+        feature_states_to_create: wanted.map(({ o }, i) => overrideState(o, feature, segments.get(o.segment), i)),
+      });
+      for (const { o } of wanted) log(`${o.flag} → ${o.segment} in ${o.environment}: ${o.enabled ? 'on' : 'off'}${'value' in o ? ` ${JSON.stringify(o.value)}` : ''}`);
+    }
+  }
+  for (const env of envs.filter((e) => !e.use_v2_feature_versioning)) {
     for (const name of seededFlags) {
       const feature = features.find((f) => f.name === name);
       if (!feature) continue;
@@ -284,15 +364,8 @@ async function seedSegments(project, envs) {
     const env = envs.find((e) => e.name === o.environment);
     const segment = segments.get(o.segment);
     if (!feature || !env || !segment) throw new Error(`Unknown flag, environment or segment in override ${JSON.stringify(o)}`);
-    await api('POST', `/environments/${env.api_key}/features/${feature.id}/create-segment-override/`, {
-      enabled: o.enabled,
-      feature_state_value: 'value' in o ? typedValue(o.value) : { type: 'unicode', string_value: null },
-      feature_segment: { segment: segment.id, priority },
-      // Verified on 2.295.2: an override of a multivariate flag copies the flag's variant split unless told
-      // otherwise, which would hide the override's own value. 0% on every variant makes everyone get `value`.
-      ...(feature.type === 'MULTIVARIATE' &&
-        'value' in o && { multivariate_feature_state_values: feature.multivariate_options.map((m) => ({ multivariate_feature_option: m.id, percentage_allocation: 0 })) }),
-    });
+    if (env.use_v2_feature_versioning) continue; // published above
+    await api('POST', `/environments/${env.api_key}/features/${feature.id}/create-segment-override/`, overrideState(o, feature, segment, priority));
     log(`${o.flag} → ${o.segment} in ${o.environment}: ${o.enabled ? 'on' : 'off'}${'value' in o ? ` ${JSON.stringify(o.value)}` : ''}`);
   }
 }
@@ -315,8 +388,9 @@ async function seedExperiment(project, envs) {
   const base = `/environments/${env.api_key}`;
 
   const warehouses = await listAll(`${base}/warehouse-connections/`);
-  if (!warehouses.some((w) => w.config?.source === 'flagsmith_database')) {
-    await api('POST', `${base}/warehouse-connections/`, { warehouse_type: 'postgres', config: { source: 'flagsmith_database' } });
+  // Self-hosted: events go to Flagsmith's own Postgres. Flagsmith Cloud: to its managed warehouse ("flagsmith").
+  if (CLOUD ? !warehouses.some((w) => w.warehouse_type === 'flagsmith') : !warehouses.some((w) => w.config?.source === 'flagsmith_database')) {
+    await api('POST', `${base}/warehouse-connections/`, CLOUD ? { warehouse_type: 'flagsmith', config: {} } : { warehouse_type: 'postgres', config: { source: 'flagsmith_database' } });
   }
   const metrics = await listAll(`${base}/experiment-metrics/`);
   const metric =
@@ -353,8 +427,15 @@ async function seedExperiment(project, envs) {
   const results = await api('GET', `${base}/experiments/${experiment.id}/results/`).catch(() => null);
   const seen = Object.values(results?.results?.payload?.metrics?.[0]?.variants ?? {}).reduce((n, v) => n + v.n, 0);
   if (seen < x.traffic.shoppers / 2) {
-    const sent = await sendShoppers(env, feature, experiment, x.traffic);
-    log(`${sent.shoppers} simulated shoppers: ${Object.entries(sent.byVariant).map(([k, n]) => `${k} ${n}`).join(', ')}`);
+    try {
+      const sent = await sendShoppers(env, feature, experiment, x.traffic);
+      log(`${sent.shoppers} simulated shoppers: ${Object.entries(sent.byVariant).map(([k, n]) => `${k} ${n}`).join(', ')}`);
+    } catch (e) {
+      // Flagsmith Cloud: the managed warehouse must be active on the organisation's plan before it accepts events.
+      if (!CLOUD || e.status !== 404) throw e;
+      log(`"${x.name}" is running, but Flagsmith Cloud's warehouse does not accept events on this plan yet, so it has no results`);
+      return;
+    }
   }
   // Ask Flagsmith to recompute the results now (it allows one refresh every few minutes; a recent one is fine).
   for (const what of ['exposures', 'results']) await api('POST', `${base}/experiments/${experiment.id}/${what}/refresh/`).catch(() => {});
@@ -398,7 +479,7 @@ async function sendShoppers(env, feature, experiment, traffic) {
   }
   for (let i = 0; i < events.length; i += 100) {
     const res = await fetch(`${API_URL}/api/v1/events/`, { method: 'POST', headers: sdk, body: JSON.stringify({ events: events.slice(i, i + 100) }) });
-    if (!res.ok) throw new Error(`Flagsmith rejected experiment events: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
+    if (!res.ok) throw Object.assign(new Error(`Flagsmith rejected experiment events: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`), { status: res.status });
   }
   return { shoppers: ids.length, byVariant };
 }
@@ -456,10 +537,27 @@ function writeEnvFiles({ apiKey, org, project, envs, healthWebhook }) {
   step('Writing .env files (git-ignored)');
   const envEntries = envs.map((e) => [`FLAGSMITH_ENV_KEY_${envVarSuffix(e.name)}`, e.api_key]);
   const header = [
-    'Written by `make seed`. Git-ignored: never commit this file. See .env.example for documentation.',
-    'Re-run `make seed` at any time; the API key is kept if it still works.',
+    `Written by \`make seed${CLOUD ? '-cloud' : ''}\`. Git-ignored: never commit this file. See .env.example for documentation.`,
+    CLOUD ? 'Flagsmith Cloud: the organisation API key is yours; re-run make seed-cloud at any time.' : 'Re-run `make seed` at any time; the API key is kept if it still works.',
     '',
   ];
+  if (CLOUD) {
+    writeFileSync(
+      rootEnvPath,
+      renderDotenv([
+        ...header,
+        ['FLAGSMITH_API_URL', API_URL],
+        ['FLAGSMITH_API_KEY', apiKey],
+        ['FLAGSMITH_ORGANISATION_ID', String(org.id)],
+        ['FLAGSMITH_PROJECT_ID', String(project.id)],
+        ...envEntries,
+        ...(healthWebhook ? [['FLAGSMITH_HEALTH_WEBHOOK_URL', healthWebhook]] : []),
+      ]),
+      { mode: 0o600 },
+    );
+    log(relative(root, rootEnvPath));
+    return;
+  }
   writeFileSync(
     rootEnvPath,
     renderDotenv([
@@ -495,6 +593,20 @@ function writeEnvFiles({ apiKey, org, project, envs, healthWebhook }) {
 
 function printSuccess({ project, envs }) {
   const dev = envs.find((e) => e.name === 'Development') ?? envs[0];
+  if (CLOUD) {
+    const box = [
+      '✔ Flagsmith Cloud is seeded and ready.',
+      '',
+      `Dashboard   https://app.flagsmith.com/project/${project.id}/environment/${dev.api_key}/features`,
+      `Project     ${data.project} · ${envs.map((e) => e.name).join(', ')} · ${data.flags.length} flags`,
+      '',
+      'Next: in VS Code, FlagLens: Connect to Flagsmith…',
+      `  API URL ${API_URL}, the organisation API key from .env.cloud, project "${data.project}"`,
+    ];
+    const w = Math.max(...box.map((l) => l.length)) + 2;
+    console.log(`\n┌${'─'.repeat(w)}┐\n${box.map((l) => `│ ${l.padEnd(w - 1)}│`).join('\n')}\n└${'─'.repeat(w)}┘\n`);
+    return;
+  }
   const lines = [
     '✔ Self-hosted Flagsmith is seeded and ready.',
     '',
@@ -513,19 +625,42 @@ function printSuccess({ project, envs }) {
   console.log(`└${'─'.repeat(width)}┘\n`);
 }
 
+/** On Cloud, a step the organisation's plan doesn't include is skipped with a note instead of failing the seed. */
+async function optional(name, fn) {
+  if (!CLOUD) return fn();
+  try {
+    return await fn();
+  } catch (e) {
+    log(`${name} skipped on this Flagsmith Cloud plan (${e.message.slice(0, 160)})`);
+    return undefined;
+  }
+}
+
 async function main() {
-  console.log('FlagLens dev kit · seeding self-hosted Flagsmith');
-  await waitForFlagsmith();
-  await signUpOrLogIn();
+  if (CLOUD) {
+    console.log(`FlagLens dev kit · seeding Flagsmith Cloud at ${API_URL}`);
+    const key = setting('FLAGSMITH_API_KEY', '');
+    if (!key) {
+      throw new Error(
+        'No organisation API key. In Flagsmith Cloud: Organisation Settings → API Access → create a key, then put\n' +
+          '  FLAGSMITH_API_KEY=<key>   in .env.cloud (git-ignored) and run make seed-cloud again.',
+      );
+    }
+    authHeader = `Api-Key ${key}`;
+  } else {
+    console.log('FlagLens dev kit · seeding self-hosted Flagsmith');
+    await waitForFlagsmith();
+    await signUpOrLogIn();
+  }
   const org = await getOrCreateOrganisation();
   const project = await getOrCreateProject(org);
   const envs = await getOrCreateEnvironments(project);
   const tagIds = await getOrCreateTags(project);
   await seedFlags(project, envs, tagIds);
   await seedSegments(project, envs);
-  await seedExperiment(project, envs);
-  const healthWebhook = await seedFeatureHealth(project, envs);
-  const apiKey = await getOrCreateOrgApiKey(org, project);
+  await optional('Experiment', () => seedExperiment(project, envs));
+  const healthWebhook = (await optional('Feature Health', () => seedFeatureHealth(project, envs))) ?? '';
+  const apiKey = CLOUD ? setting('FLAGSMITH_API_KEY', '') : await getOrCreateOrgApiKey(org, project);
   writeEnvFiles({ apiKey, org, project, envs, healthWebhook });
   printSuccess({ project, envs });
 }

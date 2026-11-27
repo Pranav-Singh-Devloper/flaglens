@@ -5,7 +5,7 @@ COMPOSE := docker compose -f devkit/compose.yaml
 VSIX    := extension/flaglens.vsix
 
 .DEFAULT_GOAL := help
-.PHONY: help up seed down reset logs mcp mcp-check demo install ext package install-ext test lint typecheck check verify-engine code-refs flag-check alert recover
+.PHONY: help up seed down reset logs mcp mcp-check seed-cloud demo install ext package install-ext test lint typecheck check verify-engine code-refs flag-check alert recover
 
 help: ## Show this help
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -27,6 +27,9 @@ logs: ## Follow the Flagsmith API logs
 
 mcp: ## Also start Flagsmith's MCP server on http://localhost:8002/mcp
 	$(COMPOSE) --profile mcp up -d --wait
+
+seed-cloud: ## Seed the same demo project into Flagsmith Cloud (organisation API key in .env.cloud)
+	node devkit/seed.mjs --cloud
 
 mcp-check: ## Check the MCP server with the seeded org key: handshake, tools, flags, experiment results
 	node devkit/mcp-check.mjs
