@@ -20,6 +20,8 @@ export interface ApiProject {
   only_allow_lower_case_feature_names: boolean;
   feature_name_regex: string | null;
   stale_flags_limit_days: number | null;
+  /** Identities live in Flagsmith's Edge store (Flagsmith Cloud projects), with their own API. */
+  use_edge_identities?: boolean;
 }
 
 export interface ApiEnvironment {

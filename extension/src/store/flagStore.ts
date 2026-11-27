@@ -334,6 +334,7 @@ export class FlagStore implements vscode.Disposable {
     try {
       const docs = await Promise.all(this.environments.map((e) => client.getEnvironmentDocument(e.apiKey)));
       this.environments.forEach((e, i) => docs[i] && result.set(e.id, docs[i]!));
+      await this.addEdgeOverrides(client, result);
     } catch (e) {
       if (e instanceof NotFoundError || e instanceof AuthError || (e instanceof ApiError && e.status < 500)) {
         this.documentsSupported = false;
@@ -344,6 +345,37 @@ export class FlagStore implements vscode.Disposable {
       }
     }
     return result;
+  }
+
+  /**
+   * Flagsmith Cloud keeps identities in its Edge store, and its environment documents show a new identity override
+   * only after a delay. While previewing as a user there, read that user's overrides directly and put them in the
+   * documents, so the preview shows what Flagsmith serves them now.
+   */
+  private async addEdgeOverrides(client: FlagsmithClient, docs: Map<number, EnvironmentDocument>): Promise<void> {
+    const persona = this.persona;
+    if (!persona || !this.connection?.project.use_edge_identities) return;
+    await Promise.all(
+      this.environments.map(async (e) => {
+        const doc = docs.get(e.id);
+        if (!doc) return;
+        let overrides;
+        try {
+          overrides = await client.edgeIdentityOverrides(e.apiKey, persona.identifier);
+        } catch (err) {
+          this.log.warn(`Could not read ${persona.identifier}'s Edge overrides in ${e.name}: ${(err as Error).message}`);
+          return;
+        }
+        const features = new Map(doc.feature_states.map((fs) => [fs.feature.id, fs.feature]));
+        const identity_features = overrides.flatMap((o) => {
+          const feature = features.get(o.feature);
+          if (!feature) return [];
+          return [{ feature, enabled: o.enabled, feature_state_value: o.feature_state_value, featurestate_uuid: o.featurestate_uuid, django_id: null, feature_segment: null, multivariate_feature_state_values: [] }];
+        });
+        const others = (doc.identity_overrides ?? []).filter((i) => i.identifier !== persona.identifier);
+        docs.set(e.id, { ...doc, identity_overrides: identity_features.length ? [...others, { identifier: persona.identifier, identity_features }] : others });
+      }),
+    );
   }
 
   private async loadHealth(client: FlagsmithClient, projectId: number): Promise<Map<string, ApiFeatureHealthEvent>> {
@@ -414,6 +446,8 @@ export class FlagStore implements vscode.Disposable {
     this.persona = persona;
     this.evaluations.clear();
     this.changeEmitter.fire();
+    // Edge projects: this user's overrides come from the Edge store, not the documents (see addEdgeOverrides).
+    if (this.connection?.project.use_edge_identities) void this.refresh();
   }
 
   /** Every flag evaluated for the current persona in one environment, or undefined without a persona or document. */

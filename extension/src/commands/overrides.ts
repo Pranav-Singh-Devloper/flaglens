@@ -102,15 +102,16 @@ async function writeOverride(app: App, row: FlagRow, env: FsEnvironment, persona
     app.journal.add({ at: new Date().toISOString(), flag: key, env: env.name, action: label, apiUrl: conn.client.baseUrl, projectId: conn.project.id, result });
   try {
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `${label}: ${key} in ${env.name}…` }, async () => {
-      const client = conn.client;
-      let identity = await client.findIdentity(env.apiKey, persona.identifier);
-      if (!identity && next === null) return;
-      identity ??= await client.createIdentity(env.apiKey, persona.identifier);
-      const fs = (await client.listIdentityFeatureStates(env.apiKey, identity.id)).find((s) => s.feature === row.feature.id);
+      // Flagsmith Cloud projects keep identities in the Edge store, which has its own API.
+      const store = conn.client.identityOverrides(!!conn.project.use_edge_identities);
+      let identity = await store.find(env.apiKey, persona.identifier);
+      if (identity === undefined && next === null) return;
+      identity ??= await store.create(env.apiKey, persona.identifier);
+      const fs = (await store.list(env.apiKey, identity)).find((s) => s.feature === row.feature.id);
       if (next === null) {
-        if (fs) await client.deleteIdentityOverride(env.apiKey, identity.id, fs.id);
+        if (fs) await store.remove(env.apiKey, identity, fs.id);
       } else {
-        await client.setIdentityOverride(env.apiKey, identity.id, row.feature.id, next, fs?.id);
+        await store.set(env.apiKey, identity, row.feature.id, next, fs?.id);
       }
     });
   } catch (e) {

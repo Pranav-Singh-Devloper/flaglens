@@ -46,6 +46,35 @@ describe('FlagsmithClient', () => {
     expect(calls[1]!.url).toBe('https://flags.example.com/api/v1/projects/1/features/?page=2&page_size=100');
   });
 
+  it('writes identity overrides to the Edge store on Flagsmith Cloud (shapes verified there)', async () => {
+    const uuid = '6ce89110-529d-44d6-bbd2-ad0038294787';
+    const fsUuid = '40fcb094-3217-4696-a438-0f4b02693b1d';
+    const { fn, calls } = mockFetch([
+      json({ results: [{ identity_uuid: 'other', identifier: 'alice@x.dev.old' }, { identity_uuid: uuid, identifier: 'alice@x.dev' }], last_evaluated_key: null }),
+      json([{ feature: 7, enabled: false, feature_state_value: null, featurestate_uuid: fsUuid, identity_uuid: uuid }]),
+      json({ feature: 7, enabled: true, feature_state_value: null, featurestate_uuid: fsUuid }),
+      new Response(null, { status: 204 }),
+    ]);
+    const edge = client(fn, 'https://api.flagsmith.com').identityOverrides(true);
+    const id = await edge.find('envKey', 'alice@x.dev');
+    expect(id).toBe(uuid); // exact match, not the first search hit
+    expect(await edge.list('envKey', id!)).toEqual([{ id: fsUuid, feature: 7 }]);
+    await edge.set('envKey', id!, 7, { enabled: true, value: null }, fsUuid);
+    await edge.remove('envKey', id!, fsUuid);
+    expect(calls.map((c) => `${c.init?.method ?? 'GET'} ${c.url.replace('https://api.flagsmith.com/api/v1/environments/envKey', '')}`)).toEqual([
+      'GET /edge-identities/?q=alice%40x.dev',
+      `GET /edge-identities/${uuid}/edge-featurestates/`,
+      `PUT /edge-identities/${uuid}/edge-featurestates/${fsUuid}/`,
+      `DELETE /edge-identities/${uuid}/edge-featurestates/${fsUuid}/`,
+    ]);
+    expect(JSON.parse(calls[2]!.init!.body as string)).toEqual({ feature: 7, enabled: true, feature_state_value: null });
+  });
+
+  it("reads an Edge identity's overrides for the preview, and none for an unknown identity", async () => {
+    const { fn } = mockFetch([json({ results: [], last_evaluated_key: null })]);
+    expect(await client(fn, 'https://api.flagsmith.com').edgeIdentityOverrides('envKey', 'nobody')).toEqual([]);
+  });
+
   it('accepts endpoints that return a plain array', async () => {
     const { fn } = mockFetch([json([{ id: 1, name: 'a' }])]);
     expect(await client(fn).listProjects()).toHaveLength(1);

@@ -100,6 +100,15 @@ export function describeErrorBody(body: unknown): string {
   return String(body);
 }
 
+/** One store of identity overrides (see FlagsmithClient.identityOverrides). Ids are numbers (core) or UUIDs (Edge). */
+export interface IdentityOverrideStore {
+  find(environmentKey: string, identifier: string): Promise<number | string | undefined>;
+  create(environmentKey: string, identifier: string): Promise<number | string>;
+  list(environmentKey: string, identity: number | string): Promise<{ id: number | string; feature: number }[]>;
+  set(environmentKey: string, identity: number | string, featureId: number, state: { enabled: boolean; value: FlagValue }, existingId?: number | string): Promise<void>;
+  remove(environmentKey: string, identity: number | string, overrideId: number | string): Promise<void>;
+}
+
 export class FlagsmithClient {
   readonly baseUrl: string;
   private readonly apiKey: string;
@@ -186,6 +195,60 @@ export class FlagsmithClient {
 
   deleteIdentityOverride(environmentKey: string, identityId: number, featureStateId: number): Promise<unknown> {
     return this.request('DELETE', `/environments/${encodeURIComponent(environmentKey)}/identities/${identityId}/featurestates/${featureStateId}/`);
+  }
+
+  /**
+   * Identity overrides in whichever store the project uses: core identities (self-hosted, by numeric id) or Edge
+   * identities (Flagsmith Cloud, by UUID). Verified on Flagsmith Cloud: GET /edge-identities/?q= returns
+   * {results: [{identity_uuid, identifier}], last_evaluated_key}; edge-featurestates is a plain array of
+   * {feature, enabled, feature_state_value, featurestate_uuid}; values are sent raw; changes use PUT.
+   */
+  identityOverrides(edge: boolean): IdentityOverrideStore {
+    if (!edge) {
+      return {
+        find: async (env, identifier) => (await this.findIdentity(env, identifier))?.id,
+        create: async (env, identifier) => (await this.createIdentity(env, identifier)).id,
+        list: async (env, identity) => (await this.listIdentityFeatureStates(env, identity as number)).map((s) => ({ id: s.id, feature: s.feature })),
+        set: async (env, identity, featureId, state, existingId) => {
+          await this.setIdentityOverride(env, identity as number, featureId, state, existingId as number | undefined);
+        },
+        remove: async (env, identity, id) => {
+          await this.deleteIdentityOverride(env, identity as number, id as number);
+        },
+      };
+    }
+    const base = (env: string) => `/environments/${encodeURIComponent(env)}/edge-identities/`;
+    return {
+      find: async (env, identifier) => {
+        const page = await this.request<{ results: { identity_uuid: string; identifier: string }[] }>('GET', `${base(env)}?q=${encodeURIComponent(identifier)}`);
+        return page.results.find((i) => i.identifier === identifier)?.identity_uuid;
+      },
+      create: async (env, identifier) => (await this.request<{ identity_uuid: string }>('POST', base(env), { identifier })).identity_uuid,
+      list: async (env, identity) =>
+        (await this.request<{ feature: number; featurestate_uuid: string }[]>('GET', `${base(env)}${identity}/edge-featurestates/`)).map((s) => ({ id: s.featurestate_uuid, feature: s.feature })),
+      set: async (env, identity, featureId, state, existingId) => {
+        const body = { feature: featureId, enabled: state.enabled, feature_state_value: state.value };
+        if (existingId === undefined) await this.request('POST', `${base(env)}${identity}/edge-featurestates/`, body);
+        else await this.request('PUT', `${base(env)}${identity}/edge-featurestates/${existingId}/`, body);
+      },
+      remove: async (env, identity, id) => {
+        await this.request('DELETE', `${base(env)}${identity}/edge-featurestates/${id}/`);
+      },
+    };
+  }
+
+  /**
+   * Edge (Flagsmith Cloud): one identity's overrides, read straight from the Edge store; [] if it has none.
+   * Verified on Flagsmith Cloud: the environment document does not show a new Edge override for at least 25 s, while
+   * the SDK serves it at once, so "Preview as" reads them from here.
+   */
+  async edgeIdentityOverrides(
+    environmentKey: string,
+    identifier: string,
+  ): Promise<{ feature: number; enabled: boolean; feature_state_value: FlagValue; featurestate_uuid: string }[]> {
+    const identity = await this.identityOverrides(true).find(environmentKey, identifier);
+    if (identity === undefined) return [];
+    return this.request('GET', `/environments/${encodeURIComponent(environmentKey)}/edge-identities/${identity}/edge-featurestates/`);
   }
 
   // --- segment overrides -----------------------------------------------------------------------------------------
