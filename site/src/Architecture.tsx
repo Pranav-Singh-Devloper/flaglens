@@ -257,7 +257,7 @@ const NODES: Record<NodeId, Box> = {
     sub: "REST only",
     lane: "around",
     about:
-      "make seed bootstraps everything through the public REST API: admin, organisation, project, 3 environments, 7 flags, 6 segments with overrides, an API key, a Feature Health provider and a running A/B test with 600 simulated shoppers. Idempotent; CI runs it twice.",
+      "make seed bootstraps everything through the public REST API: admin, organisation, project, 3 environments, 7 flags, 6 segments with overrides, an API key, a Feature Health provider and a running A/B test with 2,400 simulated shoppers. Idempotent; CI runs it twice.",
     files: ["devkit/seed.mjs", "devkit/seed-data.json"],
     flagsmith: [
       "signup → organisation → project → environments → flags → segments → API key",

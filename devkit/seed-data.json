@@ -325,11 +325,11 @@
       "orange": 33.3
     },
     "traffic": {
-      "shoppers": 600,
+      "shoppers": 2400,
       "conversion_rate": {
-        "blue": 0.1,
-        "green": 0.14,
-        "orange": 0.09
+        "blue": 0.08,
+        "green": 0.13,
+        "orange": 0.085
       }
     }
   }

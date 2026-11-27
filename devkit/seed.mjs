@@ -365,7 +365,13 @@ async function seedExperiment(project, envs) {
 async function sendShoppers(env, feature, experiment, traffic) {
   const sdk = { 'X-Environment-Key': env.api_key, 'Content-Type': 'application/json' };
   const started = Date.parse(experiment.started_at ?? new Date().toISOString());
+  // Flagsmith only counts events after the experiment started and up to when it computes the results, so every
+  // timestamp lies between the two. Right after the start that window is tiny: wait a few seconds to open it.
+  const wait = started + 6_000 - Date.now();
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   const now = Date.now();
+  const from = started + 1_000;
+  const to = now - 1_000;
   // A fixed seed: the same shoppers convert on every machine.
   let state = 20261127;
   const random = () => (state = (state * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
@@ -384,9 +390,10 @@ async function sendShoppers(env, feature, experiment, traffic) {
     for (const { identifier, value } of served) {
       const variant = value === feature.initial_value ? 'control' : value;
       byVariant[variant] = (byVariant[variant] ?? 0) + 1;
-      const at = Math.max(started + 1_000, now - Math.floor(random() * 60_000));
+      // Seen in the first half of the window; a shopper who buys does so later, still inside it.
+      const at = from + Math.floor(random() * Math.min(60_000, (to - from) / 2));
       events.push({ event: '$flag_exposure', feature_name: feature.name, identifier, value: variant, timestamp: at });
-      if (random() < (traffic.conversion_rate[value] ?? 0)) events.push({ event: data.experiment.metric.event, identifier, timestamp: at + 30_000 });
+      if (random() < (traffic.conversion_rate[value] ?? 0)) events.push({ event: data.experiment.metric.event, identifier, timestamp: at + Math.floor(random() * (to - at)) });
     }
   }
   for (let i = 0; i < events.length; i += 100) {

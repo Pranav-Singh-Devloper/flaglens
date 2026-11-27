@@ -188,7 +188,7 @@ It is a community project, not an official Flagsmith product.
 | **Lifecycle and owners**: Flagsmith's lifecycle stage (*new*, *live*, *stale*, *permanent*, *to remove*…), its code-reference count and the flag's owners appear in the hover; *to remove* is also a badge | `GET /projects/{id}/features/?environment=` |
 | **FlagLens in CI**: `flaglens check` (a GitHub Action, or `make flag-check`) runs the editor's checks over a repository: unknown flag keys with a suggested fix, archived flags still in code, and targeting-rule mistakes. The report goes to the job summary and, on pull requests, a comment; `strict` fails the build | features list, environment documents |
 | **Kill switch for unhealthy flags**: when Feature Health newly reports a flag unhealthy where it is on, FlagLens says so once and offers *Turn off in <environment>* (also in the hover), with the usual confirmation and Undo | feature states |
-| **A/B test results on the flag** (Flagsmith Experimentation, beta): a flag in a running experiment gets a badge with the leading variation (*experiment: green +168% (99% to win)*); the hover shows the hypothesis, metric and, per variation, exposures, conversion, lift against control with its 95% interval and the chance to win, and says when a variation is likely better or the split looks wrong (sample ratio mismatch). *Show Experiment Results* opens a report; *Refresh* asks Flagsmith to recompute. The flag is locked in that environment while the experiment runs. The statistics are Flagsmith's own | `GET /environments/{key}/experiments/`, `…/experiments/{id}/results/`, `POST …/exposures/refresh/`, `…/results/refresh/` |
+| **A/B test results on the flag** (Flagsmith Experimentation, beta): a flag in a running experiment gets a badge with the leading variation (*experiment: green +55% (99% to win)*); the hover shows the hypothesis, metric and, per variation, exposures, conversion, lift against control with its 95% interval and the chance to win, and says when a variation is likely better or the split looks wrong (sample ratio mismatch). *Show Experiment Results* opens a report; *Refresh* asks Flagsmith to recompute. The flag is locked in that environment while the experiment runs. The statistics are Flagsmith's own | `GET /environments/{key}/experiments/`, `…/experiments/{id}/results/`, `POST …/exposures/refresh/`, `…/results/refresh/` |
 | **Flagsmith's MCP server for AI assistants**: while FlagLens is connected and the server answers (`make mcp`), it is offered to VS Code's AI assistants (Copilot agent mode, VS Code 1.101+) as **Flagsmith**, so they can list flags, read experiment results or draft changes with Flagsmith's own 54 tools. The organisation key is added from VS Code's secret storage only when the server starts, and VS Code asks before any tool call not marked read-only | VS Code MCP API; Flagsmith MCP server (Streamable HTTP, `Authorization: Api-Key`) |
 | Autocomplete flag keys inside `isFeatureEnabled("…")`, sidebar tree, status-bar environment switcher, flag history, *Find unused flags* in the workspace | all of the above |
 | **Dev kit**: pinned official images, idempotent REST seed, demo shop using the official Node SDK | Docker, REST, SDK API |
@@ -266,9 +266,9 @@ Finally open the demo workspace: **File → Open Folder… → `flaglens/example
   that user changes; *Everyone* still sees the default.
 - **Feature Health:** `make alert` marks `new_checkout` unhealthy in Production: on the next refresh (within half a minute) its
   CodeLens shows *unhealthy*, the hover shows the reason, and toggling it warns you. `make recover` clears it.
-- **A/B test results:** `checkout_button_color` has an *experiment* badge (*green +168% (99% to win)*). Hover it:
-  Flagsmith's results for each colour, with the interval and the chance to win, and the
-  hypothesis. **FlagLens: Show Experiment Results** opens the report. Visit the shop's Staging page
+- **A/B test results:** `checkout_button_color` has an *experiment* badge, about *green +55% (99% to win)* (the
+  split of simulated shoppers varies a little between machines). Hover it: Flagsmith's results for each colour, with
+  the interval and the chance to win, and the hypothesis. **FlagLens: Show Experiment Results** opens the report. Visit the shop's Staging page
   (http://localhost:3030/?env=Staging) and click **Buy now**: the shop reports the exposure and the checkout to
   Flagsmith, and *Refresh results* in the hover asks Flagsmith to recompute (at most once every 5 minutes).
 - **MCP server:** `make mcp && make mcp-check` starts Flagsmith's MCP server and asks it, with the seeded key, for the
@@ -498,7 +498,7 @@ the open-source edition offers, then built on as much of it as an editor tool ca
 | | Lifecycle stages and flag owners | Hover, *to remove* badge |
 | | Feature Health (Webhook provider and events) | *Unhealthy* badge, reason, warning in the confirmation; `make alert` / `make recover` |
 | | Transient identities (SDK API) | Differential test of the local engine against the server |
-| | Experimentation (beta): warehouse on the Flagsmith database, metrics, experiments, events, exposures and results | The seed runs a real A/B test (600 shoppers, exposure and `checkout_completed` events); the demo shop reports real ones; results in the badge, hover and report; the lock |
+| | Experimentation (beta): warehouse on the Flagsmith database, metrics, experiments, events, exposures and results | The seed runs a real A/B test (2,400 simulated shoppers, exposure and `checkout_completed` events); the demo shop reports real ones; results in the badge, hover and report; the lock |
 | | Audit log | *Show history*, when the server exposes it |
 | | Organisation webhooks (signed) | Real-time updates, with polling as the fallback |
 | | Identity overrides | *Set flag for previewed user* |
