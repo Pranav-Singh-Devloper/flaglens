@@ -1,7 +1,7 @@
 // Domain model: the feature × environment matrix that every FlagLens view reads.
 // Pure (no VS Code imports) so it can be unit-tested.
 
-import type { ApiEnvironment, ApiExperiment, ApiFeature, ApiFeatureState, ApiTag, FeatureType, FlagValue, LifecycleStage } from '../api/types';
+import { experimentFeatureId, type ApiEnvironment, type ApiExperiment, type ApiFeature, type ApiFeatureState, type ApiTag, type FeatureType, type FlagValue, type LifecycleStage } from '../api/types';
 
 export interface FsEnvironment {
   id: number;
@@ -158,7 +158,7 @@ export function buildRows(
 
   for (const [envId, experiments] of experimentsByEnv) {
     for (const x of experiments) {
-      const row = byId.get(x.feature);
+      const row = byId.get(experimentFeatureId(x));
       if (row) row.experiments.push({ id: x.id, name: x.name, status: x.status, envId });
     }
   }

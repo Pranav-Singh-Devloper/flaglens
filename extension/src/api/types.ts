@@ -111,15 +111,24 @@ export interface ApiTag {
 
 export type ExperimentStatus = 'created' | 'running' | 'paused' | 'completed';
 
+/**
+ * An experiment as listed by GET /environments/{key}/experiments/. Verified on 2.295.2: `feature` is a nested object
+ * (id, name, initial_value, multivariate_options) and `metrics` lists the attached metrics; older servers may send
+ * the feature id alone.
+ */
 export interface ApiExperiment {
   id: number;
-  feature: number;
+  feature: number | { id: number; name: string; initial_value?: string | null; multivariate_options?: { key?: string | null; string_value?: string | null }[] };
   name: string;
   status: ExperimentStatus;
   hypothesis?: string | null;
   started_at?: string | null;
   ended_at?: string | null;
+  metrics?: { metric: number; metric_name: string; aggregation: string; direction?: string; expected_direction: string }[];
 }
+
+/** The feature id of an experiment, whichever shape the server sent. */
+export const experimentFeatureId = (x: ApiExperiment): number => (typeof x.feature === 'object' ? x.feature.id : x.feature);
 
 export interface CreateFeatureBody {
   name: string;
