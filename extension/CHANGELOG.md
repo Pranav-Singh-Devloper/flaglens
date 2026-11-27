@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0
+
+- **Flagsmith Cloud, tested.** FlagLens handles what is different on Cloud: every environment uses feature versioning,
+  so changes are published as versions, and identities live in the Edge store, so *Set flag for user* writes there and
+  *Preview as* reads the user's Edge overrides directly (Cloud's environment document shows them only after a delay).
+  8 end-to-end tests and 7,224 engine checks pass against a live Cloud project.
+- Reconnecting while a slow refresh was running (for example after changing the API URL) could leave FlagLens loading
+  until the window was reloaded. Fixed, with an end-to-end test.
+- Dev kit: `make seed-cloud` seeds the same demo into a Flagsmith Cloud organisation, with the organisation API key in
+  a git-ignored `.env.cloud`; it can seed into an existing project, as the free plan allows one.
+
 ## 0.7.0
 
 - **A/B test results on the flag.** For a flag in a running Flagsmith experiment (Experimentation, beta), the badge

@@ -57,6 +57,9 @@ made anywhere arrive in seconds; Feature Health alerts land on the code).
 3. Paste an **Organisation API key** (Organisation Settings → API Keys). It is kept in VS Code SecretStorage.
 4. Pick a project, or add a `flagsmith.json` (Flagsmith CLI format) to your workspace and FlagLens picks it up.
 
+Self-hosted Flagsmith and Flagsmith Cloud both work. On Cloud, changes are published as versions (feature versioning)
+and identity overrides go to the Edge store; both are tested against a live Cloud project.
+
 Flag references are found with the same pattern as Flagsmith's Code References scanner
 (`isFeatureEnabled("x")`, `is_feature_enabled('x')`, `hasFeature("x")`, `getFeatureValue("x")`…), plus
 `flagsmith.getValue('x')` and React's `useFlags(['x'])`. Add your own with `flaglens.extraPatterns`.

@@ -1,7 +1,7 @@
 # FlagLens check as a GitHub Action: unknown flag keys, archived flags still in code, and targeting-rule mistakes,
 # checked against your Flagsmith, as a job summary (and a PR comment on pull requests).
 #
-#   - uses: Pranav-Singh-Devloper/flaglens@v0.7.0
+#   - uses: Pranav-Singh-Devloper/flaglens@v0.8.0
 #     with:
 #       api-url: https://flagsmith.example.com
 #       api-key: ${{ secrets.FLAGSMITH_API_KEY }}     # an Organisation API key
