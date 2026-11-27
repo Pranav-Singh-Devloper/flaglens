@@ -29,6 +29,7 @@ import { DeadCodeDecorator } from './providers/deadCode';
 import { FlagCodeActions, FlagDiagnostics } from './providers/diagnostics';
 import { FlagHoverProvider } from './providers/hover';
 import { HealthAlerts } from './healthAlerts';
+import { FlagsmithMcp } from './mcp';
 import { RealtimeSync } from './realtime';
 import { ReferenceIndex } from './references';
 import { confirmWrite, WriteJournal } from './safety';
@@ -63,6 +64,9 @@ export function activate(context: vscode.ExtensionContext): App {
     confirm: confirmWrite,
     realtime,
   };
+  const mcp = new FlagsmithMcp(log, store, app.keys, () => settings.mcpUrl);
+  app.mcp = mcp;
+  mcp.register();
 
   const statusBar = new StatusBar(store, realtime);
   const codeLens = new FlagCodeLensProvider(app, refs);
@@ -88,6 +92,7 @@ export function activate(context: vscode.ExtensionContext): App {
   const onStoreChange = () => {
     restartRealtime();
     healthAlerts.update();
+    mcp.update();
     void vscode.commands.executeCommand('setContext', 'flaglens.connected', store.connected);
     statusBar.update();
     codeLens.refresh();
@@ -114,6 +119,7 @@ export function activate(context: vscode.ExtensionContext): App {
     statusBar,
     healthAlerts,
     realtime,
+    mcp,
     realtime.onDidChange(() => statusBar.update()),
     diagnostics,
     deadCode,

@@ -532,6 +532,39 @@ export async function run(): Promise<void> {
     }
   });
 
+  await test('MCP: offers Flagsmith\'s MCP server to AI assistants, with the org key added only at start, and it answers', async () => {
+    const mcp = app.mcp!;
+    assert.ok(mcp.supported, 'this VS Code has no MCP API');
+    const [definition, ...rest] = await mcp.definitions();
+    assert.ok(definition && !rest.length, 'expected one MCP server (is it running? make mcp)');
+    assert.equal(definition.label, 'Flagsmith');
+    assert.equal(definition.uri.toString(), 'http://localhost:8002/mcp');
+    assert.deepEqual(definition.headers ?? {}, {}, 'the listed definition must not carry the key');
+    const resolved = await mcp.resolve(definition);
+    assert.match(resolved?.headers.Authorization ?? '', /^Api-Key \S+$/);
+    // Talk to it with exactly what VS Code would use: handshake, then one of Flagsmith's tools.
+    let session: string | undefined;
+    const rpc = async (method: string, params: unknown, id?: number) => {
+      const res = await fetch(resolved!.uri.toString(), {
+        method: 'POST',
+        headers: { ...resolved!.headers, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', ...(session && { 'Mcp-Session-Id': session }) },
+        body: JSON.stringify({ jsonrpc: '2.0', method, params, ...(id && { id }) }),
+      });
+      session = res.headers.get('mcp-session-id') ?? session;
+      const text = await res.text();
+      assert.ok(res.ok, `${method}: HTTP ${res.status} ${text.slice(0, 200)}`);
+      if (!id) return undefined;
+      const data = text.includes('data:') ? text.split('\n').filter((l) => l.startsWith('data:')).map((l) => l.slice(5)).pop()! : text;
+      return JSON.parse(data).result;
+    };
+    await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'flaglens-test', version: '1' } }, 1);
+    await rpc('notifications/initialized', {});
+    const call = await rpc('tools/call', { name: 'list_project_features', arguments: { project_pk: app.store.project!.id, page_size: 100 } }, 2);
+    assert.ok(!call.isError, JSON.stringify(call).slice(0, 300));
+    const names = (JSON.parse(call.content[0].text).results as { name: string }[]).map((f) => f.name);
+    assert.ok(names.includes('checkout_button_color') && names.includes('new_checkout'), names.join(', '));
+  });
+
   await test('environment matrix opens', async () => {
     await vscode.commands.executeCommand('flaglens.openMatrix');
     const tab = await waitFor('matrix tab', () =>

@@ -45,6 +45,8 @@ export interface Settings {
   /** Real-time updates through a Flagsmith webhook (see realtime.ts). */
   realtimeMode: 'auto' | 'on' | 'off';
   realtimeCallbackHost: string;
+  /** Flagsmith's MCP server offered to AI assistants; empty = off (see mcp.ts). */
+  mcpUrl: string;
 }
 
 /** Keeps only well-formed persona entries from settings.json. */
@@ -81,6 +83,7 @@ export function readSettings(): Settings {
     dimInactiveCode: cfg.get<boolean>('dimInactiveCode', true),
     realtimeMode: cfg.get<Settings['realtimeMode']>('realtime.mode', 'auto'),
     realtimeCallbackHost: cfg.get<string>('realtime.callbackHost', 'host.docker.internal').trim() || 'host.docker.internal',
+    mcpUrl: cfg.get<string>('mcp.url', 'http://localhost:8002/mcp').trim(),
   };
 }
 

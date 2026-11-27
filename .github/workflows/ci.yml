@@ -43,6 +43,9 @@ jobs:
       - run: make up
       - run: make seed
       - run: make seed
+      # Flagsmith's MCP server against the same instance and key (FlagLens offers it to VS Code's AI assistants).
+      - run: make mcp
+      - run: make mcp-check
       - name: Demo shop serves flags from Flagsmith
         run: |
           node examples/demo-shop/server.mjs &

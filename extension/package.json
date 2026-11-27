@@ -50,6 +50,12 @@
     }
   },
   "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "flaglens.flagsmith",
+        "label": "Flagsmith (FlagLens)"
+      }
+    ],
     "commands": [
       {
         "command": "flaglens.connect",
@@ -500,6 +506,11 @@
           ],
           "default": "auto",
           "markdownDescription": "Show changes made anywhere (dashboard, API, teammates) within a few seconds. FlagLens registers a Flagsmith organisation webhook pointing at a small signed listener in the editor, removes it when the window closes, and keeps polling as a fallback. Flagsmith must allow the callback host in its `SSRF_ALLOWED_HOSTS` setting (the dev kit does)."
+        },
+        "flaglens.mcp.url": {
+          "type": "string",
+          "default": "http://localhost:8002/mcp",
+          "markdownDescription": "Flagsmith's MCP server, offered to VS Code's AI assistants (VS Code 1.101+) as **Flagsmith** while FlagLens is connected and the server answers. FlagLens adds your organisation API key when the server starts; it is never written to a file. The dev kit runs one with `make mcp`. Empty = off."
         },
         "flaglens.realtime.callbackHost": {
           "type": "string",

@@ -3,6 +3,7 @@ import type { ApiKeyStore } from './config';
 import type { Logger } from './log';
 import type { DeadCodeDecorator } from './providers/deadCode';
 import type { Ctx } from './present';
+import type { FlagsmithMcp } from './mcp';
 import type { RealtimeSync } from './realtime';
 import type { ReferenceIndex } from './references';
 import type { WriteIntent, WriteJournal } from './safety';
@@ -21,4 +22,6 @@ export interface App extends Ctx {
   deadCode?: DeadCodeDecorator;
   /** Real-time updates through a Flagsmith webhook. Set in activate(). */
   realtime?: RealtimeSync;
+  /** Flagsmith's MCP server for AI assistants. Set in activate(). */
+  mcp?: FlagsmithMcp;
 }
