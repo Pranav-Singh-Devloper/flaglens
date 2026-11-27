@@ -175,6 +175,14 @@ function typedValue(value) {
 async function seedFlags(project, envs, tagIds) {
   step('Flags');
   const existing = await listAll(`/projects/${project.id}/features/?page_size=100`);
+  // A running experiment locks its flag in that environment (Flagsmith rejects direct writes), so re-seeding leaves
+  // that flag as the experiment configured it.
+  const lockedByExperiment = new Set();
+  for (const env of envs) {
+    for (const x of await listAll(`/environments/${env.api_key}/experiments/`).catch(() => [])) {
+      if (x.status === 'running') lockedByExperiment.add(`${env.id}:${x.feature?.id ?? x.feature}`);
+    }
+  }
   for (const flag of data.flags) {
     const tags = (flag.tags ?? []).map((label) => tagIds.get(label));
     let feature = existing.find((f) => f.name === flag.name);
@@ -223,6 +231,7 @@ async function seedFlags(project, envs, tagIds) {
       const patch = { enabled: wanted.enabled };
       // Verified on 2.295.2: a raw JSON value is accepted and keeps its type (string, int or bool).
       if ('value' in wanted) patch.feature_state_value = wanted.value;
+      if (lockedByExperiment.has(`${env.id}:${feature.id}`)) continue;
       await api('PATCH', `/environments/${env.api_key}/featurestates/${fs.id}/`, patch);
     }
 
@@ -264,6 +273,8 @@ async function seedSegments(project, envs) {
       const feature = features.find((f) => f.name === name);
       if (!feature) continue;
       for (const fseg of await listAll(`/features/feature-segments/?feature=${feature.id}&environment=${env.id}`)) {
+        // System segments belong to Flagsmith features (an experiment's rollout, a flag dependency): keep them.
+        if (fseg.is_system_segment) continue;
         await api('DELETE', `/features/feature-segments/${fseg.id}/`);
       }
     }
@@ -284,6 +295,105 @@ async function seedSegments(project, envs) {
     });
     log(`${o.flag} → ${o.segment} in ${o.environment}: ${o.enabled ? 'on' : 'off'}${'value' in o ? ` ${JSON.stringify(o.value)}` : ''}`);
   }
+}
+
+/**
+ * Experimentation (beta): an A/B test on a multivariate flag, with a conversion metric and simulated shoppers, so the
+ * experiment has results to read. Self-hosted Flagsmith stores the events in its own database (the "Flagsmith
+ * database" warehouse). Every shopper is identified through the SDK API, so Flagsmith itself assigns the variation;
+ * the seed then sends the exposure and, at the configured rate, a conversion event, exactly as an SDK would.
+ * Re-seeding keeps a running experiment and its data; traffic is only sent while it has fewer than half the shoppers.
+ */
+async function seedExperiment(project, envs) {
+  const x = data.experiment;
+  if (!x) return;
+  step('Experiment');
+  const env = envs.find((e) => e.name === x.environment);
+  const features = await listAll(`/projects/${project.id}/features/?page_size=100`);
+  const feature = features.find((f) => f.name === x.flag);
+  if (!env || !feature) throw new Error(`Unknown environment or flag in the experiment: ${x.environment}, ${x.flag}`);
+  const base = `/environments/${env.api_key}`;
+
+  const warehouses = await listAll(`${base}/warehouse-connections/`);
+  if (!warehouses.some((w) => w.config?.source === 'flagsmith_database')) {
+    await api('POST', `${base}/warehouse-connections/`, { warehouse_type: 'postgres', config: { source: 'flagsmith_database' } });
+  }
+  const metrics = await listAll(`${base}/experiment-metrics/`);
+  const metric =
+    metrics.find((m) => m.name === x.metric.name) ??
+    (await api('POST', `${base}/experiment-metrics/`, {
+      name: x.metric.name,
+      description: x.metric.description,
+      aggregation: x.metric.aggregation,
+      direction: x.metric.direction,
+      definition: { version: 1, event: x.metric.event },
+    }));
+
+  let experiment = (await listAll(`${base}/experiments/`)).find((e) => e.name === x.name && e.status !== 'completed');
+  if (!experiment) {
+    const control = feature.initial_value;
+    experiment = await api('POST', `${base}/experiments/`, {
+      feature: feature.id,
+      name: x.name,
+      hypothesis: x.hypothesis,
+      metrics: [{ metric: String(metric.id), expected_direction: 'increase' }],
+      experiment_rollout: {
+        enabled: true,
+        rollout_percentage: x.rollout_percentage,
+        feature_state_value: { type: 'string', value: control },
+        multivariate_feature_state_values: feature.multivariate_options.map((o) => ({
+          multivariate_feature_option: o.id,
+          percentage_allocation: x.split[o.string_value] ?? 0,
+        })),
+      },
+    });
+  }
+  if (experiment.status === 'created' || experiment.status === 'paused') experiment = await api('POST', `${base}/experiments/${experiment.id}/start/`);
+
+  const results = await api('GET', `${base}/experiments/${experiment.id}/results/`).catch(() => null);
+  const seen = Object.values(results?.results?.payload?.metrics?.[0]?.variants ?? {}).reduce((n, v) => n + v.n, 0);
+  if (seen < x.traffic.shoppers / 2) {
+    const sent = await sendShoppers(env, feature, experiment, x.traffic);
+    log(`${sent.shoppers} simulated shoppers: ${Object.entries(sent.byVariant).map(([k, n]) => `${k} ${n}`).join(', ')}`);
+  }
+  // Ask Flagsmith to recompute the results now (it allows one refresh every few minutes; a recent one is fine).
+  for (const what of ['exposures', 'results']) await api('POST', `${base}/experiments/${experiment.id}/${what}/refresh/`).catch(() => {});
+  log(`"${x.name}" running in ${env.name} on ${x.flag} (metric: ${x.metric.name})`);
+}
+
+/** Simulated shoppers, as an SDK would report them: Flagsmith assigns the variation, then exposure and conversion events. */
+async function sendShoppers(env, feature, experiment, traffic) {
+  const sdk = { 'X-Environment-Key': env.api_key, 'Content-Type': 'application/json' };
+  const started = Date.parse(experiment.started_at ?? new Date().toISOString());
+  const now = Date.now();
+  // A fixed seed: the same shoppers convert on every machine.
+  let state = 20261127;
+  const random = () => (state = (state * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
+  const events = [];
+  const byVariant = {};
+  const ids = Array.from({ length: traffic.shoppers }, (_, i) => `shopper-${String(i + 1).padStart(4, '0')}`);
+  for (let i = 0; i < ids.length; i += 25) {
+    const batch = ids.slice(i, i + 25);
+    const served = await Promise.all(
+      batch.map(async (identifier) => {
+        const res = await fetch(`${API_URL}/api/v1/identities/`, { method: 'POST', headers: sdk, body: JSON.stringify({ identifier, traits: [], transient: true }) });
+        const flags = (await res.json()).flags;
+        return { identifier, value: flags.find((f) => f.feature.name === feature.name)?.feature_state_value };
+      }),
+    );
+    for (const { identifier, value } of served) {
+      const variant = value === feature.initial_value ? 'control' : value;
+      byVariant[variant] = (byVariant[variant] ?? 0) + 1;
+      const at = Math.max(started + 1_000, now - Math.floor(random() * 60_000));
+      events.push({ event: '$flag_exposure', feature_name: feature.name, identifier, value: variant, timestamp: at });
+      if (random() < (traffic.conversion_rate[value] ?? 0)) events.push({ event: data.experiment.metric.event, identifier, timestamp: at + 30_000 });
+    }
+  }
+  for (let i = 0; i < events.length; i += 100) {
+    const res = await fetch(`${API_URL}/api/v1/events/`, { method: 'POST', headers: sdk, body: JSON.stringify({ events: events.slice(i, i + 100) }) });
+    if (!res.ok) throw new Error(`Flagsmith rejected experiment events: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
+  }
+  return { shoppers: ids.length, byVariant };
 }
 
 /**
@@ -406,6 +516,7 @@ async function main() {
   const tagIds = await getOrCreateTags(project);
   await seedFlags(project, envs, tagIds);
   await seedSegments(project, envs);
+  await seedExperiment(project, envs);
   const healthWebhook = await seedFeatureHealth(project, envs);
   const apiKey = await getOrCreateOrgApiKey(org, project);
   writeEnvFiles({ apiKey, org, project, envs, healthWebhook });

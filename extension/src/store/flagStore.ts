@@ -6,12 +6,24 @@
 
 import * as vscode from 'vscode';
 import { ApiError, AuthError, FlagsmithClient, NotFoundError } from '../api/client';
-import type { ApiExperiment, ApiFeatureHealthEvent, ApiFeatureState, ApiProject } from '../api/types';
+import { experimentFeatureId, type ApiExperiment, type ApiFeatureHealthEvent, type ApiFeatureState, type ApiProject } from '../api/types';
+import { summariseExperiment, type ApiExperimentDetail, type ExperimentSummary } from '../core/experiment';
 import type { FlagFacts } from '../core/deadcode';
 import { dependenciesOf, evaluateFlags, uniformity, type EnvironmentDocument, type Evaluated, type Persona } from '../core/engine';
 import { analyseRules, type RuleFinding } from '../core/rules';
 import { buildRows, compileProtectedPattern, rowSignature, toEnvironment, type FlagRow, type FsEnvironment, type FsState } from '../core/model';
 import type { Logger } from '../log';
+
+interface ExperimentEntry {
+  envId: number;
+  featureId: number;
+  summary: ExperimentSummary;
+}
+
+/** The experiment list item already carries what the summary needs (hypothesis, metrics, the flag's options). */
+function toDetail(x: ApiExperiment): ApiExperimentDetail {
+  return { id: x.id, name: x.name, hypothesis: x.hypothesis ?? '', status: x.status, started_at: x.started_at, ended_at: x.ended_at, feature: x.feature, metrics: x.metrics ?? [] };
+}
 
 export type StoreStatus = 'disconnected' | 'loading' | 'ok' | 'offline' | 'error';
 
@@ -47,6 +59,9 @@ export class FlagStore implements vscode.Disposable {
   private documentsSupported = true;
   /** Latest Feature Health event per "featureId:envId" (envId 0 = all environments). */
   private health = new Map<string, ApiFeatureHealthEvent>();
+  /** Results of started experiments, by experiment id. */
+  private experimentResults = new Map<number, ExperimentEntry>();
+  private experimentSignature = '';
   private healthSupported = true;
   private healthSignature = '';
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -140,6 +155,8 @@ export class FlagStore implements vscode.Disposable {
     this.findings = undefined;
     this.health = new Map();
     this.healthSignature = '';
+    this.experimentResults = new Map();
+    this.experimentSignature = '';
     this.status = 'disconnected';
     this.lastError = undefined;
     this.lastRefresh = undefined;
@@ -205,6 +222,12 @@ export class FlagStore implements vscode.Disposable {
         this.evaluations.clear();
         this.findings = undefined;
       }
+      const experimentResults = await this.loadExperimentResults(client, experiments);
+      if (generation !== this.generation) return;
+      const experimentSignature = JSON.stringify([...experimentResults]);
+      const experimentsChanged = experimentSignature !== this.experimentSignature;
+      this.experimentResults = experimentResults;
+      this.experimentSignature = experimentSignature;
       const healthSignature = JSON.stringify([...health]);
       const healthChanged = healthSignature !== this.healthSignature;
       this.health = health;
@@ -214,6 +237,7 @@ export class FlagStore implements vscode.Disposable {
         envsChanged ||
         documentsChanged ||
         healthChanged ||
+        experimentsChanged ||
         signatures.size !== this.signatures.size ||
         [...signatures].some(([k, s]) => this.signatures.get(k) !== s);
 
@@ -253,6 +277,44 @@ export class FlagStore implements vscode.Disposable {
       }
     }
     return result;
+  }
+
+  /**
+   * Results of every experiment that has started (running, paused or completed), keyed by experiment id. One request
+   * per experiment; a failure keeps that experiment's last known results.
+   */
+  private async loadExperimentResults(client: FlagsmithClient, experiments: Map<number, ApiExperiment[]>): Promise<Map<number, ExperimentEntry>> {
+    const out = new Map<number, ExperimentEntry>();
+    const jobs: Promise<void>[] = [];
+    for (const [envId, list] of experiments) {
+      const env = this.environment(envId);
+      if (!env) continue;
+      for (const x of list) {
+        if (x.status === 'created') continue;
+        jobs.push(
+          client
+            .getExperimentResults(env.apiKey, x.id)
+            .catch(() => null)
+            .then((results) => {
+              const previous = this.experimentResults.get(x.id);
+              const summary = summariseExperiment(toDetail(x), results ?? null);
+              out.set(x.id, { envId, featureId: experimentFeatureId(x), summary: results || !previous ? summary : previous.summary });
+            }),
+        );
+      }
+    }
+    await Promise.all(jobs);
+    return out;
+  }
+
+  /** Experiments of this flag that have results, with their environment. */
+  experimentsFor(featureId: number): { env: FsEnvironment | undefined; summary: ExperimentSummary }[] {
+    return [...this.experimentResults.values()].filter((e) => e.featureId === featureId).map((e) => ({ env: this.environment(e.envId), summary: e.summary }));
+  }
+
+  /** Every experiment with results, for the report. */
+  allExperiments(): { env: FsEnvironment | undefined; featureId: number; summary: ExperimentSummary }[] {
+    return [...this.experimentResults.values()].map((e) => ({ env: this.environment(e.envId), featureId: e.featureId, summary: e.summary }));
   }
 
   private async loadDocuments(client: FlagsmithClient): Promise<Map<number, EnvironmentDocument>> {

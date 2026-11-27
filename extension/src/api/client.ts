@@ -26,6 +26,7 @@ import type {
   Paginated,
 } from './types';
 import type { EnvironmentDocument } from '../core/engine';
+import type { ApiExperimentResults } from '../core/experiment';
 
 export class FlagsmithError extends Error {
   constructor(message: string) {
@@ -328,6 +329,29 @@ export class FlagsmithClient {
 
   async listExperiments(environmentKey: string): Promise<ApiExperiment[]> {
     return this.listAll<ApiExperiment>(`/environments/${encodeURIComponent(environmentKey)}/experiments/`);
+  }
+
+  /** The latest results Flagsmith computed for an experiment (see core/experiment.ts for the shape). */
+  getExperimentResults(environmentKey: string, experimentId: number): Promise<ApiExperimentResults> {
+    return this.request<ApiExperimentResults>('GET', `/environments/${encodeURIComponent(environmentKey)}/experiments/${experimentId}/results/`);
+  }
+
+  /**
+   * Asks Flagsmith to recompute exposures and results. It allows one refresh every few minutes per experiment and
+   * answers 429 otherwise; that counts as "recently refreshed", not as an error.
+   */
+  async refreshExperimentResults(environmentKey: string, experimentId: number): Promise<'refreshing' | 'recently-refreshed'> {
+    const base = `/environments/${encodeURIComponent(environmentKey)}/experiments/${experimentId}`;
+    let recent = false;
+    for (const what of ['exposures', 'results']) {
+      try {
+        await this.request('POST', `${base}/${what}/refresh/`);
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 429) recent = true;
+        else throw e;
+      }
+    }
+    return recent ? 'recently-refreshed' : 'refreshing';
   }
 
   // --- plumbing --------------------------------------------------------------------------------------------------

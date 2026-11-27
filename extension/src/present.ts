@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import { describeState, driftFor, relativeTime, staleness, type DriftResult, type StaleResult } from './core/analysis';
 import { describeReason, type Evaluated, type Persona } from './core/engine';
+import { experimentHeadline, experimentTable } from './core/experiment';
 import { formatValue, type FlagRow, type FsEnvironment, type FsState } from './core/model';
 import type { Settings } from './config';
 import type { FlagStore } from './store/flagStore';
@@ -95,7 +96,13 @@ export function badgesFor(ctx: Ctx, row: FlagRow): Badge[] {
   const exps = runningExperiments(row);
   if (exps.length) {
     const envs = exps.map((x) => ctx.store.environment(x.envId)?.name ?? '?').join(', ');
-    out.push({ icon: '$(lock)', label: 'experiment', detail: `Locked by experiment "${exps[0]!.name}" in ${envs}` });
+    const live = ctx.store.experimentsFor(row.feature.id).find((e) => e.summary.status === 'running');
+    const headline = live ? experimentHeadline(live.summary) : undefined;
+    out.push({
+      icon: '$(beaker)',
+      label: headline && live!.summary.exposures ? `experiment: ${headline}` : 'experiment',
+      detail: `Experiment "${exps[0]!.name}" running in ${envs}${headline ? `: ${headline}` : ''}. The flag is locked there while it runs.`,
+    });
   }
   const findings = ctx.store.findingsFor(row.feature.name);
   if (findings.length) {
@@ -175,6 +182,8 @@ export const HOVER_COMMANDS = [
   'flaglens.showHistory',
   'flaglens.createFlag',
   'flaglens.openMatrix',
+  'flaglens.showExperiments',
+  'flaglens.refreshExperiments',
 ];
 
 function escapeMd(text: string): string {
@@ -262,6 +271,22 @@ export function flagMarkdown(ctx: Ctx, row: FlagRow, now = Date.now()): vscode.M
     const onThere = u.env && row.states.get(u.env.id)?.enabled;
     const kill = onThere ? ` · [$(debug-stop) Turn off in ${escapeMd(u.env!.name)}](${commandUri('flaglens.toggleFlag', key, u.env!.id)} "Turn the flag off where it is unhealthy")` : '';
     md.appendMarkdown(`$(pulse) **Unhealthy** in ${escapeMd(u.env?.name ?? 'all environments')} (Flagsmith Feature Health, ${escapeMd(u.event.provider_name)})${healthReason(u.event) ? `: ${escapeMd(healthReason(u.event))}` : ''}${links ? ` · ${links}` : ''}${kill}  \n`);
+  }
+  for (const { env, summary: x } of ctx.store.experimentsFor(f.id)) {
+    const since = x.startedAt ? ` since ${relativeTime(x.startedAt, now)}` : '';
+    md.appendMarkdown(
+      `\n$(beaker) **Experiment "${escapeMd(x.name)}"** · ${x.status}${env ? ` in ${escapeMd(env.name)}` : ''}${since}${x.metricName ? ` · metric: ${escapeMd(x.metricName)}` : ''}  \n`,
+    );
+    if (x.hypothesis) md.appendMarkdown(`_${escapeMd(x.hypothesis)}_\n\n`);
+    if (x.exposures) md.appendMarkdown(`${experimentTable(x).join('\n')}\n\n`);
+    const verdict = x.likelyWinner
+      ? `**${escapeMd(x.likelyWinner.value)}** is likely better than control (${Math.round(x.likelyWinner.chanceToWin! * 100)}% chance to win)`
+      : x.exposures
+        ? 'No variation is ahead with 95% confidence yet'
+        : 'Waiting for exposures';
+    md.appendMarkdown(
+      `${verdict}${x.srmWarning ? ' · $(warning) the split differs from the configuration (sample ratio mismatch)' : ''} · [$(graph) Experiment report](${commandUri('flaglens.showExperiments')}) · [$(refresh) Refresh results](${commandUri('flaglens.refreshExperiments')} "Ask Flagsmith to recompute the results")  \n\n`,
+    );
   }
   const facts: string[] = [];
   if (f.lifecycle) facts.push(`lifecycle in ${escapeMd(ctx.store.activeEnvironment?.name ?? '')}: **${f.lifecycle.replace('_', ' ')}**`);

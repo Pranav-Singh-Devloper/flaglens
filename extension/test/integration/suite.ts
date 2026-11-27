@@ -97,6 +97,27 @@ export async function run(): Promise<void> {
     assert.match(text, /50%/);
   });
 
+  await test('experiment: the running A/B test is badged on its flag, with Flagsmith\'s results in the hover and the report', async () => {
+    const doc = await open('server.mjs');
+    const lenses = await vscode.commands.executeCommand<vscode.CodeLens[]>('vscode.executeCodeLensProvider', doc.uri, 100);
+    const lens = lenses.map((l) => l.command?.title ?? '').find((t) => t.includes('checkout_button_color'));
+    assert.match(lens ?? '', /experiment/, `no experiment badge in: ${lens}`);
+    const hover = hoverText(await vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', doc.uri, positionOf(doc, "'checkout_button_color'", 3)));
+    assert.match(hover, /Checkout button colour/);
+    assert.match(hover, /running in Staging/i);
+    assert.match(hover, /green checkout button will increase checkout completion/);
+    assert.match(hover, /command:flaglens\.showExperiments/);
+    const md = await vscode.commands.executeCommand<string>('flaglens.showExperiments', { show: false });
+    assert.match(md, /## Checkout button colour/);
+    assert.match(md, /\*\*Metric:\*\* Checkout completed/);
+    // On a fresh dev kit Flagsmith may still be computing the first results; once it has, the table is there.
+    const [entry] = app.store.allExperiments();
+    if (entry?.summary.exposures) {
+      assert.match(md, /\| `blue` \(control\) \| \d+ \| [\d.]+% \| control \|/);
+      assert.match(md, /\| `green` \| \d+ \| [\d.]+% \| [+−][\d.]+% \(/);
+    }
+  });
+
   await test('typo diagnostic with "Replace with" quick fix, and stale hint', async () => {
     const doc = await open('typo.ts');
     const diags = await waitFor('diagnostics', () => {

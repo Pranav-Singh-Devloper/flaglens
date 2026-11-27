@@ -19,6 +19,7 @@ import { previewAsCommand, restorePersona, toggleDimmingCommand } from './comman
 import { publishCodeReferencesCommand } from './commands/codeReferences';
 import { userOverrideCommand } from './commands/overrides';
 import { segmentOverridesCommand } from './commands/segmentOverrides';
+import { refreshExperimentsCommand, showExperimentsCommand } from './commands/experiments';
 import { checkRulesCommand, testPlanCommand } from './commands/rules';
 import { ApiKeyStore, readSettings } from './config';
 import { createLogger } from './log';
@@ -159,6 +160,8 @@ export function activate(context: vscode.ExtensionContext): App {
     register('flaglens.toggleDimming', () => toggleDimmingCommand()),
     register('flaglens.checkRules', (opts?: never) => checkRulesCommand(app, opts)),
     register('flaglens.setUserOverride', (arg?: never, env?: never, preset?: never) => userOverrideCommand(app, arg, env, preset)),
+    register('flaglens.showExperiments', (opts?: never) => showExperimentsCommand(app, opts)),
+    register('flaglens.refreshExperiments', () => refreshExperimentsCommand(app)),
     register('flaglens.editSegmentOverrides', (arg?: never, env?: never, step?: never) => segmentOverridesCommand(app, arg, env, step)),
     register('flaglens.publishCodeReferences', (opts?: never) => publishCodeReferencesCommand(app, opts)),
     register('flaglens.testPlan', (keys?: never, mode?: never, opts?: never) => testPlanCommand(app, keys, mode, opts)),

@@ -64,9 +64,33 @@ function clientFor(envName) {
   return clients.get(key);
 }
 
+// Flagsmith Experimentation: the shop reports who saw which checkout button (an exposure, once per visitor) and who
+// bought (the "checkout_completed" metric). Flagsmith works out the results; FlagLens shows them in the editor.
+// Events only count while an experiment is running on the flag (the dev kit starts one in Staging).
+const CONTROL_COLOUR = 'blue';
+const exposed = new Set();
+async function sendEvents(envName, events) {
+  try {
+    await fetch(`${API_URL}/api/v1/events/`, {
+      method: 'POST',
+      headers: { 'X-Environment-Key': envKeys[envName.toUpperCase()], 'Content-Type': 'application/json' },
+      body: JSON.stringify({ events: events.map((e) => ({ timestamp: Date.now(), ...e })) }),
+    });
+  } catch {
+    // Analytics must never break the shop.
+  }
+}
+function recordExposure(envName, visitorId, colour) {
+  const key = `${envName}:${visitorId}`;
+  if (exposed.has(key)) return;
+  exposed.add(key);
+  const variant = colour === CONTROL_COLOUR ? 'control' : colour;
+  void sendEvents(envName, [{ event: '$flag_exposure', feature_name: 'checkout_button_color', identifier: visitorId, value: variant }]);
+}
+
 const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-async function render(envName, visitorId) {
+async function render(envName, visitorId, bought) {
   const flagsmith = clientFor(envName);
   // Identity flags, so each visitor gets a stable variant of checkout_button_color.
   const flags = await flagsmith.getIdentityFlags(visitorId, { plan: 'free' });
@@ -77,7 +101,8 @@ async function render(envName, visitorId) {
 
   const banner = flags.getFeatureValue('banner_text');
   const newCheckout = flags.isFeatureEnabled('new_checkout');
-  const buttonColor = flags.getFeatureValue('checkout_button_color') ?? 'blue';
+  const buttonColor = flags.getFeatureValue('checkout_button_color') ?? CONTROL_COLOUR;
+  recordExposure(envName, visitorId, buttonColor);
   const rateLimit = flags.getFeatureValue('rate_limit_per_minute');
   const darkMode = flags.isFeatureEnabled('dark_mode');
   const legacySearch = flags.isFeatureEnabled('legacy_search'); // archived in Flagsmith
@@ -101,7 +126,10 @@ async function render(envName, visitorId) {
           : `<h3>Checkout · step 1 of 3 <span class="tag off">new_checkout: OFF</span></h3>
              <ol><li>Shipping address</li><li>Delivery options</li><li>Payment</li></ol>`
       }
-      <button class="buy" style="background:${escapeHtml(cssColor(buttonColor))}">Buy now</button>
+      <form method="post" action="/buy?env=${encodeURIComponent(envName)}">
+        <button class="buy" style="background:${escapeHtml(cssColor(buttonColor))}">Buy now</button>
+        ${bought ? '<span class="thanks">Thanks! Order placed (checkout_completed sent to Flagsmith).</span>' : ''}
+      </form>
       <p class="variant">checkout_button_color for this visitor: <b>${escapeHtml(buttonColor)}</b></p>
     </section>
     <footer>
@@ -125,7 +153,7 @@ function cssColor(value) {
 
 function page(envName, body, dark) {
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="3">
+<html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="3; url=/?env=${encodeURIComponent(envName)}">
 <title>Demo Shop · ${escapeHtml(envName)}</title>
 <style>
   :root { --bg:#f8fafc; --fg:#0f172a; --card:#fff; --muted:#64748b; }
@@ -143,7 +171,7 @@ function page(envName, body, dark) {
   .checkout.new { border:2px solid #16a34a; } .row { display:flex; gap:10px; } input { flex:1; padding:8px; }
   .buy { margin-top:14px; color:#fff; border:0; padding:12px 28px; font-size:17px; border-radius:10px; }
   .variant, footer, .legacy { color:var(--muted); font-size:14px; } footer a { color:inherit; }
-  .maintenance { text-align:center; padding:60px; }
+  .maintenance { text-align:center; padding:60px; } .thanks { margin-left:12px; color:#16a34a; font-weight:600; }
 </style></head>
 <body class="${dark ? 'dark' : ''}"><header><h1>🛒 Demo Shop</h1><span class="env">env: ${escapeHtml(envName)}</span></header>
 <main>${body}</main></body></html>`;
@@ -151,15 +179,22 @@ function page(envName, body, dark) {
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+  const requested = url.searchParams.get('env') || DEFAULT_ENV;
+  const envName = Object.keys(envKeys).find((k) => k === requested.toUpperCase()) ? requested : DEFAULT_ENV;
+  const visitorId = /visitor=([\w-]+)/.exec(req.headers.cookie ?? '')?.[1] ?? `visitor-${randomUUID().slice(0, 8)}`;
+  const display = envName.charAt(0).toUpperCase() + envName.slice(1).toLowerCase();
+  if (url.pathname === '/buy' && req.method === 'POST') {
+    // The experiment's metric. Flagsmith counts it for visitors it has seen an exposure for.
+    await sendEvents(display, [{ event: 'checkout_completed', identifier: visitorId }]);
+    res.writeHead(303, { Location: `/?env=${encodeURIComponent(display)}&bought=1` }).end();
+    return;
+  }
   if (url.pathname !== '/') {
     res.writeHead(404).end('Not found');
     return;
   }
-  const requested = url.searchParams.get('env') || DEFAULT_ENV;
-  const envName = Object.keys(envKeys).find((k) => k === requested.toUpperCase()) ? requested : DEFAULT_ENV;
-  const visitorId = /visitor=([\w-]+)/.exec(req.headers.cookie ?? '')?.[1] ?? `visitor-${randomUUID().slice(0, 8)}`;
   try {
-    const html = await render(envName.charAt(0).toUpperCase() + envName.slice(1).toLowerCase(), visitorId);
+    const html = await render(display, visitorId, url.searchParams.has('bought'));
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Set-Cookie': `visitor=${visitorId}; Path=/; SameSite=Lax` });
     res.end(html);
   } catch (e) {

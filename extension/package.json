@@ -169,6 +169,18 @@
         "icon": "$(beaker)"
       },
       {
+        "command": "flaglens.showExperiments",
+        "title": "Show Experiment Results",
+        "category": "FlagLens",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "flaglens.refreshExperiments",
+        "title": "Refresh Experiment Results",
+        "category": "FlagLens",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "flaglens.publishCodeReferences",
         "title": "Publish Code References to Flagsmith…",
         "category": "FlagLens",
@@ -259,6 +271,11 @@
           "command": "flaglens.testPlan",
           "when": "view == flaglens.flags && flaglens.connected",
           "group": "1_flags@5"
+        },
+        {
+          "command": "flaglens.showExperiments",
+          "when": "view == flaglens.flags && flaglens.connected",
+          "group": "1_flags@7"
         },
         {
           "command": "flaglens.publishCodeReferences",
