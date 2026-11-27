@@ -565,6 +565,23 @@ export async function run(): Promise<void> {
     assert.ok(names.includes('checkout_button_color') && names.includes('new_checkout'), names.join(', '));
   });
 
+  await test('reconnecting while a slow refresh is running still loads (as on Flagsmith Cloud)', async () => {
+    const conn = store.connection!;
+    const original = conn.client.listEnvironments.bind(conn.client);
+    conn.client.listEnvironments = async (projectId: number) => {
+      await new Promise((r) => setTimeout(r, 1500));
+      return original(projectId);
+    };
+    try {
+      void store.refresh();
+      await store.connect(conn, 'Development');
+      assert.equal(store.status, 'ok');
+      assert.equal(store.rows.size, 7);
+    } finally {
+      conn.client.listEnvironments = original;
+    }
+  });
+
   await test('environment matrix opens', async () => {
     await vscode.commands.executeCommand('flaglens.openMatrix');
     const tab = await waitFor('matrix tab', () =>

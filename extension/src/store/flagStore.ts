@@ -67,6 +67,8 @@ export class FlagStore implements vscode.Disposable {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private failures = 0;
   private refreshing: Promise<void> | undefined;
+  /** The connection generation the in-flight refresh belongs to. */
+  private refreshingGeneration = -1;
   /** Experiments are a beta API; stop asking if this server doesn't have it. */
   private experimentsSupported = true;
   private generation = 0;
@@ -172,14 +174,23 @@ export class FlagStore implements vscode.Disposable {
     return this.refreshing ? this.refreshing.then(() => this.refresh()) : this.refresh();
   }
 
-  /** Refreshes now. Concurrent calls share one request round. */
+  /**
+   * Refreshes now. Concurrent calls share one request round, but only within one connection: a refresh still running
+   * for a previous connection gives up when it returns, so a new connection waits for it and then loads its own.
+   * (Otherwise reconnecting during a slow refresh, as on Flagsmith Cloud, left the store loading for good.)
+   */
   refresh(): Promise<void> {
-    if (!this.refreshing) {
-      this.refreshing = this.doRefresh().finally(() => {
-        this.refreshing = undefined;
+    if (this.refreshing && this.refreshingGeneration === this.generation) return this.refreshing;
+    const previous = this.refreshing ?? Promise.resolve();
+    const round: Promise<void> = previous
+      .catch(() => undefined)
+      .then(() => this.doRefresh())
+      .finally(() => {
+        if (this.refreshing === round) this.refreshing = undefined;
       });
-    }
-    return this.refreshing;
+    this.refreshing = round;
+    this.refreshingGeneration = this.generation;
+    return round;
   }
 
   private async doRefresh(): Promise<void> {
