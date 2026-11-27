@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.7.0
+
+- **A/B test results on the flag.** For a flag in a running Flagsmith experiment (Experimentation, beta), the badge
+  shows the leading variation (*experiment: green +168% (99% to win)*), and the hover shows the hypothesis, the metric
+  and, per variation, exposures, conversion, lift against control with its 95% interval and the chance to win. It says
+  when a variation is likely better (95% or more) and warns about a sample ratio mismatch. **Show Experiment Results**
+  opens a report; **Refresh Experiment Results** asks Flagsmith to recompute. The statistics are Flagsmith's own.
+- **Flagsmith's MCP server for AI assistants.** While FlagLens is connected and the server answers, it offers
+  Flagsmith's MCP server to VS Code's AI assistants (VS Code 1.101+) as *Flagsmith*. The organisation key is added from
+  secret storage only when VS Code starts the server. New setting `flaglens.mcp.url` (empty = off).
+- The experiment lock badge now appears on Flagsmith 2.295, which returns the experiment's flag as an object.
+- Dev kit: the seed runs a real experiment in Staging (warehouse on the Flagsmith database, a `checkout_completed`
+  metric and 600 deterministic shoppers); the demo shop reports exposures and checkouts; `make mcp-check` checks the
+  MCP server with the seeded key, and CI runs it.
+
 ## 0.6.1
 
 - The listing (Open VSX) links the demo video, the website, the source and the research paper.
