@@ -13,7 +13,9 @@ import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const envFile = join(here, '..', '..', '.env');
+// --env=.env.cloud runs the same comparison against Flagsmith Cloud (after make seed-cloud).
+const envArg = process.argv.find((a) => a.startsWith('--env='));
+const envFile = join(here, '..', '..', envArg ? envArg.slice('--env='.length) : '.env');
 const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const OPERATORS = process.argv.includes('--operators');
 const COUNT = Number(args[0] ?? 300);
