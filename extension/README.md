@@ -39,6 +39,10 @@ made anywhere arrive in seconds; Feature Health alerts land on the code).
   feature versioning get a new published version per change.
 - **Kill switch**: when Flagsmith Feature Health reports a flag unhealthy where it is on, turn it off from the alert or
   the hover.
+- **A/B test results on the flag** (Flagsmith Experimentation): the leading variation in a badge; per variation, the
+  lift against control with its 95% interval and the chance to win in the hover and a report.
+- **Flagsmith's MCP server for AI assistants**: offered to VS Code's assistants (VS Code 1.101+) while connected, with
+  the organisation key added from secret storage only when the server starts.
 - **FlagLens in CI**: the same checks for a whole repository, as a GitHub Action with a pull-request comment.
 - **Publish Code References to Flagsmith**: upload every flag reference in the repository, so the Flagsmith
   dashboard links each flag to its files and lines.
@@ -76,5 +80,6 @@ Flag references are found with the same pattern as Flagsmith's Code References s
 | `flaglens.diagnostics.staleFlags` | `true` | |
 | `flaglens.personas` | `[]` | Test users for *Preview as* (`name`, `identifier`, `traits`) |
 | `flaglens.dimInactiveCode` | `true` | Grey out code that can't run |
+| `flaglens.mcp.url` | `http://localhost:8002/mcp` | Flagsmith's MCP server for AI assistants (empty = off) |
 
 MIT licensed.

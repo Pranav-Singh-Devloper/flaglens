@@ -69,12 +69,12 @@ Then, in `server.mjs`:
 | Track 03 looks for | Where to see it |
 |---|---|
 | **Self-hosted Flagsmith** | `make up` starts the official Flagsmith 2.295.2 images ([compose.yaml](devkit/compose.yaml)); the demo, the tests and the video all run against it |
-| **Flagsmith is central** | Remove it and FlagLens does nothing. [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses): flags, environment documents, segments and overrides, identities, v2 versions, webhooks, Code References, Feature Health, lifecycle, dependencies, trait keys, CLI config, SDK, MCP |
-| **Integrations and plugins** | A VS Code extension, a Flagsmith organisation webhook, Code References from the editor or CI, Feature Health alerts |
+| **Flagsmith is central** | Remove it and FlagLens does nothing. [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses): flags, environment documents, segments and overrides, identities, v2 versions, webhooks, Experimentation (A/B tests), Code References, Feature Health, lifecycle, dependencies, trait keys, CLI config, SDK, MCP server |
+| **Integrations and plugins** | A VS Code extension, a Flagsmith organisation webhook, Code References from the editor or CI, Feature Health alerts, A/B test results next to the code, Flagsmith's MCP server for VS Code's AI assistants |
 | **Developer tools** | Greying out, *Preview as*, the rule check with fixes, test plans, typo fixes, drift, stale flags |
 | **Easy for others to reuse** | On [Open VSX](https://open-vsx.org/extension/pranav-singh-devloper/flaglens) (verified publisher) and as a `.vsix`; two commands to a seeded instance, [every environment variable](#environment-variables-dev-kit), [what success looks like](#what-success-looks-like), CI that seeds twice on a fresh machine, MIT licence |
 | **Open-source citizenship** | Three Flagsmith bugs found while building this, reported ([#9117](https://github.com/Flagsmith/flagsmith/issues/9117), [#9118](https://github.com/Flagsmith/flagsmith/issues/9118), [#9119](https://github.com/Flagsmith/flagsmith/issues/9119)), and a fix with regression tests for #9118 in [Flagsmith#9123](https://github.com/Flagsmith/flagsmith/pull/9123) |
-| **Quality** | 192 unit and 23 end-to-end tests against real Flagsmith; the engine verified on [15,050 checks](#development-and-tests); a [paper](docs/paper/flaglens.pdf) |
+| **Quality** | 195 unit and 25 end-to-end tests against real Flagsmith; the engine verified on [15,050 checks](#development-and-tests); a [paper](docs/paper/flaglens.pdf) |
 | **Demo video** | [2:33 on YouTube](https://youtu.be/n9qszMKXoB4), with captions and chapters |
 
 Everything else is below: [what it does](#what-it-does), [how it uses Flagsmith](#how-much-of-flagsmith-it-uses),
@@ -106,7 +106,7 @@ verification method and 27 references.
 ## Built on open-source Flagsmith
 
 - **Self-hosted first.** `make up && make seed` starts the official open-source Flagsmith 2.295.2 images in Docker and
-  seeds a realistic demo (3 environments, 7 flags, 6 segments, an API key) through Flagsmith's own REST API. No
+  seeds a realistic demo (3 environments, 7 flags, 6 segments, a running A/B test, an API key) through Flagsmith's own REST API. No
   clicking, idempotent, tested in CI on a fresh machine.
 - **Flagsmith is the whole point.** Every badge, value and finding comes from the Flagsmith API (management API,
   environment documents, transient identities), and every change is a confirmed Flagsmith write. Remove Flagsmith and
@@ -115,11 +115,13 @@ verification method and 27 references.
   References (FlagLens publishes them, and Flagsmith then shows each flag's files and lines and moves it through its
   lifecycle), lifecycle stages, flag owners and Feature Health alerts all show up where the flag is used. Organisation
   webhooks give real-time updates; identity overrides, segment overrides and v2 feature versions are edited from the
-  editor; trait keys feed *Preview as*. See [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses).
+  editor; trait keys feed *Preview as*. Flagsmith Experimentation's results (lift, interval, chance to win) appear on
+  the flag under test, and Flagsmith's MCP server is offered to VS Code's AI assistants. See
+  [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses).
 - **Fits the Flagsmith toolchain.** It reads the Flagsmith CLI's `flagsmith.json` and finds flags with the same pattern
   as Flagsmith's Code References scanner, in JS/TS, Python, Go, Java, Kotlin, C#, Dart and Ruby.
-- **Tested against the real thing.** 192 unit tests, 23 end-to-end tests in a real VS Code against self-hosted
-  Flagsmith, and a differential verifier for the local engine. Zero runtime dependencies; the extension is 62 KB.
+- **Tested against the real thing.** 195 unit tests, 25 end-to-end tests in a real VS Code against self-hosted
+  Flagsmith, and a differential verifier for the local engine. Zero runtime dependencies; the extension is 70 KB.
 
 ```
 ⚑ new_checkout   Development ● on · Staging ● on · Production ○ off   ⚠ drift
@@ -186,7 +188,8 @@ It is a community project, not an official Flagsmith product.
 | **Lifecycle and owners**: Flagsmith's lifecycle stage (*new*, *live*, *stale*, *permanent*, *to remove*…), its code-reference count and the flag's owners appear in the hover; *to remove* is also a badge | `GET /projects/{id}/features/?environment=` |
 | **FlagLens in CI**: `flaglens check` (a GitHub Action, or `make flag-check`) runs the editor's checks over a repository: unknown flag keys with a suggested fix, archived flags still in code, and targeting-rule mistakes. The report goes to the job summary and, on pull requests, a comment; `strict` fails the build | features list, environment documents |
 | **Kill switch for unhealthy flags**: when Feature Health newly reports a flag unhealthy where it is on, FlagLens says so once and offers *Turn off in <environment>* (also in the hover), with the usual confirmation and Undo | feature states |
-| **Experiment lock**: flags in a running experiment are badged and can't be toggled | `GET /environments/{key}/experiments/` (beta) |
+| **A/B test results on the flag** (Flagsmith Experimentation, beta): a flag in a running experiment gets a badge with the leading variation (*experiment: green +168% (99% to win)*); the hover shows the hypothesis, metric and, per variation, exposures, conversion, lift against control with its 95% interval and the chance to win, and says when a variation is likely better or the split looks wrong (sample ratio mismatch). *Show Experiment Results* opens a report; *Refresh* asks Flagsmith to recompute. The flag is locked in that environment while the experiment runs. The statistics are Flagsmith's own | `GET /environments/{key}/experiments/`, `…/experiments/{id}/results/`, `POST …/exposures/refresh/`, `…/results/refresh/` |
+| **Flagsmith's MCP server for AI assistants**: while FlagLens is connected and the server answers (`make mcp`), it is offered to VS Code's AI assistants (Copilot agent mode, VS Code 1.101+) as **Flagsmith**, so they can list flags, read experiment results or draft changes with Flagsmith's own 54 tools. The organisation key is added from VS Code's secret storage only when the server starts, and VS Code asks before any tool call not marked read-only | VS Code MCP API; Flagsmith MCP server (Streamable HTTP, `Authorization: Api-Key`) |
 | Autocomplete flag keys inside `isFeatureEnabled("…")`, sidebar tree, status-bar environment switcher, flag history, *Find unused flags* in the workspace | all of the above |
 | **Dev kit**: pinned official images, idempotent REST seed, demo shop using the official Node SDK | Docker, REST, SDK API |
 
@@ -263,6 +266,14 @@ Finally open the demo workspace: **File → Open Folder… → `flaglens/example
   that user changes; *Everyone* still sees the default.
 - **Feature Health:** `make alert` marks `new_checkout` unhealthy in Production: on the next refresh (within half a minute) its
   CodeLens shows *unhealthy*, the hover shows the reason, and toggling it warns you. `make recover` clears it.
+- **A/B test results:** `checkout_button_color` has an *experiment* badge (*green +168% (99% to win)*). Hover it:
+  Flagsmith's results for each colour, with the interval and the chance to win, and the
+  hypothesis. **FlagLens: Show Experiment Results** opens the report. Visit the shop's Staging page
+  (http://localhost:3030/?env=Staging) and click **Buy now**: the shop reports the exposure and the checkout to
+  Flagsmith, and *Refresh results* in the hover asks Flagsmith to recompute (at most once every 5 minutes).
+- **MCP server:** `make mcp && make mcp-check` starts Flagsmith's MCP server and asks it, with the seeded key, for the
+  flags and the experiment's leader. In VS Code 1.101+, **Flagsmith** then appears among the MCP servers (Chat →
+  tools); ask the assistant "which checkout colour is winning in Staging?".
 - **Code References:** run `make code-refs` (or **FlagLens: Publish Code References to Flagsmith…**), then open
   `new_checkout` in the dashboard: its *Code References* list links to the lines in this repository.
 
@@ -297,6 +308,7 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | FlagLens: Toggle Greying Out Code That Won't Run | Turn the greying on or off |
 | FlagLens: Check Targeting Rules | Report of segment overrides that never apply, change nothing or match nobody, per environment |
 | FlagLens: Generate Pairwise Test Plan… | Pick flags (the open file's are preselected): the smallest plan covering every pair of their values |
+| FlagLens: Show Experiment Results / Refresh Experiment Results | Flagsmith Experimentation's results for every started experiment; ask Flagsmith to recompute them |
 | FlagLens: Switch Active Environment… / Switch Project… / Refresh Flags / Show Log | |
 
 ## Configuration
@@ -319,6 +331,7 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | `flaglens.personas` | `[]` | Test users for *Preview as*: `[{ "name": "Beta tester", "identifier": "alice@demo-shop.dev", "traits": { "plan": "pro" } }]`. The demo workspace defines three |
 | `flaglens.dimInactiveCode` | `true` | Grey out code that can't run in the active environment (and for the previewed user) |
 | `flaglens.realtime.mode` | `auto` | Real-time updates through a Flagsmith webhook: `auto` when Flagsmith runs on this machine, `on` to always try, `off` to poll only |
+| `flaglens.mcp.url` | `http://localhost:8002/mcp` | Flagsmith's MCP server, offered to VS Code's AI assistants while connected and reachable. Empty = off |
 | `flaglens.realtime.callbackHost` | `host.docker.internal` | Host name Flagsmith uses to reach this machine. Flagsmith must allow it in `SSRF_ALLOWED_HOSTS` (the dev kit does) |
 
 ## Environment variables (dev kit)
@@ -336,6 +349,7 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | `FLAGSMITH_ENV_KEY_DEVELOPMENT`, `…_STAGING`, `…_PRODUCTION` | written by seed | demo shop | Client-side environment keys (public by design) |
 | `FLAGSMITH_HEALTH_WEBHOOK_URL` | written by seed | `make alert` / `make recover` | Feature Health webhook of the demo project. **Secret** (the URL contains its token) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | `admin@flaglens.local` / `FlagLens-demo-2026` | seed | Dev-kit dashboard login |
+| `FLAGSMITH_MCP_URL` | `http://localhost:8002/mcp` | `make mcp-check` | Flagsmith's MCP server to check |
 | `DEMO_PORT` | `3030` | demo shop | |
 | `DEMO_ENVIRONMENT` | `Development` | demo shop | Environment the shop reads by default (`?env=Production` overrides) |
 | `FLAGSMITH_PORT` | `8000` | `make up` (shell variable) | Host port if 8000 is taken: `FLAGSMITH_PORT=8080 make up`, then set `FLAGSMITH_API_URL=http://localhost:8080` |
@@ -350,6 +364,7 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | `make down` / `make reset` | `npm run devkit:down` / `devkit:reset` | Stop / stop **and delete all data** |
 | `make logs` | `npm run devkit:logs` | Follow Flagsmith logs |
 | `make mcp` | `npm run devkit:mcp` | Also start Flagsmith's MCP server on :8002 |
+| `make mcp-check` | `npm run devkit:mcp-check` | Handshake with the MCP server using the seeded key, list its tools, read the flags and the experiment's results |
 | `make help` | | List every target |
 | `make install` / `make ext` / `make package` | `npm install` / `npm run build` / `npm run package` | Install dependencies, build the extension, build `extension/flaglens.vsix` |
 | `make install-ext` | | Build the `.vsix` and install it with the `code` command |
@@ -366,7 +381,7 @@ The seeded flags are designed so every feature is visible:
 | `new_checkout` | on | on | off | Toggle it live; the shop's checkout changes |
 | `banner_text` | `🚧 dev build` | `Black Friday: 30% off` | `Black Friday: 30% off` | Values inline; the shop banner |
 | `rate_limit_per_minute` | 1000 | 100 | 50 | **drift** between Staging and Production |
-| `checkout_button_color` | blue / green 50% / orange 50% | same | same | Multivariate variants and weights |
+| `checkout_button_color` | blue / green 50% / orange 50% | A/B test: blue / green / orange, a third each | blue / green 50% / orange 50% | Multivariate variants and weights; in Staging, a running Flagsmith experiment ("does a green button increase checkout completion?") with results |
 | `dark_mode` | on | on | on | **Stale** (the demo workspace sets `staleAfterDays: 0`) |
 | `maintenance_mode` | off | off | off | Tagged `kill-switch` (permanent), so never stale |
 | `legacy_search` | off | off | off | **Archived** but still referenced |
@@ -457,7 +472,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Pranav-Singh-Devloper/flaglens@v0.6.0
+      - uses: Pranav-Singh-Devloper/flaglens@v0.7.0
         with:
           api-url: https://flagsmith.example.com
           api-key: ${{ secrets.FLAGSMITH_API_KEY }}   # an Organisation API key
@@ -483,14 +498,15 @@ the open-source edition offers, then built on as much of it as an editor tool ca
 | | Lifecycle stages and flag owners | Hover, *to remove* badge |
 | | Feature Health (Webhook provider and events) | *Unhealthy* badge, reason, warning in the confirmation; `make alert` / `make recover` |
 | | Transient identities (SDK API) | Differential test of the local engine against the server |
-| | Experiments (beta) | Lock badge; experiment flags can't be toggled |
+| | Experimentation (beta): warehouse on the Flagsmith database, metrics, experiments, events, exposures and results | The seed runs a real A/B test (600 shoppers, exposure and `checkout_completed` events); the demo shop reports real ones; results in the badge, hover and report; the lock |
 | | Audit log | *Show history*, when the server exposes it |
 | | Organisation webhooks (signed) | Real-time updates, with polling as the fallback |
 | | Identity overrides | *Set flag for previewed user* |
 | | Segment overrides and their priorities | *Edit segment overrides*, re-checked by the rule check |
 | | v2 feature versioning (versions, publish) | Toggles and value changes publish a version |
 | | Trait keys | Suggestions when previewing as a custom identity |
-| | Flagsmith CLI (`flagsmith.json`), Code References scanner pattern, Node SDK, MCP server | Config, flag detection, demo shop, `make mcp` |
+| | Flagsmith MCP server | Offered to VS Code's AI assistants with the org key from secret storage; `make mcp-check`; checked in CI |
+| | Flagsmith CLI (`flagsmith.json`), Code References scanner pattern, Node SDK | Config, flag detection, demo shop |
 | | Flagsmith's open-source evaluation engine | Ported to TypeScript for local evaluation; verified against the server (15,050 checks) |
 | | Official Docker images (`flagsmith/flagsmith` API and task processor, `flagsmith/flagsmith-mcp`) | The dev kit: `make up`, `make mcp` |
 | **Not yet** (open source) | Metadata fields, usage analytics, segment and flag-dependency editing, Edge identities | Analytics needs server-side setup; the others are dashboard work that doesn't need the code next to it |
@@ -534,14 +550,15 @@ extension/src/
   providers/       CodeLens, hover, diagnostics + quick fixes, autocomplete, greyed-out code decorations
   views/           sidebar tree, status bar, Environment Matrix webview
   commands/        connect, toggle, set value, create, history, diff, find unused, preview as user, rule check,
-                   test plan, identity and segment overrides, publish code references
+                   test plan, identity and segment overrides, publish code references, experiment results
+  mcp.ts           offers Flagsmith's MCP server to VS Code's AI assistants (key added at start, from SecretStorage)
   scripts/         verify-engine (differential test), publish-code-references (CLI for CI)
   safety.ts        confirmations, protected environments, write journal
 examples/demo-shop the shop (Node SDK), plus Python / React / TypeScript files used in the demo
 ```
 
 - **Zero runtime dependencies.** The extension uses only the VS Code API and Node's global `fetch`. The packaged
-  `.vsix` is about 62 KB.
+  `.vsix` is about 70 KB.
 - Activation is cheap (`workspaceContains:**/flagsmith.json` or after startup). The matrix webview loads only when opened.
 - Only open documents are scanned (debounced, cached by document version). *Find unused flags* scans the workspace on
   demand.

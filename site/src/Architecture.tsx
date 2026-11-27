@@ -184,7 +184,7 @@ const NODES: Record<NodeId, Box> = {
       "One typed client for the Management API using Node's global fetch: no runtime dependencies. Handles both paginated and plain-array answers, internal hostnames in next links, timeouts and error mapping. The Organisation API key lives only in VS Code SecretStorage.",
     files: ["extension/src/api/client.ts", "extension/src/api/types.ts"],
     flagsmith: ["Authorization: Api-Key <Organisation key>"],
-    facts: ["Zero runtime dependencies; the whole extension is 62 KB"],
+    facts: ["Zero runtime dependencies; the whole extension is 70 KB"],
   },
   api: {
     x: 690,
@@ -194,7 +194,7 @@ const NODES: Record<NodeId, Box> = {
     sub: "Management API · SDK API · /api/v1",
     lane: "flagsmith",
     about:
-      "The official open-source Flagsmith 2.295.2 image, started by make up. FlagLens uses flags, feature states, environment documents, segments and segment overrides, identities and identity overrides, v2 feature versions, organisation webhooks, Code References, Feature Health, lifecycle, trait keys and experiments.",
+      "The official open-source Flagsmith 2.295.2 image, started by make up. FlagLens uses flags, feature states, environment documents, segments and segment overrides, identities and identity overrides, v2 feature versions, organisation webhooks, Code References, Feature Health, lifecycle, trait keys and Experimentation (experiments, metrics, exposures and results).",
     files: ["devkit/compose.yaml"],
     flagsmith: [
       "flagsmith/flagsmith:2.295.2 (serve)",
@@ -221,7 +221,7 @@ const NODES: Record<NodeId, Box> = {
     sub: "flags, audit log, events",
     lane: "flagsmith",
     about:
-      "Flagsmith stores everything here, including analytics for Experiments (beta), which the dev kit turns on.",
+      "Flagsmith stores everything here, including the events behind Experimentation (beta): the dev kit points the experiment warehouse at this database.",
     files: ["devkit/compose.yaml"],
     flagsmith: ["postgres:15.5-alpine"],
   },
@@ -230,12 +230,12 @@ const NODES: Record<NodeId, Box> = {
     y: 312,
     w: 380,
     title: "Flagsmith MCP server (optional)",
-    sub: "make mcp · :8002",
+    sub: "make mcp · :8002 · offered to AI assistants",
     lane: "flagsmith",
     about:
-      "Flagsmith's official MCP server, pointed at the self-hosted instance, so AI assistants can read and change the same flags.",
-    files: ["devkit/compose.yaml (profile mcp)"],
-    flagsmith: ["flagsmith/flagsmith-mcp"],
+      "Flagsmith's official MCP server, pointed at the self-hosted instance. While FlagLens is connected, it offers this server to VS Code's AI assistants as Flagsmith, adding the Organisation key from SecretStorage only when VS Code starts it. make mcp-check runs a handshake and reads the flags and the experiment's results; CI runs it too.",
+    files: ["devkit/compose.yaml (profile mcp)", "extension/src/mcp.ts", "devkit/mcp-check.mjs"],
+    flagsmith: ["flagsmith/flagsmith-mcp (54 tools, Streamable HTTP)", "Authorization: Api-Key <Organisation key>"],
   },
   shop: {
     x: 680,
@@ -245,9 +245,9 @@ const NODES: Record<NodeId, Box> = {
     sub: "Node SDK",
     lane: "around",
     about:
-      "A small shop that reads its banner, checkout and button colour from self-hosted Flagsmith with the official Node SDK and per-visitor identities, so a toggle in VS Code is visible on the next request.",
+      "A small shop that reads its banner, checkout and button colour from self-hosted Flagsmith with the official Node SDK and per-visitor identities, so a toggle in VS Code is visible on the next request. It reports each visitor's button colour and every checkout to Flagsmith as experiment events.",
     files: ["examples/demo-shop/server.mjs"],
-    flagsmith: ["@flagsmith/nodejs", "SDK API with environment keys"],
+    flagsmith: ["@flagsmith/nodejs", "SDK API with environment keys", "POST /api/v1/events/ ($flag_exposure, checkout_completed)"],
   },
   seed: {
     x: 780,
@@ -257,11 +257,12 @@ const NODES: Record<NodeId, Box> = {
     sub: "REST only",
     lane: "around",
     about:
-      "make seed bootstraps everything through the public REST API: admin, organisation, project, 3 environments, 7 flags, 6 segments with overrides, an API key and a Feature Health provider. Idempotent; CI runs it twice.",
+      "make seed bootstraps everything through the public REST API: admin, organisation, project, 3 environments, 7 flags, 6 segments with overrides, an API key, a Feature Health provider and a running A/B test with 600 simulated shoppers. Idempotent; CI runs it twice.",
     files: ["devkit/seed.mjs", "devkit/seed-data.json"],
     flagsmith: [
       "signup → organisation → project → environments → flags → segments → API key",
       "POST /projects/{id}/feature-health/providers/",
+      "warehouse → metric → experiment → start → events",
     ],
   },
   ci: {
@@ -506,7 +507,7 @@ const FLOWS: Flow[] = [
       {
         nodes: ["mcp", "api"],
         edges: ["mcp>api"],
-        text: "make mcp: Flagsmith's MCP server on the same instance, for AI assistants.",
+        text: "make mcp: Flagsmith's MCP server on the same instance; FlagLens offers it to VS Code's AI assistants.",
       },
     ],
   },
@@ -608,7 +609,7 @@ export default function Architecture() {
               VS Code + FlagLens
             </text>
             <text x="196" y="50" className="fill-[#6b7186] text-[13px]">
-              zero runtime dependencies · 62 KB
+              zero runtime dependencies · 70 KB
             </text>
             <rect
               x="670"
