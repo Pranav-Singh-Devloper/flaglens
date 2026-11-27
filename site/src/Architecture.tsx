@@ -184,7 +184,7 @@ const NODES: Record<NodeId, Box> = {
       "One typed client for the Management API using Node's global fetch: no runtime dependencies. Handles both paginated and plain-array answers, internal hostnames in next links, timeouts and error mapping. The Organisation API key lives only in VS Code SecretStorage.",
     files: ["extension/src/api/client.ts", "extension/src/api/types.ts"],
     flagsmith: ["Authorization: Api-Key <Organisation key>"],
-    facts: ["Zero runtime dependencies; the whole extension is 70 KB"],
+    facts: ["Zero runtime dependencies; the whole extension is 70 KB", "Also Flagsmith Cloud: v2 versions in every environment, Edge identities"],
   },
   api: {
     x: 690,

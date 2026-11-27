@@ -120,7 +120,109 @@ const ESSENTIALS = [
   { title: 'Typos and stale flags', body: 'Unknown keys are underlined with a one-click fix. Stale and archived flags show up as problems, for free.', img: 'typo-quick-fix' },
 ];
 
+/** The nine parts of Flagsmith the Toggle Wars form lists, in its words, and what FlagLens does with each. */
+const PARTS: { name: string; what: string; proof: string }[] = [
+  {
+    name: 'Feature flags',
+    what: "Every flag's state in every environment above each reference in the code. Toggle from the editor with a confirmation, a typed one for Production, and Undo. Create a missing flag from a typo's quick fix.",
+    proof: 'A toggle in VS Code changes the demo shop on its next request',
+  },
+  {
+    name: 'Experimentation (A/B tests)',
+    what: "The dev kit seeds a real A/B test on the checkout button's colour, and the demo shop reports exposures and checkouts. The flag shows Flagsmith's own results: lift against control, its 95% interval, the chance to win.",
+    proof: 'green +55%, 99% to win: computed by Flagsmith on a fresh instance in CI',
+  },
+  {
+    name: 'Segments',
+    what: 'Preview as any user and see which segment decided. The rule check proves which segment overrides can never apply or change nothing, and you fix them from the editor by editing overrides and their priority.',
+    proof: 'Every rule operator checked against the server; each finding holds for every possible user',
+  },
+  {
+    name: 'Remote config',
+    what: 'Values, not just on and off: strings, numbers and multivariate variants with their weights, inline and in the hover. Set a value with a confirmation; drift between Staging and Production is badged.',
+    proof: 'rate_limit_per_minute: 100 in Staging, 50 in Production, drift badge',
+  },
+  {
+    name: 'Flagsmith CLI',
+    what: "Connects from the Flagsmith CLI's flagsmith.json (project by name, environment) and finds flags with the same pattern as Flagsmith's Code References scanner. Its own CLI, flaglens check, runs the editor's checks in CI.",
+    proof: 'The demo workspace connects with no settings at all',
+  },
+  {
+    name: 'Flagsmith API',
+    what: 'The Management API, the SDK API and environment documents, through a typed client with no runtime dependencies: pagination, timeouts, retries and clear errors. Every write is a confirmed Flagsmith call.',
+    proof: '30+ endpoints; 34 end-to-end tests against real servers, self-hosted and Cloud',
+  },
+  {
+    name: 'Flagsmith MCP server',
+    what: "While FlagLens is connected, it offers Flagsmith's own MCP server to VS Code's AI assistants. The organisation key comes from secret storage only when VS Code starts the server.",
+    proof: 'make mcp-check: 54 tools, and CI asks it which colour is winning',
+  },
+  {
+    name: 'Self-hosted Flagsmith',
+    what: 'make up && make seed starts the official Flagsmith 2.295.2 images and seeds a realistic demo through the REST API: 3 environments, 7 flags, 6 segments, an A/B test. The demo, the video and every test run on it.',
+    proof: '15,050 of 15,050 local evaluations match the live server',
+  },
+  {
+    name: 'Flagsmith Cloud',
+    what: "Point FlagLens at Flagsmith Cloud with an organisation key. It handles what is different there: feature versioning in every environment, identities in the Edge store, one project on the free plan. make seed-cloud seeds the same demo into a Cloud organisation.",
+    proof: '8 end-to-end tests and 7,224 of 7,224 engine checks against a live Cloud project',
+  },
+];
+
+/** Everything else of Flagsmith that FlagLens uses, beyond the form's list. */
+const BEYOND: [string, string][] = [
+  ['Environment documents', "Flagsmith's evaluation engine, ported to TypeScript and run locally"],
+  ['Identities and identity overrides', 'Set a flag for one user, with Undo'],
+  ['Transient identities', 'Differential testing of the local engine, nothing stored'],
+  ['Edge identities', "Flagsmith Cloud's identity store: overrides written and previewed there"],
+  ['Segment override priorities', 'Reorder overrides; the rule check re-runs at once'],
+  ['Multivariate options', 'Variant weights, and values in the pairwise test plan'],
+  ['v2 feature versioning', 'Changes are published as new versions'],
+  ['Organisation webhooks', 'Real-time updates, every call HMAC-SHA256 signed'],
+  ['Code References', 'Published from the editor or CI; counts in the hover'],
+  ['Feature Health', 'Unhealthy flags badged, with a kill switch'],
+  ['Lifecycle stages', 'new, live, stale, permanent, to remove, in the hover'],
+  ['Flag owners', 'Shown where the flag is used'],
+  ['Flag dependencies', 'Blocked where the prerequisite is off, evaluated per user'],
+  ['Trait keys', 'Suggestions when previewing a custom user'],
+  ['Tags', 'Permanent tags never count as stale'],
+  ['Project settings', 'Stale-flag limit and flag naming rules respected'],
+  ['Events API', 'Exposures and conversions from the demo shop'],
+  ['Experiment results and refresh', 'Recomputed on request, rate limit respected'],
+  ['Audit log', 'Flag history, where the server exposes it'],
+  ['Node SDK', 'The demo shop, with per-visitor identities'],
+  ['Official Docker images', 'API, task processor and MCP server'],
+  ['Upstream', 'Three bugs reported, and a fix with tests in Flagsmith#9123'],
+];
+
 const COMMANDS = 'git clone https://github.com/Pranav-Singh-Devloper/flaglens.git && cd flaglens\nmake up\nmake seed\nmake demo';
+
+/** "And beyond the form": the rest of Flagsmith that FlagLens uses. Shows the first nine, the rest on request. */
+function Beyond() {
+  const [all, setAll] = useState(false);
+  const shown = all ? BEYOND : BEYOND.slice(0, 9);
+  return (
+    <div className="mt-14">
+      <Reveal>
+        <h3 className="text-[22px] font-bold tracking-tight">And beyond the form</h3>
+        <p className="mt-1 text-[15px] text-muted">The rest of Flagsmith that FlagLens uses, each where the flag is used in the code.</p>
+      </Reveal>
+      <div className="mt-5 grid gap-x-8 gap-y-3 md:grid-cols-2 lg:grid-cols-3">
+        {shown.map(([b, t]) => (
+          <div key={b} className="relative pl-5 text-[15px] text-body">
+            <span className="absolute top-2 left-0 h-2 w-2 rounded-[3px] bg-brand" />
+            <b className="text-ink">{b}.</b> {t}
+          </div>
+        ))}
+      </div>
+      {BEYOND.length > 9 && (
+        <button type="button" onClick={() => setAll(!all)} className="cursor-target mt-5 rounded-lg border border-line bg-white px-3.5 py-1.5 text-[14px] font-semibold text-ink hover:border-brand">
+          {all ? 'Show fewer' : `Show all ${BEYOND.length}`}
+        </button>
+      )}
+    </div>
+  );
+}
 
 function CopyButton() {
   const [copied, setCopied] = useState(false);
@@ -156,6 +258,7 @@ export default function App() {
           <div className="hidden gap-7 text-[15px] text-muted md:flex">
             {[
               ['Features', '#features'],
+              ['Flagsmith', '#flagsmith'],
               ['Demo', '#demo'],
               ['Quick start', '#start'],
               ['Research', '#research'],
@@ -238,8 +341,8 @@ export default function App() {
             {[
               { n: <><CountUp to={15050} separator="," duration={1.6} /> / 15,050</>, l: 'local evaluations match the live server' },
               { n: <><CountUp from={7} to={96} direction="down" duration={1.8} /> runs</>, l: 'instead of 96: a provably minimal test plan' },
-              { n: <><CountUp to={195} duration={1.4} /> + <CountUp to={25} duration={1.4} /></>, l: 'unit and end-to-end tests, run in CI' },
-              { n: <><CountUp to={62} duration={1.2} /> KB</>, l: 'zero runtime dependencies' },
+              { n: <><CountUp to={197} duration={1.4} /> + <CountUp to={34} duration={1.4} /></>, l: 'unit and end-to-end tests, self-hosted and Cloud' },
+              { n: <><CountUp to={70} duration={1.2} /> KB</>, l: 'zero runtime dependencies' },
             ].map((s, i) => (
               <div key={i} className={`p-5 ${i % 2 ? '' : 'border-r'} border-line md:border-r md:last:border-r-0 ${i < 2 ? 'border-b md:border-b-0' : ''}`}>
                 <div className="text-[26px] font-extrabold tracking-tight tabular-nums">{s.n}</div>
@@ -370,32 +473,46 @@ export default function App() {
           </div>
         </section>
 
-        <section className="pt-28">
+        <section id="flagsmith" className="pt-28">
           <Reveal>
-            <h2 className="text-[clamp(28px,3.4vw,40px)] leading-tight font-extrabold tracking-tight">Built on open-source Flagsmith</h2>
-            <p className="mt-3 max-w-2xl text-[17px] text-muted">Remove Flagsmith and FlagLens does nothing: every badge, value and finding comes from the Flagsmith API.</p>
+            <h2 className="text-[clamp(28px,3.4vw,40px)] leading-tight font-extrabold tracking-tight">Every part of Flagsmith, used for real</h2>
+            <p className="mt-3 max-w-2xl text-[17px] text-muted">
+              Remove Flagsmith and FlagLens does nothing: every badge, value and finding comes from the Flagsmith API. Here are the nine parts of Flagsmith the Toggle Wars form asks about, what FlagLens does with each, and how to check it.
+            </p>
           </Reveal>
-          <div className="mt-8 grid gap-x-10 gap-y-5 md:grid-cols-2">
+
+          <div className="mt-8 grid grid-cols-2 overflow-hidden rounded-2xl border border-line bg-white shadow-sm md:grid-cols-4">
             {[
-              ['Self-hosted first.', 'Works against your own instance, with Flagsmith Cloud supported too.'],
-              ["Flagsmith's own semantics.", 'Environment documents evaluated exactly as the server does, verified with transient identities.'],
-              ['Fits the toolchain.', "Reads the Flagsmith CLI's flagsmith.json and finds flags like Flagsmith's Code References scanner."],
-              ['Code References, published.', 'One command uploads every flag reference, so the Flagsmith dashboard links each flag to its files and lines.'],
-              ['Feature Health in the editor.', 'When monitoring marks a flag unhealthy in Flagsmith, every reference shows it, and so does the confirmation.'],
-              ['Real time, and editable.', 'Changes arrive through a signed Flagsmith webhook in a few seconds; segment and identity overrides are edited right next to the code.'],
-              ['Dependencies and lifecycle.', "A flag that requires another is marked blocked where it can't serve; lifecycle stage and owners are in the hover."],
-              ['A/B tests next to the code.', "A flag in a running Flagsmith experiment shows the leading variation, its lift and its chance to win, from Flagsmith's own results."],
-              ['MCP for AI assistants.', "Flagsmith's MCP server is offered to VS Code's AI assistants, with the key added from SecretStorage only when it starts."],
-              ['Safe by default.', "API keys live in VS Code's SecretStorage; every write is confirmed and logged in Flagsmith's audit log."],
-            ].map(([b, t], i) => (
-              <Reveal key={b} delay={i * 0.06}>
-                <div className="relative pl-5 text-[16px] text-body">
-                  <span className="absolute top-2.5 left-0 h-2 w-2 rounded-[3px] bg-brand" />
-                  <b className="text-ink">{b}</b> {t}
-                </div>
+              { n: <><CountUp to={9} duration={1.2} /> / 9</>, l: 'parts of Flagsmith on the form' },
+              { n: <><CountUp to={BEYOND.length} duration={1.4} />+</>, l: 'more Flagsmith features beyond them' },
+              { n: <><CountUp to={30} duration={1.4} />+</>, l: 'Flagsmith API endpoints' },
+              { n: <><CountUp to={54} duration={1.4} /></>, l: 'MCP tools offered to AI assistants' },
+            ].map((x, i) => (
+              <div key={i} className={`p-5 ${i % 2 ? '' : 'border-r'} border-line md:border-r md:last:border-r-0 ${i < 2 ? 'border-b md:border-b-0' : ''}`}>
+                <div className="text-[26px] font-extrabold tracking-tight tabular-nums">{x.n}</div>
+                <div className="text-sm text-muted">{x.l}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {PARTS.map((p, i) => (
+              <Reveal key={p.name} delay={(i % 3) * 0.06}>
+                <SpotlightCard theme="light" spotlightColor="rgba(106, 88, 240, 0.16)" className="cursor-target flex h-full flex-col !p-5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-brand text-white" aria-hidden="true">
+                      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </span>
+                    <h3 className="text-[17px] font-bold">{p.name}</h3>
+                  </div>
+                  <p className="mt-3 flex-1 text-[15px] leading-relaxed text-body">{p.what}</p>
+                  <div className="mt-4 border-l-[3px] border-go bg-[#effaf3] py-2 pr-3 pl-3.5 text-[13.5px] text-ink">{p.proof}</div>
+                </SpotlightCard>
               </Reveal>
             ))}
           </div>
+
+          <Beyond />
         </section>
 
         <section id="research" className="pt-28">

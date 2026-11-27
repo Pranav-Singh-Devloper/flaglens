@@ -18,7 +18,7 @@ abstract: |
   flags that are provably minimal for on/off flags (the Katona--Kleitman--Spencer construction) and near-minimal with
   a stated lower bound otherwise, including a simple new bound that certifies optimality for a common mixed case. All
   analyses run in milliseconds on real projects, ship in a 70 KB extension with no runtime dependencies, and are
-  covered by 195 unit tests and 25 end-to-end tests against a self-hosted Flagsmith instance.
+  covered by 197 unit tests and 26 end-to-end tests against a self-hosted Flagsmith instance, plus 8 against Flagsmith Cloud.
 geometry: margin=2.3cm
 fontsize: 10pt
 numbersections: true
@@ -316,11 +316,12 @@ are pure modules with no editor dependencies: the engine (about 400 lines), dead
 the lexer and parser), rule analysis (about 330) and covering arrays (about 250). The editor layer adds CodeLens, hovers,
 decorations, diagnostics, a status-bar persona switch and Markdown reports.
 
-**Tests.** 195 unit tests (including the randomised soundness test of Section 5 and the exhaustive size checks of
-Section 6); 25 end-to-end tests that launch VS Code against a self-hosted Flagsmith 2.295.2 started by the project's
+**Tests.** 197 unit tests (including the randomised soundness test of Section 5 and the exhaustive size checks of
+Section 6); 26 end-to-end tests that launch VS Code against a self-hosted Flagsmith 2.295.2 started by the project's
 one-command dev kit, including a comparison of *Preview as* with the server's answer for the same identity, a check that
 nothing is greyed where users can differ, the rule check, the test plan, and a flag dependency evaluated per identity; and the differential verifier of
-Section 3.
+Section 3. The same tools run against Flagsmith Cloud, where every environment uses feature versioning and identities
+live in a separate store: 8 end-to-end tests pass there, and the differential verifier agreed on 7,224 of 7,224 checks.
 Continuous integration runs the unit and end-to-end suites on every push, seeding Flagsmith twice to prove the seed is
 idempotent.
 
@@ -380,9 +381,9 @@ self-hosted Flagsmith is at <https://youtu.be/n9qszMKXoB4>:
 
 ```bash
 make up && make seed          # self-hosted Flagsmith 2.295.2 with the demo project
-npm run check                 # lint, type-check, 195 unit tests
+npm run check                 # lint, type-check, 197 unit tests
 make verify-engine            # differential test against the live server
-npm run test:integration -w extension   # 25 end-to-end tests in VS Code
+npm run test:integration -w extension   # 26 end-to-end tests in VS Code
 ```
 
 # References

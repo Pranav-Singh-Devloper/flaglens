@@ -69,16 +69,42 @@ Then, in `server.mjs`:
 | Track 03 looks for | Where to see it |
 |---|---|
 | **Self-hosted Flagsmith** | `make up` starts the official Flagsmith 2.295.2 images ([compose.yaml](devkit/compose.yaml)); the demo, the tests and the video all run against it |
-| **Flagsmith is central** | Remove it and FlagLens does nothing. [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses): flags, environment documents, segments and overrides, identities, v2 versions, webhooks, Experimentation (A/B tests), Code References, Feature Health, lifecycle, dependencies, trait keys, CLI config, SDK, MCP server |
+| **Flagsmith is central** | Remove it and FlagLens does nothing. All [nine parts of Flagsmith on the submission form](#every-part-of-flagsmith-used-for-real), plus 22 more: flags, environment documents, segments and overrides, identities, v2 versions, webhooks, Experimentation (A/B tests), Code References, Feature Health, lifecycle, dependencies, trait keys, CLI config, SDK, MCP server |
 | **Integrations and plugins** | A VS Code extension, a Flagsmith organisation webhook, Code References from the editor or CI, Feature Health alerts, A/B test results next to the code, Flagsmith's MCP server for VS Code's AI assistants |
 | **Developer tools** | Greying out, *Preview as*, the rule check with fixes, test plans, typo fixes, drift, stale flags |
 | **Easy for others to reuse** | On [Open VSX](https://open-vsx.org/extension/pranav-singh-devloper/flaglens) (verified publisher) and as a `.vsix`; two commands to a seeded instance, [every environment variable](#environment-variables-dev-kit), [what success looks like](#what-success-looks-like), CI that seeds twice on a fresh machine, MIT licence |
 | **Open-source citizenship** | Three Flagsmith bugs found while building this, reported ([#9117](https://github.com/Flagsmith/flagsmith/issues/9117), [#9118](https://github.com/Flagsmith/flagsmith/issues/9118), [#9119](https://github.com/Flagsmith/flagsmith/issues/9119)), and a fix with regression tests for #9118 in [Flagsmith#9123](https://github.com/Flagsmith/flagsmith/pull/9123) |
-| **Quality** | 195 unit and 25 end-to-end tests against real Flagsmith; the engine verified on [15,050 checks](#development-and-tests); a [paper](docs/paper/flaglens.pdf) |
+| **Quality** | 197 unit tests, 26 end-to-end tests against self-hosted Flagsmith and 8 against Flagsmith Cloud; the engine verified on [15,050 checks](#development-and-tests); a [paper](docs/paper/flaglens.pdf) |
 | **Demo video** | [2:33 on YouTube](https://youtu.be/n9qszMKXoB4), with captions and chapters |
 
 Everything else is below: [what it does](#what-it-does), [how it uses Flagsmith](#how-much-of-flagsmith-it-uses),
 [architecture](#architecture), [the research paper](#research).
+
+## Every part of Flagsmith, used for real
+
+The nine parts of Flagsmith that the Toggle Wars form asks about, in its words: what FlagLens does with each, and how
+to check it yourself.
+
+| Part of Flagsmith | What FlagLens does with it | Check it |
+|---|---|---|
+| **Feature flags** | Every flag's state in every environment above each reference in the code. Toggle from the editor with a confirmation (typed for Production) and Undo; create a missing flag from a typo's quick fix | Toggle `new_checkout` from its CodeLens: the demo shop changes on its next request |
+| **Experimentation (A/B tests)** | The dev kit seeds a real A/B test on the checkout button's colour, and the demo shop reports exposures and checkouts. The flag shows Flagsmith's own results: lift against control, its 95% interval, the chance to win; a report, and *Refresh* | Hover `checkout_button_color`: about *green +55% (99% to win)*, computed by Flagsmith, also on a fresh instance in CI |
+| **Segments** | *Preview as* any user shows which segment decided. The rule check proves which segment overrides can never apply or change nothing; fix them by editing overrides and their priority from the editor | Problems panel: `pro_eu` never applies. Move it up and the finding disappears. Every rule operator is checked against the server |
+| **Remote config** | Values, not just on and off: strings, numbers and multivariate variants with their weights, inline and in the hover. *Set value* with a confirmation; drift between Staging and Production is badged | `rate_limit_per_minute` shows 100 in Staging, 50 in Production and a drift badge |
+| **Flagsmith CLI** | Connects from the Flagsmith CLI's `flagsmith.json` (project by name, environment) and finds flags with the pattern of Flagsmith's Code References scanner. Its own CLI, `flaglens check`, runs the editor's checks in CI | Open `examples/demo-shop`: it connects with no settings. `make flag-check` |
+| **Flagsmith API** | The Management API, the SDK API and environment documents, through a typed client with no runtime dependencies (pagination, timeouts, retries, clear errors). Every write is a confirmed Flagsmith call | 30+ endpoints, listed [below](#how-much-of-flagsmith-it-uses); 34 end-to-end tests against real servers, self-hosted and Cloud |
+| **Flagsmith MCP server** | While FlagLens is connected, it offers Flagsmith's own MCP server to VS Code's AI assistants as *Flagsmith*. The organisation key comes from secret storage only when VS Code starts the server | `make mcp && make mcp-check`: 54 tools, the flags, and which colour is winning. CI runs it |
+| **Self-hosted Flagsmith** | `make up && make seed` starts the official Flagsmith 2.295.2 images and seeds a realistic demo through the REST API. The demo, the video and every test run on it | 15,050 of 15,050 local evaluations match the live server (`make verify-engine`) |
+| **Flagsmith Cloud** | Point FlagLens at `https://api.flagsmith.com` with an organisation key. It handles what is different there: v2 versioning everywhere, Edge identities, one project on the free plan. `make seed-cloud` seeds the same demo into a Cloud organisation | 8 end-to-end tests and 7,224 engine checks against a live Cloud project; see [Use it with Flagsmith Cloud](#use-it-with-flagsmith-cloud) |
+
+**And beyond the form**, FlagLens uses: environment documents (Flagsmith's evaluation engine, ported and run
+locally), identities and identity overrides, transient identities, Edge identities (Flagsmith Cloud), segment override priorities, multivariate
+options, v2 feature versioning, organisation webhooks (real time, signed), Code References, Feature Health (with a
+kill switch), lifecycle stages, flag owners, flag dependencies, trait keys, tags, project settings (stale-flag limit,
+naming rules), the events API, experiment results and refresh, the audit log, the Node SDK and the official Docker
+images. Three Flagsmith bugs found on the way were reported upstream, with a fix in
+[Flagsmith#9123](https://github.com/Flagsmith/flagsmith/pull/9123). The full table, with the API behind each, is in
+[How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses).
 
 ## What makes it different, in detail
 
@@ -120,8 +146,8 @@ verification method and 27 references.
   [How much of Flagsmith it uses](#how-much-of-flagsmith-it-uses).
 - **Fits the Flagsmith toolchain.** It reads the Flagsmith CLI's `flagsmith.json` and finds flags with the same pattern
   as Flagsmith's Code References scanner, in JS/TS, Python, Go, Java, Kotlin, C#, Dart and Ruby.
-- **Tested against the real thing.** 195 unit tests, 25 end-to-end tests in a real VS Code against self-hosted
-  Flagsmith, and a differential verifier for the local engine. Zero runtime dependencies; the extension is 70 KB.
+- **Tested against the real thing.** 197 unit tests, 26 end-to-end tests in a real VS Code against self-hosted
+  Flagsmith and 8 against Flagsmith Cloud, and a differential verifier for the local engine. Zero runtime dependencies; the extension is 70 KB.
 
 ```
 ⚑ new_checkout   Development ● on · Staging ● on · Production ○ off   ⚠ drift
@@ -289,6 +315,35 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 4. Pick the project. If your repo already has a `flagsmith.json` from the Flagsmith CLI, FlagLens uses it
    (`project` and `environment` may be ids, names or a client-side key).
 
+## Use it with Flagsmith Cloud
+
+Self-hosted is the default, and FlagLens works the same against Flagsmith Cloud (`https://api.flagsmith.com`):
+
+1. In [Flagsmith Cloud](https://app.flagsmith.com): **Organisation Settings → API Access → Create API key**.
+2. Put it in a git-ignored `.env.cloud` file: `FLAGSMITH_API_KEY=<key>` (see [.env.example](.env.example)).
+3. `make seed-cloud` seeds the same *Demo Shop* project into your Cloud organisation through the same REST API and
+   writes its environment keys back into `.env.cloud`. Steps your plan doesn't include are skipped with a note.
+4. In VS Code, **FlagLens: Connect to Flagsmith…** with `https://api.flagsmith.com` and the key. Dashboard links go to
+   `app.flagsmith.com`.
+
+**Tested against a live Flagsmith Cloud project.** `FLAGLENS_IT_CLOUD=1 npm run test:integration -w extension` runs
+8 end-to-end tests in a real VS Code against Cloud (connect, CodeLens, hover, toggle and restore, *Preview as*
+checked against what Cloud serves, the rule check, an identity override, the matrix), and
+`node extension/scripts/verify-engine.mjs 300 --env=.env.cloud` compares the local engine with Cloud: last run,
+**7,224 of 7,224** checks agree.
+
+Cloud differs from a default self-hosted install in a few ways, and FlagLens handles each:
+
+| On Flagsmith Cloud | What FlagLens does |
+|---|---|
+| Every environment uses feature versioning (v2) | Toggles and value changes publish a new version; the seed publishes versions too |
+| Identities live in the Edge store, with their own API, and the environment document shows a new identity override only after a delay | *Set flag for user* writes to the Edge store, and *Preview as* reads that user's overrides from it directly, so the preview matches what Cloud serves at once |
+| Segment overrides in v2 environments change through versions | Edit them in the dashboard (the hover says so); the rule check still finds the problems |
+| The free plan allows one project | `FLAGSMITH_PROJECT_ID=<id>` in `.env.cloud` seeds into an existing project |
+| Real-time webhooks need a public URL that reaches your editor | FlagLens polls instead (every 10 s by default) |
+| Experiments need Cloud's managed warehouse; on the free plan it did not accept events | The seeded experiment runs and is shown on the flag; results appear once the warehouse receives events |
+| The audit-log endpoint answered HTTP 500 | *Show history* uses last-change dates and FlagLens's own change journal |
+
 ## Commands
 
 | Command | |
@@ -359,6 +414,7 @@ Something wrong? See [Troubleshooting](#troubleshooting).
 | make | npm | |
 |---|---|---|
 | `make up` | `npm run devkit:up` | Start Flagsmith (waits until healthy) |
+| `make seed-cloud` | `npm run devkit:seed-cloud` | Seed the same demo into Flagsmith Cloud (organisation API key in `.env.cloud`; see [Use it with Flagsmith Cloud](#use-it-with-flagsmith-cloud)) |
 | `make seed` | `npm run devkit:seed` | Seed or re-seed. Safe to re-run: it restores every demo flag to its declared state ([`devkit/seed-data.json`](devkit/seed-data.json)) |
 | `make demo` | `npm run demo` | Run the demo shop |
 | `make down` / `make reset` | `npm run devkit:down` / `devkit:reset` | Stop / stop **and delete all data** |
@@ -472,7 +528,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Pranav-Singh-Devloper/flaglens@v0.7.0
+      - uses: Pranav-Singh-Devloper/flaglens@v0.8.0
         with:
           api-url: https://flagsmith.example.com
           api-key: ${{ secrets.FLAGSMITH_API_KEY }}   # an Organisation API key
@@ -593,6 +649,11 @@ npm run build                    # bundle the extension (esbuild)
 make up && make seed
 npm run test:integration -w extension   # end-to-end: real VS Code + real self-hosted Flagsmith
 make verify-engine                      # local evaluation vs the live server (npm run verify:engine -w extension)
+
+# Against Flagsmith Cloud (organisation API key in .env.cloud):
+make seed-cloud
+FLAGLENS_IT_CLOUD=1 npm run test:integration -w extension
+node extension/scripts/verify-engine.mjs 300 --env=.env.cloud
 ```
 
 - **Unit tests** (Vitest, ~190 tests) cover the scanner (call styles in 9 languages, multi-line calls, false
